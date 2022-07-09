@@ -12,19 +12,14 @@ namespace TrinityText.Domain.EF
         {
             base.OnModelCreating(builder);
 
-            builder.Entity<CacheSettings>(entity =>
-            {
-                entity.ToTable(name: "Operators").HasKey(e => e.ID);
-                entity.Property(e => e.ID).ValueGeneratedOnAdd();
-                entity
-                     .HasOne(e => e.CDNSERVER)
-                     .WithMany(s => s.CACHESETTINGS)
-                     .HasForeignKey(s => s.FK_CDNSERVER);
-            });
             builder.Entity<CdnServer>(entity =>
             {
-                entity.ToTable(name: "Operators").HasKey(e => e.ID);
+                entity
+                    .ToTable(name: "CdnServers")
+                    .HasKey(e => e.ID);
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
+                entity.Property(e => e.NAME).HasColumnName("Nome");
+                entity.Property(e => e.TYPE).HasColumnName("Tipo");
                 entity.HasMany(e => e.CACHESETTINGS)
                     .WithOne(e => e.CDNSERVER)
                     .HasForeignKey(e => e.FK_CDNSERVER);
@@ -42,22 +37,49 @@ namespace TrinityText.Domain.EF
                     .HasForeignKey(e => e.FK_CDNSERVER);
             });
 
+            builder.Entity<CacheSettings>(entity =>
+            {
+                entity.ToTable(name: "CacheSettings").HasKey(e => e.ID);
+                entity.Property(e => e.ID).ValueGeneratedOnAdd();
+                entity
+                     .HasOne(e => e.CDNSERVER)
+                     .WithMany(s => s.CACHESETTINGS)
+                     .HasForeignKey(s => s.FK_CDNSERVER);
+            });
+            
+
             builder.Entity<CdnServersPerWebsite>(entity =>
             {
-                entity.ToTable(name: "Operators").HasKey(e => new {
+                entity.ToTable(name: "CdnServersPerVendor").HasKey(e => new {
                     e.FK_CDNSERVER,
                     e.FK_WEBSITE
                 });
+                entity.Property(e => e.FK_WEBSITE).HasColumnName("FK_VENDOR");
+            });
 
-                entity
-                    .HasOne(e => e.CDNSERVER)
-                    .WithMany(s => s.CDNSERVERPERWEBSITES)
-                    .HasForeignKey(s => s.CDNSERVER);
+            builder.Entity<FtpServerPerCdnServer>(entity =>
+            {
+                entity.ToTable(name: "FtpServersPerCdnServer").HasKey(e => new {
+                    e.FK_CDNSERVER,
+                    e.FK_FTPSERVER
+                });
+            });
+
+            builder.Entity<FtpServer>(entity =>
+            {
+                entity.ToTable(name: "FtpServers").HasKey(e => e.ID);
+                entity.Property(e => e.ID).ValueGeneratedOnAdd();
+                entity.Property(e => e.NAME).HasColumnName("Nome");
+                entity.Property(e => e.TYPE).HasColumnName("Tipo");
+
+                entity.HasMany(e => e.CDNSERVERS)
+                    .WithOne(e => e.FTPSERVER)
+                    .HasForeignKey(e => e.FK_FTPSERVER);
             });
 
             builder.Entity<File>(entity =>
             {
-                entity.ToTable(name: "Operators").HasKey(e => e.ID);
+                entity.ToTable(name: "Files").HasKey(e => e.ID);
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
 
                 entity.Property(e => e.CONTENT).HasMaxLength(int.MaxValue);
@@ -70,7 +92,7 @@ namespace TrinityText.Domain.EF
 
             builder.Entity<Folder>(entity =>
             {
-                entity.ToTable(name: "Operators").HasKey(e => e.ID);
+                entity.ToTable(name: "Cartelle").HasKey(e => e.ID);
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
 
                 entity
@@ -87,20 +109,11 @@ namespace TrinityText.Domain.EF
                    .HasForeignKey(e => e.FK_FOLDER);
             });
 
-            builder.Entity<FtpServer>(entity =>
-            {
-                entity.ToTable(name: "Operators").HasKey(e => e.ID);
-                entity.Property(e => e.ID).ValueGeneratedOnAdd();
-
-                entity
-                    .HasOne(e => e.CDNSERVER)
-                    .WithMany(s => s.FTPSERVERS)
-                    .HasForeignKey(s => s.FK_CDNSERVER);
-            });
+            
 
             builder.Entity<Page>(entity =>
             {
-                entity.ToTable(name: "Operators").HasKey(e => e.ID);
+                entity.ToTable(name: "Contenuti").HasKey(e => e.ID);
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
 
                 entity
@@ -111,7 +124,7 @@ namespace TrinityText.Domain.EF
 
             builder.Entity<PageType>(entity =>
             {
-                entity.ToTable(name: "Operators").HasKey(e => e.ID);
+                entity.ToTable(name: "TipologieContenuti").HasKey(e => e.ID);
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
 
                 entity.HasMany(e => e.PAGES)
@@ -121,7 +134,7 @@ namespace TrinityText.Domain.EF
 
             builder.Entity<Publication>(entity =>
             {
-                entity.ToTable(name: "Operators").HasKey(e => e.ID);
+                entity.ToTable(name: "Generazioni").HasKey(e => e.ID);
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
 
                 entity
@@ -138,7 +151,7 @@ namespace TrinityText.Domain.EF
             builder.Entity<Text>(entity =>
             {
                 entity
-                    .ToTable(name: "Operators")
+                    .ToTable(name: "Risorse")
                     .HasKey(e => e.ID);
                 entity
                     .Property(e => e.ID).ValueGeneratedOnAdd();
@@ -151,7 +164,7 @@ namespace TrinityText.Domain.EF
             builder.Entity<TextRevision>(entity =>
             {
                 entity
-                    .ToTable(name: "Operators")
+                    .ToTable(name: "TestiPerRisorsa")
                     .HasKey(e => e.ID);
                 entity
                     .Property(e => e.ID).ValueGeneratedOnAdd();
@@ -163,7 +176,7 @@ namespace TrinityText.Domain.EF
 
             builder.Entity<TextType>(entity =>
             {
-                entity.ToTable(name: "Operators").HasKey(e => e.ID);
+                entity.ToTable(name: "TipologieTesti").HasKey(e => e.ID);
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
                 entity.HasMany(e => e.TEXTS)
                     .WithOne(e => e.TEXTTYPE)
@@ -173,21 +186,21 @@ namespace TrinityText.Domain.EF
                     .HasForeignKey(e => e.FK_TEXTTYPE);
             });
 
-            builder.Entity<TextType>(entity =>
-            {
-                entity.ToTable(name: "Operators").HasKey(e => e.ID);
-                entity.Property(e => e.ID).ValueGeneratedOnAdd();
-                entity.HasMany(e => e.TEXTS)
-                    .WithOne(e => e.TEXTTYPE)
-                    .HasForeignKey(e => e.FK_TEXTTYPE);
-                entity.HasMany(e => e.TEXTTYPEPERWEBSITES)
-                    .WithOne(e => e.TEXTTYPE)
-                    .HasForeignKey(e => e.FK_TEXTTYPE);
-            });
+            //builder.Entity<TextType>(entity =>
+            //{
+            //    entity.ToTable(name: "Operators").HasKey(e => e.ID);
+            //    entity.Property(e => e.ID).ValueGeneratedOnAdd();
+            //    entity.HasMany(e => e.TEXTS)
+            //        .WithOne(e => e.TEXTTYPE)
+            //        .HasForeignKey(e => e.FK_TEXTTYPE);
+            //    entity.HasMany(e => e.TEXTTYPEPERWEBSITES)
+            //        .WithOne(e => e.TEXTTYPE)
+            //        .HasForeignKey(e => e.FK_TEXTTYPE);
+            //});
 
             builder.Entity<TextTypePerWebsite>(entity =>
             {
-                entity.ToTable(name: "Operators").HasKey(e => new {
+                entity.ToTable(name: "TipologieTestiPerVendor").HasKey(e => new {
                     e.FK_VENDOR,
                     e.FK_TEXTTYPE
                 });
@@ -200,13 +213,13 @@ namespace TrinityText.Domain.EF
 
             builder.Entity<WebsiteConfiguration>(entity =>
             {
-                entity.ToTable(name: "Operators").HasKey(e => e.ID);
+                entity.ToTable(name: "WebsitesPerVendor").HasKey(e => e.ID);
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
             });
 
             builder.Entity<Widget>(entity =>
             {
-                entity.ToTable(name: "Operators").HasKey(e => e.ID);
+                entity.ToTable(name: "WidgetContenuti").HasKey(e => e.ID);
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
             });
         }

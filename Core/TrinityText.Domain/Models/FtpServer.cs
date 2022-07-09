@@ -8,6 +8,7 @@ namespace TrinityText.Domain
         public FtpServer()
         {
             this.PUBLICATIONS = new HashSet<Publication>();
+            this.CDNSERVERS = new HashSet<FtpServerPerCdnServer>();
         }
     
         public virtual int ID { get; set; }
@@ -18,9 +19,7 @@ namespace TrinityText.Domain
         public virtual string PASSWORD { get; set; }
         public virtual int TYPE { get; set; }
 
-        public virtual int FK_CDNSERVER { get; set; }
-    
         public virtual ICollection<Publication> PUBLICATIONS { get; set; }
-        public virtual CdnServer CDNSERVER { get; set; }
+        public virtual ICollection<FtpServerPerCdnServer> CDNSERVERS { get; set; }
     }
 }
