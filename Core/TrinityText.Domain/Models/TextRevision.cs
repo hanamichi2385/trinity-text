@@ -7,10 +7,10 @@ namespace TrinityText.Domain
     {
         public virtual int ID { get; set; }
         public virtual int FK_TEXT { get; set; }
-        public virtual string TESTO { get; set; }
-        public virtual int REVISIONE { get; set; }
-        public virtual DateTime DATA_CREAZIONE { get; set; }
-        public virtual string UTENTE_CREAZIONE { get; set; }
+        public virtual string CONTENT { get; set; }
+        public virtual int REVISION_NUMBER { get; set; }
+        public virtual DateTime CREATION_DATE { get; set; }
+        public virtual string CREATION_USER { get; set; }
     
         public virtual Text TEXT { get; set; }
     }

@@ -8,12 +8,12 @@ namespace TrinityText.Domain
         public virtual string FILENAME { get; set; }
         public virtual byte[] CONTENT { get; set; }
         public virtual byte[] THUMBNAIL { get; set; }
-        public virtual DateTime DATA_ULTIMA_MODIFICA { get; set; }
-        public virtual string UTENTE_CREAZIONE { get; set; }
+        public virtual DateTime LASTUPDATE_DATE { get; set; }
+        public virtual string CREATION_USER { get; set; }
         public virtual int FK_FOLDER { get; set; }
         public virtual string FK_VENDOR { get; set; }
-        public virtual DateTime DATA_CREAZIONE { get; set; }
-        public virtual string UTENTE_ULTIMA_MODIFICA { get; set; }
+        public virtual DateTime CREATION_DATE { get; set; }
+        public virtual string LASTUPDATE_USER { get; set; }
     
         public virtual Folder FOLDER { get; set; }
     }

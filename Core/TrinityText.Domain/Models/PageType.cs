@@ -10,14 +10,14 @@ namespace TrinityText.Domain
         }
     
         public int ID { get; set; }
-        public virtual string NOME { get; set; }
+        public virtual string NAME { get; set; }
         public virtual string OUTPUT_FILENAME { get; set; }
-        public virtual string XMLSCHEMA { get; set; }
-        public virtual string FK_VENDOR { get; set; }
+        public virtual string SCHEMA { get; set; }
+        public virtual string FK_WEBSITE { get; set; }
         public virtual string SUBFOLDER { get; set; }
-        public virtual string PATH_PAGINAPREVIEW { get; set; }
+        public virtual string PATH_PREVIEWPAGE { get; set; }
         public virtual string PRINT_ELEMENT_NAME { get; set; }
-        public virtual string VISIBILITA { get; set; }
+        public virtual string VISIBILITY { get; set; }
     
         public virtual ICollection<Page> PAGES { get; set; }
     }

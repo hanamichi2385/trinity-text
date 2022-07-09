@@ -4,14 +4,14 @@ namespace TrinityText.Domain
     public partial class Widget
     {
         public virtual int ID { get; set; }
-        public virtual string CHIAVE { get; set; }
+        public virtual string KEY { get; set; }
         public virtual string FK_WEBSITE { get; set; }
         public virtual string FK_PRICELIST { get; set; }
-        public virtual string FK_CULTURE { get; set; }
-        public virtual string CONTENUTO { get; set; }
-        public virtual string UTENTE_CREAZIONE { get; set; }
-        public virtual string UTENTE_ULTIMA_MODIFICA { get; set; }
-        public System.DateTime DATA_CREAZIONE { get; set; }
-        public System.DateTime DATA_ULTIMA_MODIFICA { get; set; }
+        public virtual string FK_LANGUAGE { get; set; }
+        public virtual string CONTENT { get; set; }
+        public virtual string CREATION_USER { get; set; }
+        public virtual string LASTUPDATE_USER { get; set; }
+        public System.DateTime CREATION_DATE { get; set; }
+        public System.DateTime LASTUPDATE_DATE { get; set; }
     }
 }

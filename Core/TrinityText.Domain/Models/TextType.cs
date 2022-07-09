@@ -11,7 +11,7 @@ namespace TrinityText.Domain
         }
     
         public virtual int ID { get; set; }
-        public virtual string TIPOLOGIA { get; set; }
+        public virtual string CONTENTTYPE { get; set; }
         public virtual string NOTE { get; set; }
         public virtual string SUBFOLDER { get; set; }
     
