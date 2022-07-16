@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace TrinityText.Domain
 {
-    public partial class Folder
+    public partial class Folder : IEntity
     {
         public Folder()
         {

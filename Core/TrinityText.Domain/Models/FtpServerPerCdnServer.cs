@@ -1,6 +1,6 @@
 namespace TrinityText.Domain
 {
-    public partial class FtpServerPerCdnServer
+    public partial class FtpServerPerCdnServer : IEntity
     {
         public virtual int FK_FTPSERVER { get; set; }
         public virtual int FK_CDNSERVER { get; set; }

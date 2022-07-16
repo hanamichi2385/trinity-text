@@ -3,7 +3,7 @@ using System;
 namespace TrinityText.Domain
 {
     
-    public partial class TextRevision
+    public partial class TextRevision : IEntity
     {
         public virtual int ID { get; set; }
         public virtual int FK_TEXT { get; set; }

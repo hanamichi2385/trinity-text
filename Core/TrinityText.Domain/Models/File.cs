@@ -2,7 +2,7 @@ using System;
 
 namespace TrinityText.Domain
 {
-    public partial class File
+    public partial class File : IEntity
     {
         public virtual Guid ID { get; set; }
         public virtual string FILENAME { get; set; }

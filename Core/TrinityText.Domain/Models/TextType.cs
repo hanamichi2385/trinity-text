@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace TrinityText.Domain
 {
-    public partial class TextType
+    public partial class TextType : IEntity
     {
         public TextType()
         {

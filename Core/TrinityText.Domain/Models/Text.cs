@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace TrinityText.Domain
 {
-    public partial class Text
+    public partial class Text : IEntity
     {
         public Text()
         {

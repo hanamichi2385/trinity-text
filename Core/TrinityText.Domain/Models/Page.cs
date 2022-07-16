@@ -2,7 +2,7 @@ using System;
 
 namespace TrinityText.Domain
 {
-    public partial class Page
+    public partial class Page : IEntity
     {
         public virtual int ID { get; set; }
         public virtual string TITLE { get; set; }

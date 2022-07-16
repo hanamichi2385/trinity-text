@@ -1,6 +1,6 @@
 namespace TrinityText.Domain
 {
-    public partial class CacheSettings
+    public partial class CacheSettings : IEntity
     {
         public virtual int ID { get; set; }
         public virtual int FK_CDNSERVER { get; set; }

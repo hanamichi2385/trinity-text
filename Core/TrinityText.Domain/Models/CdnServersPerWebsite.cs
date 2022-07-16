@@ -1,6 +1,6 @@
 namespace TrinityText.Domain
 {
-    public partial class CdnServersPerWebsite
+    public partial class CdnServersPerWebsite : IEntity
     {
         public virtual string FK_WEBSITE { get; set; }
         public virtual int FK_CDNSERVER { get; set; }

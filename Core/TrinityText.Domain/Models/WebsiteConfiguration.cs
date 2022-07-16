@@ -1,6 +1,6 @@
 namespace TrinityText.Domain
 {
-    public partial class WebsiteConfiguration
+    public partial class WebsiteConfiguration : IEntity
     {
         public virtual int ID { get; set; }
         public virtual string FK_WEBSITE { get; set; }

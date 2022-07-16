@@ -1,7 +1,7 @@
 namespace TrinityText.Domain
 {
   
-    public partial class Widget
+    public partial class Widget : IEntity
     {
         public virtual int ID { get; set; }
         public virtual string KEY { get; set; }

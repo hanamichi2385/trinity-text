@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace TrinityText.Domain
 {
-    public partial class PageType
+    public partial class PageType : IEntity
     {
         public PageType()
         {
