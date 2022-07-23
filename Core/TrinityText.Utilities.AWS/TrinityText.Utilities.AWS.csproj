@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.Translate" Version="3.7.5.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.27" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="3.1.27" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TrinityText.Business\TrinityText.Business.csproj" />
+  </ItemGroup>
+
+</Project>
