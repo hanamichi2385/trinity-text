@@ -1,13 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<Description>Trinity Text business layer</Description>
+	</PropertyGroup>
+	<Import Project="..\..\SolutionItems\GlobalAssemblyInfo.proj" />
 
-  <ItemGroup>
-    <Compile Remove="DTO\NewFolder\**" />
-    <EmbeddedResource Remove="DTO\NewFolder\**" />
-    <None Remove="DTO\NewFolder\**" />
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Remove="DTO\NewFolder\**" />
+		<EmbeddedResource Remove="DTO\NewFolder\**" />
+		<None Remove="DTO\NewFolder\**" />
+	</ItemGroup>
 
 </Project>

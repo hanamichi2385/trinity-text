@@ -83,7 +83,7 @@ namespace TrinityText.Utilities
                     ftp.Disconnect();
                 }
             }
-            return operationLog.ToString();
+            return await Task.FromResult(operationLog.ToString());
         }
 
         private string NavigateTo(string directoryName, FtpClient ftp, StringBuilder operationLog)

@@ -1,15 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<Description>Trinity Text utilities layer</Description>
+	</PropertyGroup>
+	<Import Project="..\..\SolutionItems\GlobalAssemblyInfo.proj" />
 
   <ItemGroup>
     <PackageReference Include="FluentFTP" Version="38.0.0" />
+    <PackageReference Include="Jdenticon-net" Version="3.1.2" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="3.1.27" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.27" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="3.1.27" />
-    <PackageReference Include="NIdenticon.FlatColorRandomBrushGenerator" Version="1.1.0" />
     <PackageReference Include="Spire.XLS" Version="12.7.1" />
     <PackageReference Include="SSH.NET" Version="2020.0.2" />
     <PackageReference Include="System.Drawing.Common" Version="6.0.0" />

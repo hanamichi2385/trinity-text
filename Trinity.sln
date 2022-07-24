@@ -13,9 +13,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinityText.UnitTests", "Te
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinityText.Business", "Core\TrinityText.Business\TrinityText.Business.csproj", "{23C931F8-154D-47A5-BFA2-B5EE9309E23D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrinityText.Utilities", "Core\TrinityText.Utilities\TrinityText.Utilities.csproj", "{5115F531-BD24-4160-8F06-3503799D0C33}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinityText.Utilities", "Core\TrinityText.Utilities\TrinityText.Utilities.csproj", "{5115F531-BD24-4160-8F06-3503799D0C33}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrinityText.Utilities.AWS", "Core\TrinityText.Utilities.AWS\TrinityText.Utilities.AWS.csproj", "{1F3E2222-A4F5-4D6D-A2E8-5ADBC3894DEB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinityText.Utilities.AWS", "Core\TrinityText.Utilities.AWS\TrinityText.Utilities.AWS.csproj", "{1F3E2222-A4F5-4D6D-A2E8-5ADBC3894DEB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_SolutionItems", "_SolutionItems", "{50EF363B-7C82-4653-81A5-F58FBAEDF4D9}"
+	ProjectSection(SolutionItems) = preProject
+		SolutionItems\GlobalAssemblyInfo.proj = SolutionItems\GlobalAssemblyInfo.proj
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -25,13 +25,13 @@ namespace TrinityText.Utilities
 
                 ZipFile.CreateFromDirectory(folder, fileZipName);
 
-                return fileZipName;
+                return await Task.FromResult(fileZipName);
             }
             catch(Exception ex)
             {
                 _logger.LogError(ex, "COMPRESSFOLDER");
             }
-            return string.Empty;
+            return await Task.FromResult(string.Empty);
         }
 
         public async Task DecompressFolder(string basePath, byte[] zipFileByteArray)

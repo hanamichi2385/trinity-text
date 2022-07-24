@@ -1,8 +1,7 @@
-﻿using Devcorner.NIdenticon;
+﻿using Jdenticon;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Threading.Tasks;
 using TrinityText.Business;
@@ -37,19 +36,21 @@ namespace TrinityText.Utilities
                 }
                 else
                 {
-                    var g = new IdenticonGenerator();
-                    var bmp = g.Create(email);
+                    
                     var bytes = new byte[0];
                     using (var ms = new MemoryStream())
                     {
-                        bmp.Save(ms, ImageFormat.Png);
+                        await Identicon
+                            .FromValue(email, size: 100)
+                            .SaveAsPngAsync(ms);
+                        
                         bytes = ms.ToArray();
                         ms.Close();
                     }
 
                     _memoryCache.Set(cacheKey, bytes, TimeSpan.FromDays(1));
 
-                    return bytes;
+                    return await Task.FromResult(bytes);
                 }
 
                 

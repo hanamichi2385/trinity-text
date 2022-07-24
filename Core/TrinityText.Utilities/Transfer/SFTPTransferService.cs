@@ -83,7 +83,7 @@ namespace TrinityText.Utilities
                     ftp.Disconnect();
                 }
             }
-            return operationLog.ToString();
+            return await Task.FromResult(operationLog.ToString());
         }
 
         public async Task<byte[]> GetFile(string tenant, string vendor, string file, string host, string username, string password, string path)
@@ -116,7 +116,7 @@ namespace TrinityText.Utilities
                     using (Stream stream = ftp.OpenRead(file))
                     {
                         byte[] b = new byte[(int)stream.Length];
-                        stream.Read(b, 0, (int)stream.Length);
+                        await stream.ReadAsync(b, 0, (int)stream.Length);
                         return b;
                     }
                 }

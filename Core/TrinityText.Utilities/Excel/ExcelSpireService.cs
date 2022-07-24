@@ -338,6 +338,7 @@ namespace TrinityText.Utilities
                 }
                 stream.Close();
             }
+            await Task.FromResult(0);
         }
 
         private async Task<byte[]> GetStream(string filePath)

@@ -1,0 +1,83 @@
+name: Build And Pack
+on:
+  push:
+   branches:
+   - 'main'
+   tags:
+   - 'releases/**'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+     package-version:  ${{ steps.setup-version.outputs.version }}
+     publish-version:  ${{ steps.setup-version.outputs.publishversion }}
+     organization-id: ${{ steps.setup-solution.outputs.organization }}
+     solution-name: ${{ steps.setup-solution.outputs.solution }}
+     suffix: ${{ steps.setup-solution.outputs.suffix }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.301
+        
+    - name: Setup Solution
+      id: setup-solution
+      env: 
+        SOLUTION_NAME: "Trinity.sln"
+      run: |
+        #https://www.tutorialspoint.com/execute_bash_online.php
+        event=$GITHUB_REF
+        suffix="-beta"
+        eventmatch="release"
+        echo "Event Name:" $event
+        if [[ "$event" == *"$eventmatch"* ]]; then
+         suffix=""
+        fi
+        echo "Suffix:" $suffix
+       
+        echo "::set-output name=solution::$SOLUTION_NAME"
+        echo "::set-output name=suffix::$suffix"
+       
+    - name: Determinate Version
+      id: setup-version
+      env: 
+        VERSION_SUFFIX: ${{ steps.setup-solution.outputs.suffix }}
+      run: |      
+       assemblyversion=$(cat $GITHUB_WORKSPACE"/SolutionItems/GlobalAssemblyInfo.proj" | grep -Po '(?<=Version>).*(?=</Version>)')
+       
+       echo "Assembly Version:" $assemblyversion
+       
+       buildversion=$assemblyversion$VERSION_SUFFIX
+       echo "Build Version:" $buildversion
+       
+       rebuild=$GITHUB_RUN_NUMBER
+       echo "Version: " $assemblyversion
+       end=${assemblyversion##*.}
+       lastindex=$((${#assemblyversion} - ${#end}))
+       partialversion=$(echo $assemblyversion | cut -c1-$lastindex)
+       
+       publishversion=$partialversion$rebuild$VERSION_SUFFIX
+       echo "Publish Version:" $publishversion
+       
+       echo "::set-output name=version::$buildversion"
+       echo "::set-output name=publishversion::$publishversion"
+       
+       
+    - name: Install dependencies
+      env: 
+        SOLUTION_NAME: ${{ steps.setup-solution.outputs.solution }}
+      run: |
+       echo $SOLUTION_NAME
+       dotnet restore $SOLUTION_NAME
+    - name: Build Solution
+      env: 
+        SOLUTION_NAME: ${{ steps.setup-solution.outputs.solution }}
+      run: dotnet build $SOLUTION_NAME --configuration Release --no-restore
+  
+    - name: Pack Solution
+      env: 
+        VERSION: ${{ steps.setup-version.outputs.version }}
+        SOLUTION_NAME: ${{ steps.setup-solution.outputs.solution }}
+      run: |    
+       #dotnet pack $SOLUTION_NAME --configuration Release --no-restore --output $GITHUB_WORKSPACE"/nupackages" /p:Version=$VERSION
