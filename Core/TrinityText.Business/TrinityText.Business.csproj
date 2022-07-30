@@ -12,4 +12,14 @@
 		<None Remove="DTO\NewFolder\**" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <PackageReference Include="AutoMapper" Version="10.1.1" />
+	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.27" />
+	  <PackageReference Include="Resulz" Version="1.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\TrinityText.Domain\TrinityText.Domain.csproj" />
+	</ItemGroup>
+
 </Project>

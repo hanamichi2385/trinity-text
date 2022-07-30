@@ -41,60 +41,66 @@ namespace TrinityText.Utilities
                         var start = currentWorksheet.FirstRow + 1;
                         var end = currentWorksheet.LastRow + 1;
 
-                        var types = await _textTypeService.GetAll();
-                        for (int i = start; i < end; i++)
+                        var typesRs = await _textTypeService.GetAll();
+
+                        if (typesRs.Success)
                         {
-                            var key = Convert.ToString(currentWorksheet.Range[i, 1].Value).Trim();
-                            var typeName = Convert.ToString(currentWorksheet.Range[i, 2].Value).ToUpper().Trim();
-                            var vendor = Convert.ToString(currentWorksheet.Range[i, 3].Value).Trim();
-                            var istance = Convert.ToString(currentWorksheet.Range[i, 4].Value).Trim();
-                            var nation = Convert.ToString(currentWorksheet.Range[i, 5].Value).Trim();
-                            var lang = Convert.ToString(currentWorksheet.Range[i, 6].Value).Trim();
-                            var text = Convert.ToString(currentWorksheet.Range[i, 7].Value).Trim();
+                            var types = typesRs.Value;
 
-                            if (!string.IsNullOrEmpty(key))
+                            for (int i = start; i < end; i++)
                             {
-                                TextTypeDTO type = null;
+                                var key = Convert.ToString(currentWorksheet.Range[i, 1].Value).Trim();
+                                var typeName = Convert.ToString(currentWorksheet.Range[i, 2].Value).ToUpper().Trim();
+                                var vendor = Convert.ToString(currentWorksheet.Range[i, 3].Value).Trim();
+                                var istance = Convert.ToString(currentWorksheet.Range[i, 4].Value).Trim();
+                                var nation = Convert.ToString(currentWorksheet.Range[i, 5].Value).Trim();
+                                var lang = Convert.ToString(currentWorksheet.Range[i, 6].Value).Trim();
+                                var text = Convert.ToString(currentWorksheet.Range[i, 7].Value).Trim();
 
-                                var cont = true;
-
-                                if (!"*".Equals(typeName, StringComparison.InvariantCultureIgnoreCase)
-                                    && !string.IsNullOrEmpty(typeName))
+                                if (!string.IsNullOrEmpty(key))
                                 {
-                                    type = types
-                                    .Where(t => t.Name.Equals(typeName, StringComparison.InvariantCultureIgnoreCase))
-                                    .FirstOrDefault();
+                                    TextTypeDTO type = null;
 
-                                    cont = type != null;
-                                }
+                                    var cont = true;
 
-                                if (cont)
-                                {
-                                    TextDTO dto = new TextDTO()
+                                    if (!"*".Equals(typeName, StringComparison.InvariantCultureIgnoreCase)
+                                        && !string.IsNullOrEmpty(typeName))
                                     {
-                                        Name = key.Trim().Replace(' ', '_'),
-                                        Language = lang,
-                                        TextRevision = new TextRevisionDTO()
-                                        {
-                                            Content = text,
-                                            CreationUser = utente,
-                                            CreationDate = DateTime.Now
-                                        },
-                                        Active = true,
-                                        Type = type,
-                                        IdType = type != null ? type.Id : null,
-                                        Website = "*".Equals(vendor) ? null : vendor,
-                                        Country = "*".Equals(nation) ? null : nation,
-                                        Site = "*".Equals(istance) ? null : istance,
-                                    };
+                                        type = types
+                                            .Where(t => t.Name.Equals(typeName, StringComparison.InvariantCultureIgnoreCase))
+                                            .FirstOrDefault();
 
-                                    list.Add(dto);
+                                        cont = type != null;
+                                    }
+
+                                    if (cont)
+                                    {
+                                        TextDTO dto = new TextDTO()
+                                        {
+                                            Name = key.Trim().Replace(' ', '_'),
+                                            Language = lang,
+                                            TextRevision = new TextRevisionDTO()
+                                            {
+                                                Content = text,
+                                                CreationUser = utente,
+                                                CreationDate = DateTime.Now
+                                            },
+                                            Active = true,
+                                            TextType = type,
+                                            TextTypeId = type != null ? type.Id : null,
+                                            Website = "*".Equals(vendor) ? null : vendor,
+                                            Country = "*".Equals(nation) ? null : nation,
+                                            Site = "*".Equals(istance) ? null : istance,
+                                        };
+
+                                        list.Add(dto);
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                // E' finito il file..
-                                i = end;
+                                else
+                                {
+                                    // E' finito il file..
+                                    i = end;
+                                }
                             }
                         }
                     }
@@ -217,7 +223,7 @@ namespace TrinityText.Utilities
                     var w = list.ElementAt(i);
 
                     cells.Add(new KeyValuePair<int, int>(i + 2, 1), w.Name);
-                    cells.Add(new KeyValuePair<int, int>(i + 2, 2), w.Type != null ? w.Type.Name : "*");
+                    cells.Add(new KeyValuePair<int, int>(i + 2, 2), w.TextType != null ? w.TextType.Name : "*");
                     cells.Add(new KeyValuePair<int, int>(i + 2, 3), !string.IsNullOrWhiteSpace(w.Website) ? w.Website : "*");
                     cells.Add(new KeyValuePair<int, int>(i + 2, 4), !string.IsNullOrWhiteSpace(w.Site) ? w.Site : "*");
                     cells.Add(new KeyValuePair<int, int>(i + 2, 5), !string.IsNullOrWhiteSpace(w.Country) ? w.Country : "*");
@@ -278,7 +284,7 @@ namespace TrinityText.Utilities
                         var w = list.ElementAt(i);
 
                         cells.Add(new KeyValuePair<int, int>(i + 2, 1), w.Name);
-                        cells.Add(new KeyValuePair<int, int>(i + 2, 2), w.Type != null ? w.Type.Name : (!string.IsNullOrWhiteSpace(w.Site) ? w.Website : "Channel file"));
+                        cells.Add(new KeyValuePair<int, int>(i + 2, 2), w.TextType != null ? w.TextType.Name : (!string.IsNullOrWhiteSpace(w.Site) ? w.Website : "Channel file"));
                         cells.Add(new KeyValuePair<int, int>(i + 2, 3), !string.IsNullOrWhiteSpace(w.Website) ? w.Website : "All channels");
                         cells.Add(new KeyValuePair<int, int>(i + 2, 4), !string.IsNullOrWhiteSpace(w.Site) ? w.Site : "All sites");
                         cells.Add(new KeyValuePair<int, int>(i + 2, 5), w.Language);

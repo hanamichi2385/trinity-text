@@ -274,7 +274,7 @@ namespace TrinityText.UnitTests
                     TEXT = cs1,
                     CREATION_USER = "hanamichi2385",
                     CONTENT = "text",
-                    REVISION_NUMBER = 1,
+                    //REVISION_NUMBER = 1,
                 };
 
                 ctx.Add(cs1);

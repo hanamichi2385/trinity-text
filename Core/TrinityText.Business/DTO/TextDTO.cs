@@ -20,11 +20,11 @@ namespace TrinityText.Business
 
         public TextRevisionDTO TextRevision { get; set; }
 
-        public int? IdType { get; set; }
+        public int? TextTypeId { get; set; }
 
         public string Country { get; set; }
 
-        public TextTypeDTO Type { get; set; }
+        public TextTypeDTO TextType { get; set; }
 
         public bool Active { get; set; }
     }
