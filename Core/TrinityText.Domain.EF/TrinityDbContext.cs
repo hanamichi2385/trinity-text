@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using System.Threading.Tasks;
 
 namespace TrinityText.Domain.EF
 {
@@ -6,6 +8,32 @@ namespace TrinityText.Domain.EF
     {
         public TrinityDbContext(DbContextOptions options) : base(options)
         {
+        }
+
+        private IDbContextTransaction _transaction;
+
+        public async Task BeginTransaction()
+        {
+            _transaction = await Database.BeginTransactionAsync();
+        }
+
+        public async Task Commit()
+        {
+            try
+            {
+                SaveChanges();
+                await _transaction.CommitAsync();
+            }
+            finally
+            {
+                _transaction.Dispose();
+            }
+        }
+
+        public async Task Rollback()
+        {
+            await _transaction.RollbackAsync();
+            _transaction.Dispose();
         }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -125,7 +153,7 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.CONTENT).HasColumnName("CONTENUTO");
                 entity.Property(e => e.CREATION_DATE).HasColumnName("DATA_CREAZIONE");
                 entity.Property(e => e.LASTUPDATE_DATE).HasColumnName("DATA_ULTIMO_AGGIORNAMENTO");
-                entity.Property(e => e.FK_LINGUAGE).HasColumnName("FK_LINGUA");
+                entity.Property(e => e.FK_LANGUAGE).HasColumnName("FK_LINGUA");
                 entity.Property(e => e.FK_PRICELIST).HasColumnName("FK_ISTANZA");
                 entity.Property(e => e.GENERATE_PDF).HasColumnName("GENERA_PDF");
                 entity.Property(e => e.TITLE).HasColumnName("TITOLO");

@@ -205,7 +205,7 @@ namespace TrinityText.UnitTests
                     CONTENT = "ciao",
                     CREATION_DATE = System.DateTime.Now,
                     LASTUPDATE_DATE = System.DateTime.Now,
-                    FK_LINGUAGE = "it",
+                    FK_LANGUAGE = "it",
                     PAGETYPE = cs0,
                     FK_PRICELIST = "TRINITY 2",
                     FK_WEBSITE = "TRINITY 2",

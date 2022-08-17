@@ -71,5 +71,42 @@ namespace TrinityText.UnitTests
 
             Assert.IsTrue(settings2.Count == 0);
         }
+
+        [TestMethod]
+        public async Task TransactionTests()
+        {
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<IRepository<CdnServer>>();
+
+            await repo.BeginTransaction();
+
+            var cs0 = new CdnServer()
+            {
+                BASEURL = "base",
+                NAME = "Test",
+                TYPE = 0,
+            };
+
+            var r1 = await repo.Create(cs0);
+
+            var servers = repo.Repository.ToList();
+
+            var cs1 = servers.ElementAt(0);
+
+            cs1.BASEURL = "base2";
+
+            var r2 = await repo.Update(cs1);
+
+            await repo.Delete(r2);
+
+            await repo.CommitTransaction();
+
+            var settings2 = repo.Repository
+                .Where(cs => cs.ID == r2.ID)
+                .ToList();
+
+            Assert.IsTrue(settings2.Count == 0);
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using Microsoft.EntityFrameworkCore.Infrastructure;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace TrinityText.Domain.EF
@@ -41,6 +42,21 @@ namespace TrinityText.Domain.EF
             await _trinityDbContext.SaveChangesAsync();
 
             return entity.Entity;
+        }
+
+        public async Task BeginTransaction() 
+        {
+            await _trinityDbContext.BeginTransaction();
+        }
+
+        public async Task CommitTransaction()
+        {
+            await _trinityDbContext.Commit();
+        }
+
+        public async Task RollbackTransaction()
+        {
+            await _trinityDbContext.Rollback();
         }
     }
 }

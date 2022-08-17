@@ -132,9 +132,9 @@ namespace TrinityText.Utilities
                 {
                     var w = list.ElementAt(i);
 
-                    cells.Add(new KeyValuePair<int, int>(i + 2, 1), w.Name);
+                    cells.Add(new KeyValuePair<int, int>(i + 2, 1), w.Title);
                     cells.Add(new KeyValuePair<int, int>(i + 2, 2), !string.IsNullOrWhiteSpace(w.Website) ? w.Website : "All websites");
-                    cells.Add(new KeyValuePair<int, int>(i + 2, 3), !string.IsNullOrWhiteSpace(w.Pricelist) ? w.Pricelist : "All sites");
+                    cells.Add(new KeyValuePair<int, int>(i + 2, 3), !string.IsNullOrWhiteSpace(w.Site) ? w.Site : "All sites");
                     cells.Add(new KeyValuePair<int, int>(i + 2, 4), w.Language);
                     cells.Add(new KeyValuePair<int, int>(i + 2, 5), w.Content);
                 }

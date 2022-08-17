@@ -11,11 +11,11 @@ namespace TrinityText.Business.Services.Impl
 {
     public class TextTypeService : ITextTypeService
     {
-        private IRepository<TextType> _textTypeRepository;
+        private readonly IRepository<TextType> _textTypeRepository;
 
-        private ILogger<TextTypeService> _logger;
+        private readonly ILogger<TextTypeService> _logger;
 
-        private IMapper _mapper;
+        private readonly IMapper _mapper;
 
         public TextTypeService(IRepository<TextType> textTypeRepository, IMapper mapper, ILogger<TextTypeService> logger)
         {
@@ -156,7 +156,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError("REMOVE", ex);
-                return OperationResult<TextTypeDTO>.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "GENERIC_ERROR") });
+                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "GENERIC_ERROR") });
             }
         }
     }

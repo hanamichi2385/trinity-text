@@ -11,6 +11,10 @@ namespace TrinityText.Domain
         Task Delete(T entityToDelete);
 
         IQueryable<T> Repository { get; }
+
+        Task BeginTransaction();
+        Task CommitTransaction();
+        Task RollbackTransaction();
     }
 
     public interface IEntity

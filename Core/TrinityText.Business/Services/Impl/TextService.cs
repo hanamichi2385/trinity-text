@@ -11,13 +11,13 @@ namespace TrinityText.Business.Services.Impl
 {
     public class TextService : ITextService
     {
-        private IRepository<Text> _textRepository;
+        private readonly IRepository<Text> _textRepository;
 
-        private IRepository<TextRevision> _textRevisionRepository;
+        private readonly IRepository<TextRevision> _textRevisionRepository;
 
-        private ILogger<TextService> _logger;
+        private readonly ILogger<TextService> _logger;
 
-        private IMapper _mapper;
+        private readonly IMapper _mapper;
 
         public TextService(IRepository<Text> textRepository, IRepository<TextRevision> textRevisionRepository, IMapper mapper, ILogger<TextService> logger)
         {
@@ -60,7 +60,7 @@ namespace TrinityText.Business.Services.Impl
         private IQueryable<Text> GetTextsByFilter(SearchTextDTO search)
         {
             var websites = search.UserWebsites;
-            var languages = search.UserWebsites;
+            var languages = search.WebsiteLanguages;
 
             var query =
                 _textRepository
@@ -72,31 +72,6 @@ namespace TrinityText.Business.Services.Impl
 
             if (search != null)
             {
-                if (!string.IsNullOrWhiteSpace(search.Terms))
-                {
-                    query =
-                        query
-                        .Where(s => s.NAME.Contains(search.Terms, StringComparison.InvariantCultureIgnoreCase));
-                }
-
-                if (!string.IsNullOrWhiteSpace(search.Website))
-                {
-                    query =
-                        query
-                        .Where(s =>
-                        (string.IsNullOrWhiteSpace(s.FK_WEBSITE) ||
-                        (!string.IsNullOrWhiteSpace(s.FK_WEBSITE) && s.FK_WEBSITE == search.Website)));
-                }
-
-                if (!string.IsNullOrWhiteSpace(search.Site))
-                {
-                    query =
-                        query
-                        .Where(s =>
-                        (string.IsNullOrEmpty(s.FK_PRICELIST) ||
-                        (!string.IsNullOrEmpty(s.FK_PRICELIST) && s.FK_PRICELIST == search.Site)));
-                }
-
                 if (search.TextTypeId.HasValue)
                 {
                     var typeId = search.TextTypeId.Value;
@@ -114,10 +89,37 @@ namespace TrinityText.Business.Services.Impl
                     }
                 }
 
-                if (!string.IsNullOrWhiteSpace(search.LanguageId))
+
+
+                if (!string.IsNullOrWhiteSpace(search.Website))
                 {
                     query =
-                        query.Where(r => r.FK_LANGUAGE == search.LanguageId);
+                        query
+                        .Where(s =>
+                        (string.IsNullOrWhiteSpace(s.FK_WEBSITE) ||
+                        (!string.IsNullOrWhiteSpace(s.FK_WEBSITE) && s.FK_WEBSITE == search.Website)));
+                }
+
+                if (!string.IsNullOrWhiteSpace(search.Site))
+                {
+                    query =
+                        query
+                        .Where(s =>
+                        (string.IsNullOrWhiteSpace(s.FK_PRICELIST) ||
+                        (!string.IsNullOrWhiteSpace(s.FK_PRICELIST) && s.FK_PRICELIST == search.Site)));
+                }
+
+                if (search.LanguageIds?.Any() ?? false)
+                {
+                    query =
+                        query.Where(r => search.LanguageIds.Contains(r.FK_LANGUAGE));
+                }
+
+                if (!string.IsNullOrWhiteSpace(search.Terms))
+                {
+                    query =
+                        query
+                        .Where(s => s.NAME.Contains(search.Terms, StringComparison.InvariantCultureIgnoreCase));
                 }
 
                 if (search.ShowOnlyDedicated.HasValue)
@@ -334,330 +336,294 @@ namespace TrinityText.Business.Services.Impl
 
                 var resx = query.Count();
 
-                return await Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure(new[] {ErrorMessage.Create("DUPLICATED", "DUPLICATED") }));
-            }catch(Exception ex)
+                return await Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure(new[] { ErrorMessage.Create("DUPLICATED", "DUPLICATED") }));
+            }
+            catch (Exception ex)
             {
                 _logger.LogError("EXIST", ex);
                 return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("EXIST", "GENERIC_ERROR") });
             }
         }
 
-        //public IDictionary<string, List<ResourceDto>> GenerateResources(string idVendor, InstanceDTO istanza, IList<ResourceTypeDto> resourceTypes)
-        //{
-        //    var idIstanza = istanza.InstanceId;
-        //    var languages = istanza.Languages.Select(l => l.LanguageId).ToList();
+        public async Task<OperationResult<Dictionary<string, List<TextDTO>>>> GetPublishableTexts(string website, string site, string[] languages)
+        {
+            try
+            {
+                var publishableTexts = new Dictionary<string, List<TextDTO>>();
 
-        //    Dictionary<string, List<ResourceDto>> generatedResources = new Dictionary<string, List<ResourceDto>>();
-        //    using (MorganEntities context = new MorganEntities())
-        //    {
-        //        var rts = resourceTypes.Select(r => r.Id).Distinct().ToArray();
+                var search = new SearchTextDTO()
+                {
+                    Website = website,
+                    Site = site,
+                    LanguageIds = languages,
+                    ShowOnlyActive = true,
+                };
 
-        //        var allresources =
-        //            context.Risorse
-        //            .Where(s => s.ATTIVA == true && (s.FK_TIPOLOGIA == null || rts.Contains(s.FK_TIPOLOGIA)) &&
-        //                ((string.IsNullOrEmpty(s.FK_VENDOR)) ||
-        //                (s.FK_VENDOR == idVendor && string.IsNullOrEmpty(s.FK_ISTANZA)) ||
-        //                (!string.IsNullOrEmpty(s.FK_VENDOR) && !string.IsNullOrEmpty(s.FK_ISTANZA) && s.FK_ISTANZA == idIstanza)))
-        //            .ToList();
+                var query =
+                    GetTextsByFilter(search);
 
-        //        foreach (var l in languages)
-        //        {
-        //            var resources =
-        //                allresources
-        //                .Where(n => n.FK_LINGUA == l)
-        //                .OrderBy(n => n.NOME)
-        //                .Select(r => new ResourceDto()
-        //                {
-        //                    Id = r.ID,
-        //                    Vendor = r.FK_VENDOR,
-        //                    Istanza = r.FK_ISTANZA,
-        //                    Nazione = r.FK_NAZIONE,
-        //                    IdTipologia = r.FK_TIPOLOGIA,
-        //                    Nome = r.NOME,
-        //                    Revisione = GetLastRevisionDto(r, context),
-        //                    Tipologia = new ResourceTypeDto() { Nome = r.TIPOLOGIA != null && !string.IsNullOrEmpty(r.TIPOLOGIA.TIPOLOGIA) ? r.TIPOLOGIA.TIPOLOGIA : string.Empty, Subfolder = r.TIPOLOGIA != null ? r.TIPOLOGIA.SUBFOLDER : string.Empty },
-        //                })
-        //                .ToList();
+                var all = _mapper.Map<IList<TextDTO>>(query.ToList());
 
-        //            var types = resources
-        //                .Select(t => t.IdTipologia)
-        //                .Distinct()
-        //                .ToList();
+                foreach (var l in languages)
+                {
+                    var texts =
+                        all
+                        .Where(n => n.Language == l)
+                        .OrderBy(n => n.Name)
+                        .ToList();
 
-        //            List<ResourceDto> list = new List<ResourceDto>();
-        //            foreach (var t in types)
-        //            {
-        //                List<ResourceDto> listForType = new List<ResourceDto>();
+                    var types = texts
+                        .Select(t => t.TextType)
+                        .Distinct()
+                        .ToList();
 
-        //                var resourcesForType =
-        //                    resources
-        //                    .Where(rft => rft.IdTipologia == t)
-        //                    .ToList();
+                    var list = new List<TextDTO>();
+                    foreach (var t in types)
+                    {
+                        var listForType = new List<TextDTO>();
 
-        //                foreach (var n in resourcesForType.Select(s => s.Nome).Distinct())
-        //                {
-        //                    var resourcesByName =
-        //                        resourcesForType
-        //                        .Where(resx => resx.Nome.Equals(n, StringComparison.InvariantCultureIgnoreCase))
-        //                        .ToList();
+                        var textsforType =
+                            texts
+                            .Where(rft => rft.TextType == t)
+                            .ToList();
 
-        //                    if (resourcesByName.Count() == 1)
-        //                    {
-        //                        listForType.Add(resourcesByName.First());
-        //                    }
-        //                    else
-        //                    {
-        //                        var resourcesByVendor =
-        //                            resourcesByName.Where(resx => resx.Vendor == idVendor)
-        //                            .ToList();
+                        foreach (var n in textsforType.Select(s => s.Name).Distinct())
+                        {
+                            var textByName =
+                                textsforType
+                                .Where(resx => resx.Name.Equals(n, StringComparison.InvariantCultureIgnoreCase))
+                                .ToList();
 
-        //                        var globalResource =
-        //                            resourcesByName.Where(resx => string.IsNullOrEmpty(resx.Vendor))
-        //                            .ToList();
+                            if (textByName.Count() == 1)
+                            {
+                                listForType.Add(textByName.First());
+                            }
+                            else
+                            {
+                                var textByWebsite =
+                                    textByName.Where(resx => resx.Website == website)
+                                    .ToList();
 
-        //                        if (resourcesByVendor.Count() == 1)
-        //                        {
-        //                            listForType.Add(resourcesByVendor.First());
-        //                        }
-        //                        else
-        //                        {
-        //                            var resourcesByInstance =
-        //                                resourcesByVendor.Where(resx => resx.Istanza == idIstanza)
-        //                                .ToList();
+                                var globalTexts =
+                                    textByName.Where(resx => string.IsNullOrEmpty(resx.Website))
+                                    .ToList();
 
-        //                            if (resourcesByInstance.Count() == 0)
-        //                            {
-        //                                var resourceCustomByInstance =
-        //                                    resourcesByVendor.Where(resx => !string.IsNullOrEmpty(resx.Vendor) && !string.IsNullOrEmpty(resx.Istanza))
-        //                                    .FirstOrDefault();
+                                if (textByWebsite.Count() == 1)
+                                {
+                                    listForType.Add(textByWebsite.First());
+                                }
+                                else
+                                {
+                                    var textsBySite =
+                                        textByWebsite.Where(resx => resx.Site == site)
+                                        .ToList();
 
-        //                                if (resourceCustomByInstance != null)
-        //                                {
-        //                                    listForType.Add(resourceCustomByInstance);
-        //                                }
-        //                                else
-        //                                {
-        //                                    if (globalResource.Count == 1)
-        //                                    {
-        //                                        listForType.Add(globalResource.First());
-        //                                    }
-        //                                    else
-        //                                    {
-        //                                        var nations =
-        //                                            globalResource.Select(ris => ris.Nazione)
-        //                                            .Distinct()
-        //                                            .ToList();
+                                    if (textsBySite.Count() == 0)
+                                    {
+                                        var textCustomBySite =
+                                            textByWebsite.Where(resx => !string.IsNullOrEmpty(resx.Website) && !string.IsNullOrEmpty(resx.Site))
+                                            .FirstOrDefault();
 
-        //                                        foreach (var nat in nations)
-        //                                        {
-        //                                            var resxForNation = resourcesByName
-        //                                                .Where(resx => resx.Nazione == nat)
-        //                                                .ToList();
+                                        if (textCustomBySite != null)
+                                        {
+                                            listForType.Add(textCustomBySite);
+                                        }
+                                        else
+                                        {
+                                            if (globalTexts.Count == 1)
+                                            {
+                                                listForType.Add(globalTexts.First());
+                                            }
+                                            else
+                                            {
+                                                var countries =
+                                                    globalTexts.Select(ris => ris.Country)
+                                                    .Distinct()
+                                                    .ToList();
 
-        //                                            if (resxForNation.Count == 1)
-        //                                            {
-        //                                                listForType.Add(resxForNation.First());
-        //                                            }
-        //                                            else
-        //                                            {
-        //                                                var resx =
-        //                                                    resxForNation.Where(ris => ris.Istanza == idIstanza)
-        //                                                    .Single();
+                                                foreach (var country in countries)
+                                                {
+                                                    var textsForCountry = textByName
+                                                        .Where(resx => resx.Country == country)
+                                                        .ToList();
 
-        //                                                listForType.Add(resx);
-        //                                            }
-        //                                        }
-        //                                    }
-        //                                }
-        //                            }
-        //                            else
-        //                            {
-        //                                if (resourcesByInstance.Count == 1)
-        //                                {
-        //                                    listForType.Add(resourcesByInstance.First());
-        //                                }
-        //                                else
-        //                                {
+                                                    if (textsForCountry.Count == 1)
+                                                    {
+                                                        listForType.Add(textsForCountry.First());
+                                                    }
+                                                    else
+                                                    {
+                                                        var text =
+                                                            textsForCountry.Where(ris => ris.Site == site)
+                                                            .Single();
 
-        //                                    var nations =
-        //                                        resourcesByName.Select(ris => ris.Nazione)
-        //                                        .Distinct()
-        //                                        .ToList();
+                                                        listForType.Add(text);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (textsBySite.Count == 1)
+                                        {
+                                            listForType.Add(textsBySite.First());
+                                        }
+                                        else
+                                        {
 
-        //                                    foreach (var nat in nations)
-        //                                    {
-        //                                        var resxForNation = resourcesByName
-        //                                            .Where(resx => resx.Nazione == nat)
-        //                                            .ToList();
+                                            var countries =
+                                                textByName.Select(ris => ris.Country)
+                                                .Distinct()
+                                                .ToList();
 
-        //                                        if (resxForNation.Count == 1)
-        //                                        {
-        //                                            listForType.Add(resxForNation.First());
-        //                                        }
-        //                                        else
-        //                                        {
-        //                                            var resx =
-        //                                                resxForNation.Where(ris => ris.Istanza == idIstanza)
-        //                                                .Single();
+                                            foreach (var country in countries)
+                                            {
+                                                var textsForCountries = textByName
+                                                    .Where(resx => resx.Country == country)
+                                                    .ToList();
 
-        //                                            listForType.Add(resx);
-        //                                        }
-        //                                    }
-        //                                }
-        //                            }
-        //                        }
-        //                    }
-        //                }
-        //                list.AddRange(listForType);
-        //            }
+                                                if (textsForCountries.Count == 1)
+                                                {
+                                                    listForType.Add(textsForCountries.First());
+                                                }
+                                                else
+                                                {
+                                                    var text =
+                                                        textsForCountries.Where(ris => ris.Site == site)
+                                                        .Single();
 
-        //            generatedResources.Add(l, list);
-        //        }
+                                                    listForType.Add(text);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        list.AddRange(listForType);
+                    }
 
-        //        return generatedResources;
-        //    }
-        //}
+                    publishableTexts.Add(l, list);
+                }
 
-        //public int ImportGlobalResources(string email, ResourceTypeDto type, List<ResourceDto> resourcesForType, bool sovrascrivi)
-        //{
-        //    var counter = 0;
-        //    using (MorganEntities context = new MorganEntities())
-        //    {
-        //        using (var dbContextTransaction = context.Database.BeginTransaction())
-        //        {
-        //            try
-        //            {
-        //                ResourceCRUD resourceCRUD = new ResourceCRUD();
-        //                foreach (var r in resourcesForType)
-        //                {
-        //                    var resx = context
-        //                        .Risorse
-        //                        .Where(rx =>
-        //                            rx.FK_TIPOLOGIA == type.Id
-        //                            && rx.NOME.Equals(r.Nome, StringComparison.InvariantCultureIgnoreCase)
-        //                            && rx.FK_LINGUA == r.Lingua
-        //                            && rx.FK_VENDOR == r.Vendor
-        //                            && rx.FK_ISTANZA == r.Istanza
-        //                            && rx.FK_NAZIONE == r.Nazione
-        //                        )
-        //                        .FirstOrDefault();
+                return await Task.FromResult(OperationResult<Dictionary<string, List<TextDTO>>>.MakeSuccess(publishableTexts));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("SEARCH", ex);
+                return OperationResult<Dictionary<string, List<TextDTO>>>.MakeFailure(new[] { ErrorMessage.Create("PUBLISH_TEXTS", "GENERIC_ERROR") });
+            }
+        }
 
-        //                    var exist = resx != null;
+        public async Task<OperationResult> Remove(int id)
+        {
+            try
+            {
+                var entity = await _textRepository
+                    .Read(id);
 
-        //                    if ((exist == false) || (exist == true && sovrascrivi))
-        //                    {
-        //                        if (exist)
-        //                        {
-        //                            r.Id = resx.ID;
-        //                        }
+                if (entity != null)
+                {
+                    foreach (var t in entity.REVISIONS)
+                    {
+                        await _textRevisionRepository.Delete(t);
+                    }
 
-        //                        resourceCRUD.Save(r);
-        //                        counter++;
-        //                    }
-        //                }
-        //                dbContextTransaction.Commit();
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                if (context.Database.Connection.State == System.Data.ConnectionState.Open)
-        //                {
-        //                    dbContextTransaction.Rollback();
-        //                }
-        //                return 0;
-        //            }
-        //        }
-        //    }
-        //    return counter;
-        //}
+                    await _textRepository.Delete(entity);
 
-        //public int ImportDedicatedResources(string email, List<ResourceDto> dedicatedResources, bool sovrascrivi)
-        //{
-        //    var counter = 0;
-        //    using (MorganEntities context = new MorganEntities())
-        //    {
-        //        using (var dbContextTransaction = context.Database.BeginTransaction())
-        //        {
-        //            try
-        //            {
+                    return OperationResult.MakeSuccess();
+                }
+                else
+                {
+                    return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "NOT_FOUND") });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("REMOVE", ex);
+                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "GENERIC_ERROR") });
+            }
+        }
 
-        //                ResourceCRUD resourceCRUD = new ResourceCRUD();
-        //                foreach (var r in dedicatedResources)
-        //                {
-        //                    var resx = context
-        //                        .Risorse
-        //                        .Where(rx =>
-        //                            rx.NOME.Equals(r.Nome, StringComparison.InvariantCultureIgnoreCase)
-        //                            && rx.FK_LINGUA == r.Lingua
-        //                            && rx.FK_TIPOLOGIA == r.IdTipologia
-        //                            && rx.FK_VENDOR == r.Vendor
-        //                            && rx.FK_ISTANZA == r.Istanza
-        //                            && rx.FK_NAZIONE == r.Nazione
-        //                        ).FirstOrDefault();
+        public async Task<OperationResult> CleanRevisions(int revisionToMantain)
+        {
+            try
+            {
+                var texts =
+                    _textRepository
+                        .Repository
+                        .Where(r => r.REVISIONS.Count > revisionToMantain)
+                        .ToList();
 
-        //                    var exist = resx != null;
+                foreach (var t in texts)
+                {
+                    var revisions =
+                        t.REVISIONS
+                        .OrderByDescending(s => s.CREATION_DATE)
+                        .Skip(revisionToMantain)
+                        .ToList();
 
-        //                    if ((exist == false) || (exist == true && sovrascrivi))
-        //                    {
-        //                        if (exist)
-        //                        {
-        //                            r.Id = resx.ID;
-        //                        }
+                    foreach (var rev in revisions)
+                    {
+                        await _textRevisionRepository.Delete(rev);
+                    }
+                }
+                return OperationResult.MakeSuccess();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("CLEAN_REVISIONS", ex);
+                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("CLEAN_REVISIONS", "GENERIC_ERROR") });
+            }
+        }
 
-        //                        resourceCRUD.Save(r);
-        //                        counter++;
-        //                    }
-        //                }
-        //                dbContextTransaction.Commit();
-        //            }
-        //            catch (Exception ex)
-        //            {
-        //                if (context.Database.Connection.State == System.Data.ConnectionState.Open)
-        //                {
-        //                    dbContextTransaction.Rollback();
-        //                }
+        public async Task<OperationResult<int>> ImportTexts(TextTypeDTO type, IList<TextDTO> texts, bool @override)
+        {
+            try
+            {
+                var counter = 0;
+                await _textRepository.BeginTransaction();
+                foreach (var r in texts)
+                {
+                    var t = _textRepository
+                        .Repository
+                        .Where(rx =>
+                            rx.FK_TEXTTYPE == type.Id
+                            && rx.NAME.Equals(r.Name, StringComparison.InvariantCultureIgnoreCase)
+                            && rx.FK_LANGUAGE == r.Language
+                            && rx.FK_WEBSITE == r.Website
+                            && rx.FK_PRICELIST == r.Site
+                            && rx.FK_COUNTRY == r.Country
+                        )
+                        .FirstOrDefault();
 
-        //                return 0;
-        //            }
-        //            return counter;
-        //        }
-        //    }
-        //}
+                    var exist = t != null;
 
-        //public IList<ResourceDto> GetAll(FilterDto resourcesFilterDto)
-        //{
-        //    using (MorganEntities context = new MorganEntities())
-        //    {
-        //        IList<Resource> resources =
-        //            GetTextsByFilter(context, resourcesFilterDto)
-        //            .OrderBy(x => x.NOME)
-        //            .ThenBy(x => x.FK_VENDOR)
-        //            .ThenBy(x => x.FK_ISTANZA)
-        //            .ThenBy(x => x.FK_LINGUA)
-        //                .ToList();
+                    if ((exist == false) || (exist == true && @override))
+                    {
+                        if (exist)
+                        {
+                            r.Id = t.ID;
+                        }
 
-        //        List<ResourceDto> list = new List<ResourceDto>();
-        //        foreach (var r in resources)
-        //        {
-        //            var revision = GetLastRevision(r, context);
+                        await Save(r);
+                        counter++;
+                    }
+                }
+                await _textRepository.CommitTransaction();
 
-        //            ResourceDto dto = new ResourceDto()
-        //            {
-        //                Id = r.ID,
-        //                Nome = r.NOME.ToUpper(),
-        //                Istanza = r.FK_ISTANZA,
-        //                Lingua = r.FK_LINGUA,
-        //                IdTipologia = r.FK_TIPOLOGIA,
-        //                Tipologia = r.TIPOLOGIA != null ? new ResourceTypeDto() { Id = r.TIPOLOGIA.ID, Nome = r.TIPOLOGIA.TIPOLOGIA } : null,
-        //                Revisione = new RevisionDto() { Numero = revision.REVISIONE, DataCreazione = revision.DATA_CREAZIONE, Testo = revision.TESTO },
-        //                Nazione = r.FK_NAZIONE,
-        //                Vendor = r.FK_VENDOR,
-        //            };
-        //            list.Add(dto);
-        //        }
+                return OperationResult<int>.MakeSuccess(counter);
+            }
+            catch (Exception ex)
+            {
+                await _textRepository.RollbackTransaction();
+                _logger.LogError("IMPORT_TEXTS", ex);
+                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("IMPORT_TEXTS", "GENERIC_ERROR") });
+            }
+        }
 
-        //        return list;
-        //    }
-        //}
+        
 
         //public int? GetIdByAttributes(string nome, string idVendor, string idIstanza, int? idTipologia, string idLingua, string idNazione)
         //{
@@ -697,111 +663,6 @@ namespace TrinityText.Business.Services.Impl
         //        return resourceId;
         //    }
         //}
-
-        //public IList<ResourceDto> GetLastResources(int numberOfContents, string[] vendors)
-        //{
-        //    using (MorganEntities context = new MorganEntities())
-        //    {
-        //        IList<Resource> resources =
-        //            context.Risorse
-        //            .Where(r => string.IsNullOrEmpty(r.FK_VENDOR) || (!string.IsNullOrEmpty(r.FK_VENDOR) && vendors.Contains(r.FK_VENDOR)))
-        //            .OrderByDescending(r => r.REVISIONI.OrderByDescending(rev => rev.DATA_CREAZIONE).Select(rev => rev.DATA_CREAZIONE).FirstOrDefault())
-        //            .Take(numberOfContents)
-        //            .ToList();
-
-        //        List<ResourceDto> list = new List<ResourceDto>();
-
-        //        foreach (var r in resources)
-        //        {
-        //            var dto = new ResourceDto()
-        //            {
-        //                Id = r.ID,
-        //                Lingua = r.FK_LINGUA,
-        //                Nome = r.NOME,
-        //                Revisione = GetLastRevisionDto(r, context),
-        //                Tipologia = r.FK_TIPOLOGIA.HasValue ? new ResourceTypeDto() { Id = r.TIPOLOGIA.ID, Nome = r.TIPOLOGIA.TIPOLOGIA } : null,
-        //            };
-
-        //            list.Add(dto);
-        //        }
-        //        return list;
-        //    }
-        //}
-
-        //public override void Delete(int id)
-        //{
-        //    Delete(id, false);
-        //}
-
-        //public void Delete(int id, bool caneditglobal)
-        //{
-        //    using (MorganEntities context = new MorganEntities())
-        //    {
-        //        Resource resource =
-        //            context.Risorse
-        //            .Where(r => r.ID == id)
-        //            .Single();
-
-        //        if ((string.IsNullOrEmpty(resource.FK_VENDOR) && caneditglobal)
-        //            || (!string.IsNullOrEmpty(resource.FK_VENDOR)))
-        //        {
-
-        //            while (resource.REVISIONI.Count > 0)
-        //            {
-        //                var revision = resource.REVISIONI.First();
-
-        //                resource.REVISIONI.Remove(revision);
-        //                context.TestiPerRisorsa.Remove(revision);
-        //            }
-        //            context.Risorse.Remove(resource);
-
-        //            context.SaveChanges();
-        //        }
-        //    }
-        //}
-
-        //public void CleanRevisions(int number)
-        //{
-        //    using (MorganEntities context = new MorganEntities())
-        //    {
-        //        var resources =
-        //            context.Risorse
-        //            .Where(r => r.REVISIONI.Count > number)
-        //            .ToList();
-
-        //        foreach (var r in resources)
-        //        {
-        //            var revisions =
-        //                r.REVISIONI
-        //                .OrderByDescending(s => s.DATA_CREAZIONE)
-        //                .Skip(number)
-        //                .ToList();
-
-        //            foreach (var rev in revisions)
-        //            {
-        //                context.TestiPerRisorsa.Remove(rev);
-        //            }
-
-        //            context.SaveChanges();
-        //        }
-
-
-        //    }
-        //}
-
-        //public int GetResourcesCount()
-        //{
-        //    using (MorganEntities context = new MorganEntities())
-        //    {
-        //        var count =
-        //            context.Risorse
-        //            .Where(r => r.ATTIVA == true)
-        //            .Count();
-
-        //        return count;
-        //    }
-        //}
-
         //public int GetRevisionsCount()
         //{
         //    using (MorganEntities context = new MorganEntities())

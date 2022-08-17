@@ -36,6 +36,18 @@ namespace TrinityText.Business
                 .ForMember(d => d.Id, src => src.MapFrom(s => s.ID))
                 .ForMember(d => d.Index, src => src.MapFrom(s => s.REVISION_NUMBER))
                 .ReverseMap();
+
+            CreateMap<PageType, PageTypeDTO>()
+                .ForMember(d => d.PageTotals, src => src.MapFrom(s => s.PAGES != null ? s.PAGES.Count : 0))
+                .ForMember(d => d.Visibility, src => src.MapFrom(s => string.IsNullOrWhiteSpace(s.VISIBILITY) ? new List<string>() : s.VISIBILITY.Split('|', System.StringSplitOptions.RemoveEmptyEntries).ToList()))
+                .ForMember(d => d.Website, src => src.MapFrom(s => s.FK_WEBSITE))
+                .ForMember(d => d.HasSubfolder, src => src.Ignore());
+
+            CreateMap<PageTypeDTO, PageType>()
+                .ForMember(d => d.FK_WEBSITE, src => src.MapFrom(s => s.Website));
+
+            CreateMap<Page, PageDTO>()
+                .ReverseMap();
         }
 
         private TextRevision GetTextRevision(ICollection<TextRevision> revisions)
