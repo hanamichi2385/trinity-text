@@ -1,10 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Linq;
 using TrinityText.Domain;
 using TrinityText.Domain.EF;
-using System.Linq;
-using System.Collections.ObjectModel;
 
 namespace TrinityText.UnitTests
 {

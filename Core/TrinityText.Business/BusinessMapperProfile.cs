@@ -84,6 +84,7 @@ namespace TrinityText.Business
                 .ForMember(d => d.LASTUPDATE_USER, src => src.MapFrom(s => s.LastUpdateUser));
 
             CreateMap<CacheSettings, CacheSettingsDTO>()
+                .IncludeAllDerived()
                 .ForMember(d => d.CdnServerId, src => src.MapFrom(s => s.FK_CDNSERVER))
                 .ReverseMap();
 

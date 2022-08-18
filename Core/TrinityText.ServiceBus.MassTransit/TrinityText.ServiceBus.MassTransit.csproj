@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+	  <Description>Trinity Text servicebus implementation with MassTransit</Description>
+  </PropertyGroup>
+  <Import Project="..\..\SolutionItems\GlobalAssemblyInfo.proj" />
+
+  <ItemGroup>
+    <PackageReference Include="MassTransit" Version="8.0.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TrinityText.Business\TrinityText.Business.csproj" />
+    <ProjectReference Include="..\TrinityText.ServiceBus\TrinityText.ServiceBus.csproj" />
+  </ItemGroup>
+
+</Project>

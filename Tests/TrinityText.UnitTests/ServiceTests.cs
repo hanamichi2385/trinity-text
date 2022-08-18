@@ -49,6 +49,7 @@ namespace TrinityText.UnitTests
         [TestMethod]
         public async Task TextServiceTest()
         {
+
             var kernel = InitServices();
 
             var repo = kernel.GetService<ITextService>();
@@ -65,7 +66,7 @@ namespace TrinityText.UnitTests
                     CreationDate = DateTime.Now,
                     CreationUser = "test_admin",
                 },
-                
+
             };
 
             var result = await repo.Save(dto);

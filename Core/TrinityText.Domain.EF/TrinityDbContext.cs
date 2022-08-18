@@ -123,6 +123,7 @@ namespace TrinityText.Domain.EF
             {
                 entity.ToTable(name: "Files").HasKey(e => e.ID);
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
+                entity.Property(e => e.FK_WEBSITE).HasColumnName("FK_VENDOR");
                 entity.Property(e => e.CREATION_DATE).HasColumnName("DATA_CREAZIONE");
                 entity.Property(e => e.CREATION_USER).HasColumnName("UTENTE_CREAZIONE");
                 entity.Property(e => e.LASTUPDATE_DATE).HasColumnName("DATA_ULTIMA_MODIFICA");

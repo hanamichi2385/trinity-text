@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<TargetFramework>netstandard2.1</TargetFramework>
 		<Description>Trinity Text business layer</Description>
 	</PropertyGroup>
 	<Import Project="..\..\SolutionItems\GlobalAssemblyInfo.proj" />
@@ -16,6 +16,7 @@
 	  <PackageReference Include="AutoMapper" Version="10.1.1" />
 	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.27" />
 	  <PackageReference Include="Resulz" Version="1.0.0" />
+	  <PackageReference Include="System.Text.Json" Version="5.0.2" />
 	</ItemGroup>
 
 	<ItemGroup>

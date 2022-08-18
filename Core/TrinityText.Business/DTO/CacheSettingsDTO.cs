@@ -14,7 +14,7 @@ namespace TrinityText.Business
 
         public CdnServerDTO CdnServer { get; set; }
 
-        public T GetPayload<T>() where T : ICacheSettingPayload
+        public T ObtainPayload<T>() where T : ICacheSettingPayload
         {
             return JsonSerializer.Deserialize<T>(Payload);
         }
@@ -25,7 +25,7 @@ namespace TrinityText.Business
             {
                 if (!string.IsNullOrEmpty(Payload))
                 {
-                    var obj = GetPayload<T>();
+                    var obj = ObtainPayload<T>();
                     return obj.Validate();
                 }
                 else

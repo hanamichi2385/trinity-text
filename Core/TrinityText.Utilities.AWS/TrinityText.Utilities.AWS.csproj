@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<TargetFramework>netstandard2.1</TargetFramework>
 		<Description>Trinity Text utilities layer integration with Amazon AWS</Description>
 	</PropertyGroup>
 	<Import Project="..\..\SolutionItems\GlobalAssemblyInfo.proj" />
