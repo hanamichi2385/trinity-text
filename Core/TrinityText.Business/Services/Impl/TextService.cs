@@ -586,10 +586,12 @@ namespace TrinityText.Business.Services.Impl
                 await _textRepository.BeginTransaction();
                 foreach (var r in texts)
                 {
+                    var typeId = type?.Id;
+
                     var t = _textRepository
                         .Repository
                         .Where(rx =>
-                            rx.FK_TEXTTYPE == type.Id
+                            rx.FK_TEXTTYPE == typeId
                             && rx.NAME.Equals(r.Name, StringComparison.InvariantCultureIgnoreCase)
                             && rx.FK_LANGUAGE == r.Language
                             && rx.FK_WEBSITE == r.Website

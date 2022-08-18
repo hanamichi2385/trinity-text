@@ -19,21 +19,33 @@ namespace TrinityText.Domain.EF
 
         public async Task Commit()
         {
-            try
+            if (_transaction != null)
             {
-                SaveChanges();
-                await _transaction.CommitAsync();
-            }
-            finally
-            {
-                _transaction.Dispose();
+                try
+                {
+                    SaveChanges();
+                    await _transaction.CommitAsync();
+                }
+                finally
+                {
+                    _transaction.Dispose();
+                }
             }
         }
 
         public async Task Rollback()
         {
-            await _transaction.RollbackAsync();
-            _transaction.Dispose();
+            if (_transaction != null)
+            {
+                try
+                {
+                    await _transaction.RollbackAsync();
+                }
+                finally
+                {
+                    _transaction.Dispose();
+                }
+            }
         }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -74,11 +86,12 @@ namespace TrinityText.Domain.EF
                      .WithMany(s => s.CACHESETTINGS)
                      .HasForeignKey(s => s.FK_CDNSERVER);
             });
-            
+
 
             builder.Entity<CdnServersPerWebsite>(entity =>
             {
-                entity.ToTable(name: "CdnServersPerVendor").HasKey(e => new {
+                entity.ToTable(name: "CdnServersPerVendor").HasKey(e => new
+                {
                     e.FK_CDNSERVER,
                     e.FK_WEBSITE
                 });
@@ -87,7 +100,8 @@ namespace TrinityText.Domain.EF
 
             builder.Entity<FtpServerPerCdnServer>(entity =>
             {
-                entity.ToTable(name: "FtpServersPerCdnServer").HasKey(e => new {
+                entity.ToTable(name: "FtpServersPerCdnServer").HasKey(e => new
+                {
                     e.FK_CDNSERVER,
                     e.FK_FTPSERVER
                 });
@@ -220,7 +234,7 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.FK_TEXTTYPE).HasColumnName("FK_TIPOLOGIA");
                 entity.Property(e => e.ACTIVE).HasColumnName("ATTIVA");
                 entity.Property(e => e.NAME).HasColumnName("NOME");
-                
+
 
                 entity
                     .HasOne(e => e.TEXTTYPE)
@@ -264,7 +278,8 @@ namespace TrinityText.Domain.EF
 
             builder.Entity<TextTypePerWebsite>(entity =>
             {
-                entity.ToTable(name: "TipologieTestiPerVendor").HasKey(e => new {
+                entity.ToTable(name: "TipologieTestiPerVendor").HasKey(e => new
+                {
                     e.FK_WEBSITE,
                     e.FK_TEXTTYPE
                 });

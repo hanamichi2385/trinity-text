@@ -47,7 +47,41 @@ namespace TrinityText.Business
                 .ForMember(d => d.FK_WEBSITE, src => src.MapFrom(s => s.Website));
 
             CreateMap<Page, PageDTO>()
+                .ForMember(d => d.CreationDate, src => src.MapFrom(s => s.CREATION_DATE))
+                .ForMember(d => d.CreationUser, src => src.MapFrom(s => s.CREATION_USER))
+                .ForMember(d => d.LastUpdate, src => src.MapFrom(s => s.LASTUPDATE_DATE))
+                .ForMember(d => d.Website, src => src.MapFrom(s => s.FK_WEBSITE))
+                .ForMember(d => d.Site, src => src.MapFrom(s => s.FK_PRICELIST))
+                .ForMember(d => d.Language, src => src.MapFrom(s => s.FK_LANGUAGE))
+                .ForMember(d => d.LastUpdateUser, src => src.MapFrom(s => s.LASTUPDATE_USER))
                 .ReverseMap();
+
+            CreateMap<Widget, WidgetDTO>()
+                .ForMember(d => d.CreationDate, src => src.MapFrom(s => s.CREATION_DATE))
+                .ForMember(d => d.CreationUser, src => src.MapFrom(s => s.CREATION_USER))
+                .ForMember(d => d.LastUpdate, src => src.MapFrom(s => s.LASTUPDATE_DATE))
+                .ForMember(d => d.LastUpdateUser, src => src.MapFrom(s => s.LASTUPDATE_USER))
+                .ForMember(d => d.Website, src => src.MapFrom(s => s.FK_WEBSITE))
+                .ForMember(d => d.Site, src => src.MapFrom(s => s.FK_PRICELIST))
+                .ForMember(d => d.Language, src => src.MapFrom(s => s.FK_LANGUAGE))
+                .ReverseMap();
+
+            CreateMap<Folder, FolderDTO>()
+                .ForMember(d => d.Website, src => src.MapFrom(s => s.FK_WEBSITE))
+                .ReverseMap();
+
+            CreateMap<File, FileDTO>()
+                .ForMember(d => d.CreationDate, src => src.MapFrom(s => s.CREATION_DATE))
+                .ForMember(d => d.CreationUser, src => src.MapFrom(s => s.CREATION_USER))
+                .ForMember(d => d.LastUpdate, src => src.MapFrom(s => s.LASTUPDATE_DATE))
+                .ForMember(d => d.LastUpdateUser, src => src.MapFrom(s => s.LASTUPDATE_USER))
+                .ForMember(d => d.Content, src => src.Ignore());
+
+            CreateMap<FileDTO, File>()
+                .ForMember(d => d.CREATION_DATE, src => src.MapFrom(s => s.CreationDate))
+                .ForMember(d => d.CREATION_USER, src => src.MapFrom(s => s.CreationUser))
+                .ForMember(d => d.LASTUPDATE_DATE, src => src.MapFrom(s => s.LastUpdate))
+                .ForMember(d => d.LASTUPDATE_USER, src => src.MapFrom(s => s.LastUpdateUser));
         }
 
         private TextRevision GetTextRevision(ICollection<TextRevision> revisions)

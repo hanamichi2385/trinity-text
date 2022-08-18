@@ -57,7 +57,7 @@ namespace TrinityText.Business.Services.Impl
         private IQueryable<Page> GetPagesByFilter(SearchPageDTO search)
         {
             var websites = search.UserWebsites;
-            var languages = search.UserWebsites;
+            var languages = search.WebsiteLanguages;
 
             var query =
                 _pageRepository

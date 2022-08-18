@@ -8,9 +8,13 @@ namespace TrinityText.Business
 
         public string Filename { get; set; }
 
-        public string LastUpdate { get; set; }
+        public DateTime CreationDate { get; set; }
+
+        public DateTime LastUpdate { get; set; }
 
         public string CreationUser { get; set; }
+
+        public string LastUpdateUser { get; set; }
 
         public byte[] Content { get; set; }
 

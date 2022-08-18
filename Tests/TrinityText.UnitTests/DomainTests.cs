@@ -148,7 +148,7 @@ namespace TrinityText.UnitTests
                     CREATION_DATE = System.DateTime.Now,
                     FOLDER = cs1,
                     FILENAME = "File 1",
-                    FK_VENDOR = "TRINITY",
+                    FK_WEBSITE = "TRINITY",
                     CREATION_USER = "hanamichi2385",
                     LASTUPDATE_DATE = System.DateTime.Now,
                     LASTUPDATE_USER = "hanamichi2385"
