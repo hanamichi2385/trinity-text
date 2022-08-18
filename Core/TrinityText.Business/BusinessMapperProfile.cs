@@ -82,6 +82,14 @@ namespace TrinityText.Business
                 .ForMember(d => d.CREATION_USER, src => src.MapFrom(s => s.CreationUser))
                 .ForMember(d => d.LASTUPDATE_DATE, src => src.MapFrom(s => s.LastUpdate))
                 .ForMember(d => d.LASTUPDATE_USER, src => src.MapFrom(s => s.LastUpdateUser));
+
+            CreateMap<CacheSettings, CacheSettingsDTO>()
+                .ForMember(d => d.CdnServerId, src => src.MapFrom(s => s.FK_CDNSERVER))
+                .ReverseMap();
+
+            CreateMap<WebsiteConfiguration, WebsiteConfigurationDTO>()
+                .ForMember(d => d.Website, src => src.MapFrom(s => s.FK_WEBSITE))
+                .ReverseMap();
         }
 
         private TextRevision GetTextRevision(ICollection<TextRevision> revisions)

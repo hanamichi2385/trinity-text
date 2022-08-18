@@ -2,7 +2,7 @@
 
 namespace TrinityText.Business
 {
-    public class CacheSettingDTO
+    public class CacheSettingsDTO
     {
         public int? Id { get; set; }
 
