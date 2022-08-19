@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace TrinityText.Business.Services
+namespace TrinityText.Business
 {
     public interface ICacheSettingsService
     {

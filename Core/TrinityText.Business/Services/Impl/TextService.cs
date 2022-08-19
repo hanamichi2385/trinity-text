@@ -345,7 +345,8 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult<Dictionary<string, List<TextDTO>>>> GetPublishableTexts(string website, string site, string[] languages)
+        //TODO: sistemare
+        public async Task<OperationResult<Dictionary<string, List<TextDTO>>>> GetPublishableTexts(string website, string site, string[] languages, TextTypeDTO[] textTypes)
         {
             try
             {

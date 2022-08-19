@@ -12,13 +12,13 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
 {
     public class GenerateWebsiteConsumer : IConsumer<V1_0.IGenerateWebsiteMessage>
     {
-        private readonly IGenerationSupportService _generationService;
+        private readonly IPublicationSupportService _generationService;
 
         private readonly IPublicationService _publicationService;
 
         private readonly ILogger<GenerateWebsiteConsumer> _logger;
 
-        public GenerateWebsiteConsumer(IGenerationSupportService generationService, IPublicationService publicationService, ILogger<GenerateWebsiteConsumer> logger)
+        public GenerateWebsiteConsumer(IPublicationSupportService generationService, IPublicationService publicationService, ILogger<GenerateWebsiteConsumer> logger)
         {
             _generationService = generationService;
             _publicationService = publicationService;
@@ -95,7 +95,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                                         await context.Publish(mail);
                                         retry = 0;
                                     }
-                                    catch (Exception ex)
+                                    catch
                                     {
                                         retry -= 1;
                                     }
@@ -142,7 +142,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                                     await context.Publish(mail);
                                     retry = 0;
                                 }
-                                catch (Exception ex)
+                                catch
                                 {
                                     retry -= 1;
                                 }

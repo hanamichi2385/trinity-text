@@ -77,9 +77,9 @@ namespace TrinityText.Business
 
     public class SiteConfiguration
     {
-        public string TenantId { get; set; }
-        public string VendorId { get; set; }
-        public string InstanceId { get; set; }
+        public string Tenant { get; set; }
+        public string Website { get; set; }
+        public string Site { get; set; }
         public string CurrencyId { get; set; }
         public IList<string> Languages { get; set; }
         public IList<string> Countries { get; set; }

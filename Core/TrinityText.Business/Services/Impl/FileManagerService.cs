@@ -749,7 +749,7 @@ namespace TrinityText.Business.Services.Impl
                             Content = file.CONTENT,
                         };
 
-                        return OperationResult<FileDTO>.MakeSuccess(dto);
+                        return await Task.FromResult(OperationResult<FileDTO>.MakeSuccess(dto));
                     }
                     else
                     {
@@ -789,7 +789,7 @@ namespace TrinityText.Business.Services.Impl
 
                         if (folderFound == null || folderIndex < 0)
                         {
-                            return null;
+                            return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("GETFILEBYFULLNAME", "FOLDER_NOT_FOUND") }); ;
                         }
                         else
                         {
