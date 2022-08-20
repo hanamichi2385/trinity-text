@@ -8,7 +8,7 @@ namespace TrinityText.Business
     {
         Task<OperationResult<IList<PublicationDTO>>> GetAll();
 
-        Task<OperationResult<PublicationDTO>> Get(int id);
+        Task<OperationResult<PublicationDTO>> Get(int id, bool withContent);
 
         Task<OperationResult<PublicationDTO>> Save(PublicationDTO dto);
 

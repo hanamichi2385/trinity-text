@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Resulz;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -14,7 +15,7 @@ namespace TrinityText.Business
     {
         IDictionary<string, ITransferService> Services { get; }
 
-        Task<string> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password);
-        Task<byte[]> GetFile(string tenant, string website, string file, string host, string username, string password);
+        Task<OperationResult> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password);
+        Task<OperationResult<byte[]>> GetFile(string tenant, string website, string file, string host, string username, string password);
     }
 }

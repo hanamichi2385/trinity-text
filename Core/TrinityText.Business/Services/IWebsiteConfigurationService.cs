@@ -10,5 +10,6 @@ namespace TrinityText.Business
         Task<OperationResult<IList<WebsiteConfigurationDTO>>> GetAll(string website);
         Task<OperationResult> Remove(int id);
         Task<OperationResult<WebsiteConfigurationDTO>> Save(WebsiteConfigurationDTO dto);
+        Task<OperationResult> AddTo(string website, IList<int> cdnIds, IList<int> textTypeIds);
     }
 }

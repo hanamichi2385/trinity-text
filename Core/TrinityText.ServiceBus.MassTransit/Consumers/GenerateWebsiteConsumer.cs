@@ -4,7 +4,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using TrinityText.Business;
-using TrinityText.Business.Services;
 using TrinityText.ServiceBus.Messages;
 using V1_0 = TrinityText.ServiceBus.Messages.V1_0;
 
@@ -29,17 +28,17 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
         {
             var message = context.Message;
 
-            var filesGenerationSettingRs = await _publicationService.Get(message.FilesGenerationId);
+            var filesGenerationSettingRs = await _publicationService.Get(message.FilesGenerationId, false);
 
             if (filesGenerationSettingRs.Success)
             {
                 var filesGenerationSetting = filesGenerationSettingRs.Value;
-                string operationsLog = await _generationService.Generate(filesGenerationSetting);
+                var generateRs = await _generationService.Generate(filesGenerationSetting);
                 string tipoEsportazione = filesGenerationSetting.PublicationType.ToString();
                 string vendorName = filesGenerationSetting.Website;
 
                 //operation log empty = generate with success
-                if (string.IsNullOrEmpty(operationsLog))
+                if (generateRs.Success)
                 {
                     bool includePublishing = filesGenerationSetting.FtpServer != null;
                     if (includePublishing)
@@ -116,38 +115,23 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
 
                     if (rs.Success)
                     {
-                        if (!string.IsNullOrEmpty(operationsLog))
+                        var mail = new SendMailMessage()
                         {
-                            var logs = operationsLog.Replace(System.Environment.NewLine, "<br/>");
+                            Id = Guid.NewGuid(),
+                            IsHtmlBody = true,
+                        };
+                        mail.To.Add(filesGenerationSetting.Email);
+                        mail.Subject = string.Format("[CMS] Website update {0} failed", vendorName);
 
-                            SendMailMessage mail = new SendMailMessage()
-                            {
-                                Id = Guid.NewGuid(),
-                                IsHtmlBody = true,
-                            };
-                            mail.To.Add(filesGenerationSetting.Email);
-                            mail.Subject = string.Format("[CMS] Website update {0} failed", vendorName);
-
-                            string body = "<p>Website {0} update (type {1}) is failed!</p>";
-                            body += "<p>These are the errors recorded during the update process. The updated was interrupted so run a new website update</p>";
-                            body += "<p>" + logs + "</p>";
-
-                            mail.Body = string.Format(body, vendorName, tipoEsportazione);
-
-                            int retry = 5;
-                            while (retry > 0)
-                            {
-                                try
-                                {
-                                    await context.Publish(mail);
-                                    retry = 0;
-                                }
-                                catch
-                                {
-                                    retry -= 1;
-                                }
-                            };
+                        var body = "<p>Website {0} update (type {1}) is failed!</p>";
+                        body += "<p>These are the errors recorded during the update process. The updated was interrupted so run a new website update</p>";
+                        foreach (var e in generateRs.Errors)
+                        {
+                            body += "<p>" + e.Context + ":" + e.Description + "</p>";
                         }
+
+                        mail.Body = string.Format(body, vendorName, tipoEsportazione);
+                        await context.Publish(mail);
                     }
                     else
                     {

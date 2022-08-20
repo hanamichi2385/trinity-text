@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Resulz;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -16,8 +17,9 @@ namespace TrinityText.Utilities.Transfer
             Services = services;
         }
 
-        public async Task<byte[]> GetFile(string tenant, string website, string file, string host, string username, string password)
+        public async Task<OperationResult<byte[]>> GetFile(string tenant, string website, string file, string host, string username, string password)
         {
+            var result = OperationResult.MakeSuccess();
             try
             {
                 var uri = new Uri(host);
@@ -29,19 +31,16 @@ namespace TrinityText.Utilities.Transfer
                 var service = GetService(uri);
                 var ftpfile = await service.GetFile(tenant, website, file, uri.Host, username, password, directories);
             }
-            catch
+            catch(Exception ex)
             {
-
+                result.AppendError("GET_FILE", ex.Message);
             }
-            return null;
+            return result;
         }
 
-        public async Task<string> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password)
+        public async Task<OperationResult> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password)
         {
-            StringBuilder operationLog = new StringBuilder();
-
-            string baseFtpDirectoryPath = host;
-
+            var result = OperationResult.MakeSuccess();
             try
             {
                 var uri = new Uri(host);
@@ -56,23 +55,18 @@ namespace TrinityText.Utilities.Transfer
 
                 if (!string.IsNullOrWhiteSpace(uploadlog))
                 {
-                    operationLog.AppendLine(uploadlog);
+                    result.AppendError("UPLOAD", uploadlog);
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                operationLog.AppendLine("--ex: " + e.Message);
-                if (e.InnerException != null && !string.IsNullOrEmpty(e.InnerException.Message))
-                {
-                    operationLog.AppendLine("--innerex: " + e.InnerException.Message);
-                }
-                return operationLog.ToString();
+                result.AppendError("UPLOAD", ex.Message);
             }
             finally
             {
                 baseDirectory.Delete(true);
             }
-            return operationLog.ToString();
+            return result;
         }
 
         private ITransferService GetService(Uri host)

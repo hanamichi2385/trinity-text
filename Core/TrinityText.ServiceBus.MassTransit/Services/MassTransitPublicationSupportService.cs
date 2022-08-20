@@ -40,7 +40,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             _options = options.Value;
         }
 
-        public async Task<OperationResult<string>> ExportFiles(int id, PayloadDTO payload, PublicationType exportType, PublishType publishType, DateTime filesGenerationDate, bool compressFileOutput, string user, CdnServerDTO cdnServer)
+        private async Task<OperationResult<string>> CreateExportFile(int id, PayloadDTO payload, PublicationType exportType, PublishType publishType, DateTime filesGenerationDate, bool compressFileOutput, string user, CdnServerDTO cdnServer)
         {
             var basePath = _options.LocalDirectory;
             var website = payload.Website;
@@ -124,19 +124,9 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             }
         }
 
-        private void GenerateFileTimestamp(DirectoryInfo currentDirectory, string username)
+        public async Task<OperationResult> Generate(PublicationDTO filesGenerationSettings)
         {
-            var textFile = currentDirectory + "\\trinity-text.txt";
-            var text = string.Format("{0}|{1:dd-MM-yyyy|HH-mm-ss}", username, DateTime.Now);
-
-            System.IO.File.WriteAllText(textFile, text);
-        }
-
-
-
-        public async Task<string> Generate(PublicationDTO filesGenerationSettings)
-        {
-            StringBuilder operationsLog = new StringBuilder();
+            var result = OperationResult.MakeSuccess();
             try
             {
                 var vendor = filesGenerationSettings.Website;
@@ -146,8 +136,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                 var payload = filesGenerationSettings.Payload;
 
-
-                var filePathRs = await ExportFiles(filesGenerationSettings.Id.Value, payload, exportType, filesGenerationSettings.PublishType, filesGenerationDate, true, filesGenerationSettings.Utente, cdnServer);
+                var filePathRs = await CreateExportFile(filesGenerationSettings.Id.Value, payload, exportType, filesGenerationSettings.PublishType, filesGenerationDate, true, filesGenerationSettings.Utente, cdnServer);
 
                 if (filePathRs.Success)
                 {
@@ -162,67 +151,68 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 }
                 else
                 {
-                    foreach (var er in filePathRs.Errors)
-                    {
-                        operationsLog.AppendLine($"{er.Context}: {er.Description}");
-                    }
+                    result.AppendErrors(filePathRs.Errors);
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                operationsLog.AppendLine("--ex: " + e.Message);
-                if (e.InnerException != null && !string.IsNullOrEmpty(e.InnerException.Message))
-                {
-                    operationsLog.AppendLine("--innerex: " + e.InnerException.Message);
-                }
+                result.AppendError("GENERATE", ex.Message);
             }
-            return operationsLog.ToString();
+            return result;
         }
 
-        public async Task<string> Publish(PublicationDTO filesGenerationSettings)
+        public async Task<OperationResult> Publish(PublicationDTO filesGenerationSettings)
         {
             var basePath = _options.LocalDirectory + "/Uploading/" + Guid.NewGuid();
-            StringBuilder operationsLog = new StringBuilder();
+            var result = OperationResult.MakeSuccess();
             try
             {
                 await _compressionFileService.DecompressFolder(basePath, filesGenerationSettings.ZipFile);
 
                 var payload = filesGenerationSettings.Payload;
-                //var instances = JsonConvert.DeserializeObject<IList<InstanceDTO>>(payload);
-
-                //var tenant = instances.Select(i => i.TenantId).SingleOrDefault();
 
 
                 var server = filesGenerationSettings.FtpServer;
                 var d = new DirectoryInfo(basePath);
 
-                var publishLog = await _transferServiceCoordinator.Upload(payload.Tenant, filesGenerationSettings.Website, d, server.Host, server.Username, server.Password);
+                var uploadRs = await _transferServiceCoordinator.Upload(payload.Tenant, filesGenerationSettings.Website, d, server.Host, server.Username, server.Password);
 
-                if (!string.IsNullOrEmpty(publishLog))
+                if(uploadRs.Success == false)
                 {
-                    operationsLog.AppendLine(publishLog);
+                    result.AppendErrors(uploadRs.Errors);
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                operationsLog.AppendLine("--ex: " + e.Message);
-                if (e.InnerException != null && !string.IsNullOrEmpty(e.InnerException.Message))
-                {
-                    operationsLog.AppendLine("--innerex: " + e.InnerException.Message);
-                }
+                result.AppendError("PUBLISH", ex.Message);
             }
             finally
             {
-                DirectoryInfo folder = new DirectoryInfo(basePath);
-                if (folder.Exists)
+                try
                 {
-                    folder.Delete(true);
+                    DirectoryInfo folder = new DirectoryInfo(basePath);
+                    if (folder.Exists)
+                    {
+                        folder.Delete(true);
+                    }
+                }
+                catch
+                {
+
                 }
             }
-            return operationsLog.ToString();
+            return result;
         }
 
         #region private methods
+
+        private void GenerateFileTimestamp(DirectoryInfo currentDirectory, string username)
+        {
+            var textFile = currentDirectory + "\\trinity-text.txt";
+            var text = string.Format("{0}|{1:dd-MM-yyyy|HH-mm-ss}", username, DateTime.Now);
+
+            System.IO.File.WriteAllText(textFile, text);
+        }
 
         private void GenerateTextsFileBySite(string website, IDictionary<string, List<TextDTO>> textsPerLanguage, string directoryPath, PublishType type)
         {

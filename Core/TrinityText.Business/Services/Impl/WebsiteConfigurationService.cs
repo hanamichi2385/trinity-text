@@ -13,6 +13,10 @@ namespace TrinityText.Business.Services.Impl
     {
         private readonly IRepository<WebsiteConfiguration> _websiteConfigurationRepository;
 
+        private readonly IRepository<TextTypePerWebsite> _textTypePerWebsiteRepository;
+
+        private readonly IRepository<CdnServersPerWebsite> _cdnServersPerWebsite;
+
         private readonly ILogger<WebsiteConfigurationService> _logger;
 
         private readonly IMapper _mapper;
@@ -136,6 +140,91 @@ namespace TrinityText.Business.Services.Impl
                 _logger.LogError("REMOVE", ex);
                 return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "GENERIC_ERROR") });
             }
+        }
+
+        public async Task<OperationResult> AddTo(string website, IList<int> cdnIds, IList<int> textTypeIds)
+        {
+            
+
+            try
+            {
+                await _websiteConfigurationRepository.BeginTransaction();
+
+                var cpv =
+                    _cdnServersPerWebsite
+                    .Repository
+                    .Where(f => f.FK_WEBSITE == website)
+                    .ToList();
+
+                foreach (var c in cdnIds)
+                {
+                    var cdnAdd = cpv.Where(k => k.FK_CDNSERVER == c).SingleOrDefault();
+
+                    if (cdnAdd == null)
+                    {
+                        var n = new CdnServersPerWebsite()
+                        {
+                            FK_CDNSERVER = c,
+                            FK_WEBSITE = website,
+                        };
+                        await _cdnServersPerWebsite.Create(n);
+                    }
+                }
+
+                var rtpv =
+                    _textTypePerWebsiteRepository
+                    .Repository
+                    .Where(f => f.FK_WEBSITE == website)
+                    .ToList();
+
+                foreach (var c in textTypeIds)
+                {
+                    var rtAdd = rtpv.Where(k => k.FK_TEXTTYPE == c).SingleOrDefault();
+
+                    if (rtAdd == null)
+                    {
+                        var n = new TextTypePerWebsite()
+                        {
+                            FK_TEXTTYPE =c,
+                            FK_WEBSITE = website,
+                        };
+
+                        await _textTypePerWebsiteRepository.Create(n);
+                    }
+                }
+
+                foreach (var c in cpv)
+                {
+                    var cdnRemove = cdnIds.Where(k => k == c.FK_CDNSERVER).Any();
+
+                    if (!cdnRemove)
+                    {
+                        await _cdnServersPerWebsite.Delete(c);
+                    }
+                }
+
+                foreach (var c in rtpv)
+                {
+                    var rtRemove = textTypeIds.Where(k => k == c.FK_TEXTTYPE).Any();
+
+                    if (!rtRemove)
+                    {
+                        await _textTypePerWebsiteRepository.Delete(c);
+                    }
+                }
+
+                await _websiteConfigurationRepository.CommitTransaction();
+
+                return OperationResult.MakeSuccess();
+            }
+            catch(Exception ex)
+            {
+                await _websiteConfigurationRepository.RollbackTransaction();
+                _logger.LogError("ADDTO", ex);
+                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("ADDTO", "GENERIC_ERROR") });
+            }
+
+            
         }
     }
 }
