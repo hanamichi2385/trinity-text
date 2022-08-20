@@ -1,13 +1,13 @@
-name: Build And Pack
+name: Release packages
 on:
-  push:
-   branches:
-   - 'main'
-   tags:
-   - 'releases/**'
+  release:
+    types: [published]
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet: [ '3.1.x', '6.0.x' ]
     outputs:
      package-version:  ${{ steps.setup-version.outputs.version }}
      publish-version:  ${{ steps.setup-version.outputs.publishversion }}
@@ -19,20 +19,21 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 3.1.301
+        dotnet-version: ${{ matrix.dotnet }}
         
     - name: Setup Solution
       id: setup-solution
       env: 
         SOLUTION_NAME: "Trinity.sln"
+        TYPE: ${{ github.event.release.prerelease }}
       run: |
         #https://www.tutorialspoint.com/execute_bash_online.php
-        event=$GITHUB_REF
-        suffix="-beta"
-        eventmatch="release"
+        event=$TYPE
+        suffix=""
+        eventmatch="true"
         echo "Event Name:" $event
         if [[ "$event" == *"$eventmatch"* ]]; then
-         suffix=""
+         suffix="-beta"
         fi
         echo "Suffix:" $suffix
        
@@ -61,8 +62,7 @@ jobs:
        echo "Publish Version:" $publishversion
        
        echo "::set-output name=version::$buildversion"
-       echo "::set-output name=publishversion::$publishversion"
-       
+       echo "::set-output name=publishversion::$publishversion"    
        
     - name: Install dependencies
       env: 
@@ -80,4 +80,10 @@ jobs:
         VERSION: ${{ steps.setup-version.outputs.version }}
         SOLUTION_NAME: ${{ steps.setup-solution.outputs.solution }}
       run: |    
-       #dotnet pack $SOLUTION_NAME --configuration Release --no-restore --output $GITHUB_WORKSPACE"/nupackages" /p:Version=$VERSION
+       dotnet pack $SOLUTION_NAME --configuration Release --no-restore --output $GITHUB_WORKSPACE"/nupackages" /p:Version=$VERSION
+   - name: Upload to Nuget
+      run: |       
+       find $GITHUB_WORKSPACE"/nupackages" -type f -name '*.nupkg' -printf "%f\n"
+       for i in $(find $GITHUB_WORKSPACE"/nupackages" -type f -name '*.nupkg'); do
+         dotnet nuget push $i --api-key ${{secrets.nuget_api_key}} --source https://api.nuget.org/v3/index.json --skip-duplicate
+       done
