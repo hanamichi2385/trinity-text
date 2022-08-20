@@ -10,6 +10,7 @@ jobs:
     strategy:
       matrix:
         dotnet: [ '3.1.x', '6.0.x' ]
+        
     outputs:
      package-version:  ${{ steps.setup-version.outputs.version }}
      publish-version:  ${{ steps.setup-version.outputs.publishversion }}
@@ -83,7 +84,7 @@ jobs:
         SOLUTION_NAME: ${{ steps.setup-solution.outputs.solution }}
       run: |    
        dotnet pack $SOLUTION_NAME --configuration Release --no-restore --output $GITHUB_WORKSPACE"/nupackages" /p:Version=$VERSION
-   - name: Upload to Nuget
+    - name: Upload to Nuget
       run: |       
        find $GITHUB_WORKSPACE"/nupackages" -type f -name '*.nupkg' -printf "%f\n"
        for i in $(find $GITHUB_WORKSPACE"/nupackages" -type f -name '*.nupkg'); do
