@@ -11,6 +11,7 @@
 		<RepositoryType>git</RepositoryType>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/hanamichi2385/trinity-text</PackageProjectUrl>
 		<PackageTags>trinity-text</PackageTags>
 	</PropertyGroup>
