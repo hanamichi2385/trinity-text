@@ -236,7 +236,7 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.ACTIVE).HasColumnName("ATTIVA");
                 entity.Property(e => e.NAME).HasColumnName("NOME");
                 entity.Navigation(e => e.REVISIONS).AutoInclude();
-
+                entity.Navigation(e => e.TEXTTYPE).AutoInclude();
 
                 entity
                     .HasOne(e => e.TEXTTYPE)

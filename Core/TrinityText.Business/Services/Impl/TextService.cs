@@ -221,25 +221,18 @@ namespace TrinityText.Business.Services.Impl
                         entity.FK_WEBSITE = dto.Website;
                         entity.NAME = dto.Name;
 
-                        var revisions = _textRevisionRepository.Repository
-                            .Where(tt => tt.FK_TEXT == entity.ID)
-                            .OrderByDescending(d => d.CREATION_DATE)
-                            .ToList();
-
-                        var lastRevision = revisions.FirstOrDefault();
+                        var lastRevision = entity.REVISIONS.OrderByDescending(d => d.CREATION_DATE).FirstOrDefault();
                         if (lastRevision != null && string.Equals(lastRevision.CONTENT, dto.TextRevision.Content, StringComparison.InvariantCultureIgnoreCase) == false)
                         {
                             var revision = _mapper.Map<TextRevision>(dto.TextRevision);
                             revision.TEXT = entity;
                             revision.FK_TEXT = entity.ID;
-                            revision.REVISION_NUMBER = revisions.Max(r => r.REVISION_NUMBER) + 1;
+                            revision.REVISION_NUMBER = lastRevision.REVISION_NUMBER + 1;
+                            revision.CREATION_DATE = DateTime.Now;
 
                             await _textRevisionRepository.Create(revision);
-
-                            revisions.Add(revision);
                         }
 
-                        entity.REVISIONS = revisions;
                         var result = await _textRepository.Update(entity);
 
                         var r = _mapper.Map<TextDTO>(result);
@@ -257,9 +250,10 @@ namespace TrinityText.Business.Services.Impl
                     if (existRs.Success)
                     {
                         var entity = _mapper.Map<Text>(dto);
-                        var revision = _mapper.Map<TextRevision>(dto.TextRevision);
+                        var revision = entity.REVISIONS.ElementAt(0);
+                        revision.CREATION_DATE = DateTime.Now;
+                        revision.REVISION_NUMBER = 1;
                         entity.ACTIVE = true;
-                        entity.REVISIONS.Add(revision);
                         await _textRepository.Create(entity);
 
                         var r = _mapper.Map<TextDTO>(entity);
@@ -525,10 +519,15 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    foreach (var t in entity.REVISIONS)
+                    var i = entity.REVISIONS.Count;
+                    while (i > 0)
                     {
+                        var t = entity.REVISIONS.ElementAt(i - 1);
                         await _textRevisionRepository.Delete(t);
+
+                        i--;
                     }
+                    
 
                     await _textRepository.Delete(entity);
 

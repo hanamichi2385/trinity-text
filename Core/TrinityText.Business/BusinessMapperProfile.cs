@@ -18,7 +18,9 @@ namespace TrinityText.Business
                 .ForMember(d => d.Website, src => src.MapFrom(s => s.FK_WEBSITE))
                 .ForMember(d => d.TextTypeId, src => src.MapFrom(s => s.FK_TEXTTYPE))
                 .ForMember(d => d.Country, src => src.MapFrom(s => s.FK_COUNTRY))
+                .ForMember(d => d.Language, src => src.MapFrom(s => s.FK_LANGUAGE))
                 .ForMember(d => d.TextType, src => src.MapFrom(s => s.TEXTTYPE))
+                .ForMember(d => d.Name, src => src.MapFrom(s => s.NAME.ToUpper()))
                 .ForMember(d => d.TextRevision, src => src.MapFrom(s => GetTextRevision(s.REVISIONS)));
 
             CreateMap<TextDTO, Text>()
@@ -26,7 +28,9 @@ namespace TrinityText.Business
                 .ForMember(d => d.FK_WEBSITE, src => src.MapFrom(s => s.Website))
                 .ForMember(d => d.FK_TEXTTYPE, src => src.MapFrom(s => s.TextTypeId))
                 .ForMember(d => d.FK_COUNTRY, src => src.MapFrom(s => s.Country))
+                .ForMember(d => d.FK_LANGUAGE, src => src.MapFrom(s => s.Language))
                 .ForMember(d => d.TEXTTYPE, src => src.MapFrom(s => s.TextType))
+                .ForMember(d => d.NAME, src => src.MapFrom(s => s.Name.ToUpper()))
                 .ForMember(d => d.REVISIONS, src => src.MapFrom(s => new[] { s.TextRevision }));
 
             CreateMap<TextRevision, TextRevisionDTO>()
