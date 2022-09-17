@@ -77,7 +77,7 @@ jobs:
   
     - name: Pack Solution
       env: 
-        VERSION: ${{ steps.setup-version.outputs.version }}
+        VERSION: ${{ steps.setup-version.outputs.publish-version }}
         SOLUTION_NAME: ${{ steps.setup-solution.outputs.solution }}
       run: |    
        dotnet pack $SOLUTION_NAME --configuration Release --no-restore --output $GITHUB_WORKSPACE"/nupackages" /p:Version=$VERSION
