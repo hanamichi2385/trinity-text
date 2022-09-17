@@ -108,5 +108,17 @@ namespace TrinityText.UnitTests
 
             Assert.IsTrue(settings2.Count == 0);
         }
+
+
+        [TestMethod]
+        public async Task TextsTests()
+        {
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<IRepository<TextType>>();
+
+            var list = repo.Repository.ToList();
+
+        }
     }
 }

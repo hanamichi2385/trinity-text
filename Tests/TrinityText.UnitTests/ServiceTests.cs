@@ -34,6 +34,7 @@ namespace TrinityText.UnitTests
             services.AddDbContextPool<TrinityDbContext>(s => s.UseSqlServer(connectionString));
             services.AddTransient(typeof(IRepository<>), typeof(EFRepository<>));
             services.AddTransient<ITextService, TextService>();
+            services.AddTransient<ITextTypeService, TextTypeService>();
             services.AddLogging();
 
             services.AddAutoMapper((cfg) =>
@@ -70,6 +71,35 @@ namespace TrinityText.UnitTests
             };
 
             var result = await repo.Save(dto);
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public async Task TextTypeServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<ITextTypeService>();
+
+            var result = await repo.GetAll();
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public async Task SearchTextServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<ITextService>();
+            var searc = new SearchTextDTO()
+            {
+                WebsiteLanguages = new [] {"it"},
+            };
+            var result = await repo.Search(searc, 0, 10);
 
             Assert.IsTrue(result.Success);
         }

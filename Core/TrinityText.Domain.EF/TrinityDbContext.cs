@@ -235,6 +235,7 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.FK_TEXTTYPE).HasColumnName("FK_TIPOLOGIA");
                 entity.Property(e => e.ACTIVE).HasColumnName("ATTIVA");
                 entity.Property(e => e.NAME).HasColumnName("NOME");
+                entity.Navigation(e => e.REVISIONS).AutoInclude();
 
 
                 entity
@@ -256,11 +257,12 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.REVISION_NUMBER).HasColumnName("REVISIONE");
                 entity.Property(e => e.CONTENT).HasColumnName("TESTO");
                 entity.Property(e => e.CREATION_USER).HasColumnName("UTENTE_CREAZIONE");
-
+                entity.Navigation(e => e.TEXT).AutoInclude();
                 entity
                     .HasOne(e => e.TEXT)
-                    .WithMany(s => s.REVISIONS)
-                    .HasForeignKey(s => s.FK_TEXT);
+                    .WithMany(e => e.REVISIONS)
+                    .HasForeignKey(s => s.FK_TEXT)
+                    .IsRequired();
             });
 
             builder.Entity<TextType>(entity =>
@@ -268,6 +270,8 @@ namespace TrinityText.Domain.EF
                 entity.ToTable(name: "TipologieTesti").HasKey(e => e.ID);
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
                 entity.Property(e => e.CONTENTTYPE).HasColumnName("TIPOLOGIA");
+                entity.Navigation(e => e.TEXTS);
+                entity.Navigation(e => e.TEXTTYPEPERWEBSITES).AutoInclude();
 
                 entity.HasMany(e => e.TEXTS)
                     .WithOne(e => e.TEXTTYPE)

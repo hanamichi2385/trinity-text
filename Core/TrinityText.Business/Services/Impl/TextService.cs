@@ -59,17 +59,16 @@ namespace TrinityText.Business.Services.Impl
 
         private IQueryable<Text> GetTextsByFilter(SearchTextDTO search)
         {
-            var websites = search.UserWebsites;
-            var languages = search.WebsiteLanguages;
+            var websites = search.UserWebsites ?? new string[0];
+            var languages = search.WebsiteLanguages ?? new string[0];
 
-            var query =
-                _textRepository
+            var query = _textRepository
                 .Repository
                 .Where(s =>
-                    (string.IsNullOrWhiteSpace(s.FK_WEBSITE) ||
-                    (!string.IsNullOrWhiteSpace(s.FK_WEBSITE) && websites.Contains(s.FK_WEBSITE, StringComparer.InvariantCultureIgnoreCase)))
-                    && languages.Contains(s.FK_LANGUAGE, StringComparer.InvariantCultureIgnoreCase));
-
+                        (string.IsNullOrWhiteSpace(s.FK_WEBSITE) ||
+                        (!string.IsNullOrWhiteSpace(s.FK_WEBSITE) && websites.Contains(s.FK_WEBSITE)))
+                        && languages.Contains(s.FK_LANGUAGE));
+            
             if (search != null)
             {
                 if (search.TextTypeId.HasValue)
