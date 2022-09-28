@@ -35,6 +35,7 @@ namespace TrinityText.UnitTests
             services.AddTransient(typeof(IRepository<>), typeof(EFRepository<>));
             services.AddTransient<ITextService, TextService>();
             services.AddTransient<ITextTypeService, TextTypeService>();
+            services.AddTransient<IWebsiteConfigurationService, WebsiteConfigurationService>();
             services.AddLogging();
 
             services.AddAutoMapper((cfg) =>
@@ -100,6 +101,19 @@ namespace TrinityText.UnitTests
                 WebsiteLanguages = new [] {"it"},
             };
             var result = await repo.Search(searc, 0, 10);
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public async Task WebsiteConfigurationServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<IWebsiteConfigurationService>();
+            
+            var result = await repo.GetAll("ABC");
 
             Assert.IsTrue(result.Success);
         }

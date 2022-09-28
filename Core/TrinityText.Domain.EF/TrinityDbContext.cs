@@ -8,6 +8,7 @@ namespace TrinityText.Domain.EF
     {
         public TrinityDbContext(DbContextOptions options) : base(options)
         {
+            this.ChangeTracker.AutoDetectChangesEnabled = false;
         }
 
         private IDbContextTransaction _transaction;
@@ -302,6 +303,8 @@ namespace TrinityText.Domain.EF
             {
                 entity.ToTable(name: "WebsitesPerVendor").HasKey(e => e.ID);
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
+                entity.Property(e => e.FK_WEBSITE).HasColumnName("FK_VENDOR");
+                entity.Property(e => e.TYPE).HasColumnName("TIPO");
             });
 
             builder.Entity<Widget>(entity =>
