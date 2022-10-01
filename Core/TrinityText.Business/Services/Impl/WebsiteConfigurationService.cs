@@ -21,9 +21,12 @@ namespace TrinityText.Business.Services.Impl
 
         private readonly IMapper _mapper;
 
-        public WebsiteConfigurationService(IRepository<WebsiteConfiguration> websiteConfigurationRepository, IMapper mapper, ILogger<WebsiteConfigurationService> logger)
+        public WebsiteConfigurationService(IRepository<WebsiteConfiguration> websiteConfigurationRepository, IRepository<TextTypePerWebsite> textTypePerWebsiteRepository, IRepository<CdnServersPerWebsite> cdnServersPerWebsite,
+            IMapper mapper, ILogger<WebsiteConfigurationService> logger)
         {
             _websiteConfigurationRepository = websiteConfigurationRepository;
+            _textTypePerWebsiteRepository = textTypePerWebsiteRepository;
+            _cdnServersPerWebsite = cdnServersPerWebsite;
             _mapper = mapper;
             _logger = logger;
         }

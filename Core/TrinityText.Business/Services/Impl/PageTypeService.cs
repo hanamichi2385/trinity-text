@@ -73,16 +73,21 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var entity = _pageTypeRepository
+                var entities = _pageTypeRepository
                     .Repository
-                    .Where(t => (string.IsNullOrWhiteSpace(t.FK_WEBSITE) || (!string.IsNullOrWhiteSpace(t.FK_WEBSITE) && websites.Contains(t.FK_WEBSITE, StringComparer.InvariantCultureIgnoreCase)))
-                        && (string.IsNullOrWhiteSpace(t.VISIBILITY) || visibilities.Where(r => t.VISIBILITY.Contains(r)).Any()))
+                    .Where(t => (string.IsNullOrWhiteSpace(t.FK_WEBSITE) || (!string.IsNullOrWhiteSpace(t.FK_WEBSITE) && websites.Contains(t.FK_WEBSITE))))
                     .OrderBy(t => t.NAME)
                     .ToList();
 
-                if (entity != null)
+                if (entities != null)
                 {
-                    var result = _mapper.Map<IList<PageTypeDTO>>(entity);
+                    var filtered = entities.Where(e => 
+                        (string.IsNullOrWhiteSpace(e.VISIBILITY) || 
+                            (!string.IsNullOrWhiteSpace(e.VISIBILITY) 
+                                && visibilities.Intersect(e.VISIBILITY.Split(',', StringSplitOptions.RemoveEmptyEntries)).Any())))
+                        .ToList();
+
+                    var result = _mapper.Map<IList<PageTypeDTO>>(filtered);
 
                     return await Task.FromResult(OperationResult<IList<PageTypeDTO>>.MakeSuccess(result));
                 }

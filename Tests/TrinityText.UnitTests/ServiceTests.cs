@@ -35,6 +35,7 @@ namespace TrinityText.UnitTests
             services.AddTransient(typeof(IRepository<>), typeof(EFRepository<>));
             services.AddTransient<ITextService, TextService>();
             services.AddTransient<ITextTypeService, TextTypeService>();
+            services.AddTransient<IPageTypeService, PageTypeService>();
             services.AddTransient<IWebsiteConfigurationService, WebsiteConfigurationService>();
             services.AddLogging();
 
@@ -90,6 +91,35 @@ namespace TrinityText.UnitTests
         }
 
         [TestMethod]
+        public async Task PageTypesServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<IPageTypeService>();
+
+            var result = await repo.GetAll();
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public async Task PageTypesUserServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<IPageTypeService>();
+
+            var websites = new[] { "ABC", "CDE" };
+            var visibilies = new[] { "role1", "role2" };
+
+            var result = await repo.GetAllByUser(websites, visibilies);
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
         public async Task SearchTextServiceTest()
         {
 
@@ -114,6 +144,19 @@ namespace TrinityText.UnitTests
             var repo = kernel.GetService<IWebsiteConfigurationService>();
             
             var result = await repo.GetAll("ABC");
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public async Task WebsiteConfigurationAddToServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<IWebsiteConfigurationService>();
+
+            var result = await repo.AddTo("ABC", new int[0], new int[0]);
 
             Assert.IsTrue(result.Success);
         }
