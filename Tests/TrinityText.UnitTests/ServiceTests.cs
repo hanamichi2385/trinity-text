@@ -37,6 +37,7 @@ namespace TrinityText.UnitTests
             services.AddTransient<ITextTypeService, TextTypeService>();
             services.AddTransient<IPageTypeService, PageTypeService>();
             services.AddTransient<IWebsiteConfigurationService, WebsiteConfigurationService>();
+            services.AddTransient<IFTPServerService, FTPServerService>();
             services.AddLogging();
 
             services.AddAutoMapper((cfg) =>
@@ -104,6 +105,27 @@ namespace TrinityText.UnitTests
         }
 
         [TestMethod]
+        public async Task SavePageTypesServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<IPageTypeService>();
+
+            var dto = new PageTypeDTO()
+            {
+                Name = "Ciao2",
+                Schema = "<root id=\"Contents\"><content id=\"Content\"><textpart ishtml=\"false\" id=\"Group\" isrequired=\"false\" /><textpart ishtml=\"false\" id=\"Id\" isrequired=\"true\" /><textpart ishtml=\"false\" id=\"Visible_From\" isrequired=\"false\" /><textpart ishtml=\"false\" id=\"Visible_To\" isrequired=\"false\" /><textpart ishtml=\"false\" id=\"SEO_Title\" isrequired=\"false\" /><textpart ishtml=\"false\" id=\"SEO_Description\" isrequired=\"false\" /><textpart ishtml=\"false\" id=\"Title\" isrequired=\"true\" /><textpart ishtml=\"false\" id=\"Subtitle\" isrequired=\"false\" /><textpart ishtml=\"true\" id=\"Body\" isrequired=\"true\" /><textpart ishtml=\"true\" id=\"CSS\" isrequired=\"false\" /><textpart ishtml=\"true\" id=\"Javascript\" isrequired=\"false\" /></content></root>",
+                OutputFilename = "Ciao",
+                Visibility = new[] { "ROLE1", "ROLE2" }
+            };
+
+            var result = await repo.Save(dto);
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
         public async Task PageTypesUserServiceTest()
         {
 
@@ -157,6 +179,42 @@ namespace TrinityText.UnitTests
             var repo = kernel.GetService<IWebsiteConfigurationService>();
 
             var result = await repo.AddTo("ABC", new int[0], new int[0]);
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public async Task FtpServerServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<IFTPServerService>();
+
+            var result = await repo.GetAll();
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public async Task SaveFtpServerServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<IFTPServerService>();
+
+            var ftp = new FTPServerDTO()
+            {
+                Host = "host",
+                Name = "ftp",
+                Password = "password",
+                Port = 21,
+                Type = EnvironmentType.Development,
+                Username = "username"
+            };
+
+            var result = await repo.Save(ftp);
 
             Assert.IsTrue(result.Success);
         }

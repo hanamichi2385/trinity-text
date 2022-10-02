@@ -1,6 +1,6 @@
 ﻿namespace TrinityText.Business
 {
-    public class FtpServerDTO
+    public class FTPServerDTO
     {
         public string Name { get; set; }
 
@@ -16,6 +16,6 @@
 
         public EnvironmentType Type { get; set; }
 
-        public int? IdType { get; set; }
+        //public int? IdType { get; set; }
     }
 }

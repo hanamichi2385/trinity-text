@@ -18,7 +18,7 @@ namespace TrinityText.Business
 
         public string Website { get; set; }
 
-        public FtpServerDTO FtpServer { get; set; }
+        public FTPServerDTO FtpServer { get; set; }
 
         public CdnServerDTO CdnServer { get; set; }
 

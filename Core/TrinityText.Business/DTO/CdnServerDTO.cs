@@ -14,6 +14,6 @@ namespace TrinityText.Business
 
         public EnvironmentType Type { get; set; }
 
-        public IList<FtpServerDTO> FtpServers { get; set; }
+        public IList<FTPServerDTO> FtpServers { get; set; }
     }
 }

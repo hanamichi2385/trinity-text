@@ -13,7 +13,7 @@ namespace TrinityText.Business.Services.Impl
     {
         private readonly IRepository<CdnServer> _cdnSettingsRepository;
 
-        private readonly IRepository<FtpServerPerCdnServer> _ftpServerPerCdnServerRepository;
+        //private readonly IRepository<FtpServerPerCdnServer> _ftpServerPerCdnServerRepository;
 
         private readonly ILogger<CDNSettingService> _logger;
 
@@ -22,7 +22,7 @@ namespace TrinityText.Business.Services.Impl
         public CDNSettingService(IRepository<CdnServer> cdnSettingsRepository, IRepository<FtpServerPerCdnServer> ftpServerPerCdnServerRepository, IMapper mapper, ILogger<CDNSettingService> logger)
         {
             _cdnSettingsRepository = cdnSettingsRepository;
-            _ftpServerPerCdnServerRepository = ftpServerPerCdnServerRepository;
+            //_ftpServerPerCdnServerRepository = ftpServerPerCdnServerRepository;
             _mapper = mapper;
             _logger = logger;
         }
