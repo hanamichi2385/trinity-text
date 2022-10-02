@@ -38,6 +38,7 @@ namespace TrinityText.UnitTests
             services.AddTransient<IPageTypeService, PageTypeService>();
             services.AddTransient<IWebsiteConfigurationService, WebsiteConfigurationService>();
             services.AddTransient<IFTPServerService, FTPServerService>();
+            services.AddTransient<ICDNSettingService, CDNSettingService>();
             services.AddLogging();
 
             services.AddAutoMapper((cfg) =>
@@ -215,6 +216,39 @@ namespace TrinityText.UnitTests
             };
 
             var result = await repo.Save(ftp);
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public async Task SaveCDNServerServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<ICDNSettingService>();
+
+            var ftp = new CdnServerDTO()
+            {
+                Name = "ftp",
+                Type = EnvironmentType.Development,
+                BaseUrl = "https://cdn.it",
+            };
+
+            var result = await repo.Save(ftp, new[] { 1} );
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public async Task CDNServerServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<ICDNSettingService>();
+
+            var result = await repo.GetAll();
 
             Assert.IsTrue(result.Success);
         }

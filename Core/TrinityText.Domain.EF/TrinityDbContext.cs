@@ -61,6 +61,8 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
                 entity.Property(e => e.NAME).HasColumnName("Nome");
                 entity.Property(e => e.TYPE).HasColumnName("Tipo");
+                entity.Navigation(e => e.FTPSERVERS).AutoInclude();
+
                 entity.HasMany(e => e.CACHESETTINGS)
                     .WithOne(e => e.CDNSERVER)
                     .HasForeignKey(e => e.FK_CDNSERVER);
@@ -106,6 +108,7 @@ namespace TrinityText.Domain.EF
                     e.FK_CDNSERVER,
                     e.FK_FTPSERVER
                 });
+                entity.Navigation(e => e.FTPSERVER).AutoInclude();
             });
 
             builder.Entity<FtpServer>(entity =>

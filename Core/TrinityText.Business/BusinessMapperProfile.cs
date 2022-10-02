@@ -106,6 +106,10 @@ namespace TrinityText.Business
 
             CreateMap<FtpServer, FTPServerDTO>()
                 .ReverseMap();
+
+            CreateMap<CdnServer, CdnServerDTO>()
+                .ForMember(d => d.FtpServers, src => src.MapFrom(s => s.FTPSERVERS.Select(f => f.FTPSERVER)))
+                .ReverseMap();
         }
 
         private TextRevision GetTextRevision(ICollection<TextRevision> revisions)

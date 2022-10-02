@@ -10,7 +10,7 @@ namespace TrinityText.Business
 
         public string BaseUrl { get; set; }
 
-        public int? IdType { get; set; }
+        //public int? IdType { get; set; }
 
         public EnvironmentType Type { get; set; }
 

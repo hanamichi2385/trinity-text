@@ -130,7 +130,7 @@ namespace TrinityText.Business.Services.Impl
                     {
                         entity.BASEURL = dto.BaseUrl;
                         entity.NAME = dto.Name;
-                        entity.TYPE = dto.IdType.Value;
+                        entity.TYPE = (int)dto.Type;
 
                         var cpv =
                             entity.FTPSERVERS
