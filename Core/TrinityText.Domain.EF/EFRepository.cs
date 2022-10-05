@@ -38,6 +38,7 @@ namespace TrinityText.Domain.EF
 
         public async Task<T> Update(T modifiedEntity)
         {
+            _trinityDbContext.ChangeTracker.Clear();
             var entity = _trinityDbContext.Update(modifiedEntity);
             await _trinityDbContext.SaveChangesAsync();
 

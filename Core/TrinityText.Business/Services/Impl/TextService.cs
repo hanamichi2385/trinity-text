@@ -15,14 +15,17 @@ namespace TrinityText.Business.Services.Impl
 
         private readonly IRepository<TextRevision> _textRevisionRepository;
 
+        private readonly IRepository<TextType> _textTypeRevisionRepository;
+
         private readonly ILogger<TextService> _logger;
 
         private readonly IMapper _mapper;
 
-        public TextService(IRepository<Text> textRepository, IRepository<TextRevision> textRevisionRepository, IMapper mapper, ILogger<TextService> logger)
+        public TextService(IRepository<Text> textRepository, IRepository<TextRevision> textRevisionRepository, IRepository<TextType> textTypeRevisionRepository, IMapper mapper, ILogger<TextService> logger)
         {
             _textRepository = textRepository;
             _textRevisionRepository = textRevisionRepository;
+            _textTypeRevisionRepository = textTypeRevisionRepository;
             _mapper = mapper;
             _logger = logger;
         }
@@ -68,7 +71,7 @@ namespace TrinityText.Business.Services.Impl
                         (string.IsNullOrWhiteSpace(s.FK_WEBSITE) ||
                         (!string.IsNullOrWhiteSpace(s.FK_WEBSITE) && websites.Contains(s.FK_WEBSITE)))
                         && languages.Contains(s.FK_LANGUAGE));
-            
+
             if (search != null)
             {
                 if (search.TextTypeId.HasValue)
@@ -87,8 +90,6 @@ namespace TrinityText.Business.Services.Impl
                             .Where(s => s.FK_TEXTTYPE == null);
                     }
                 }
-
-
 
                 if (!string.IsNullOrWhiteSpace(search.Website))
                 {
@@ -205,43 +206,17 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
+                var textType = default(TextType);
+                if (dto.TextTypeId.HasValue)
+                {
+                    textType = await _textTypeRevisionRepository.Read(dto.TextTypeId.Value);
+                }
+
                 if (dto.Id.HasValue)
                 {
                     var entity = await _textRepository
                         .Read(dto.Id.Value);
-
-                    if (entity != null)
-                    {
-                        entity.FK_TEXTTYPE = dto.TextTypeId;
-                        entity.ACTIVE = dto.Active;
-                        entity.FK_COUNTRY = dto.Country;
-                        entity.FK_LANGUAGE = dto.Language;
-                        entity.FK_PRICELIST = dto.Site;
-                        entity.FK_TEXTTYPE = dto.TextTypeId;
-                        entity.FK_WEBSITE = dto.Website;
-                        entity.NAME = dto.Name;
-
-                        var lastRevision = entity.REVISIONS.OrderByDescending(d => d.CREATION_DATE).FirstOrDefault();
-                        if (lastRevision != null && string.Equals(lastRevision.CONTENT, dto.TextRevision.Content, StringComparison.InvariantCultureIgnoreCase) == false)
-                        {
-                            var revision = _mapper.Map<TextRevision>(dto.TextRevision);
-                            revision.TEXT = entity;
-                            revision.FK_TEXT = entity.ID;
-                            revision.REVISION_NUMBER = lastRevision.REVISION_NUMBER + 1;
-                            revision.CREATION_DATE = DateTime.Now;
-
-                            await _textRevisionRepository.Create(revision);
-                        }
-
-                        var result = await _textRepository.Update(entity);
-
-                        var r = _mapper.Map<TextDTO>(result);
-                        return OperationResult<TextDTO>.MakeSuccess(r);
-                    }
-                    else
-                    {
-                        return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
-                    }
+                    return await Update(dto, entity, textType);
                 }
                 else
                 {
@@ -249,16 +224,7 @@ namespace TrinityText.Business.Services.Impl
 
                     if (existRs.Success)
                     {
-                        var entity = _mapper.Map<Text>(dto);
-                        var revision = entity.REVISIONS.ElementAt(0);
-                        revision.CREATION_DATE = DateTime.Now;
-                        revision.REVISION_NUMBER = 1;
-                        entity.ACTIVE = true;
-                        await _textRepository.Create(entity);
-
-                        var r = _mapper.Map<TextDTO>(entity);
-
-                        return OperationResult<TextDTO>.MakeSuccess(r);
+                        return await Create(dto, textType);
                     }
                     else
                     {
@@ -273,6 +239,73 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
+        private async Task<OperationResult<TextDTO>> Create(TextDTO dto, TextType textType)
+        {
+            var entity = _mapper.Map<Text>(dto);
+            entity.TEXTTYPE = textType;
+            
+
+            var revision = entity.REVISIONS.ElementAt(0);
+            revision.CREATION_DATE = DateTime.Now;
+            revision.REVISION_NUMBER = 1;
+            entity.ACTIVE = true;
+            await _textRepository.Create(entity);
+
+            var r = _mapper.Map<TextDTO>(entity);
+
+            return OperationResult<TextDTO>.MakeSuccess(r);
+        }
+
+        private async Task<OperationResult<TextDTO>> Update(TextDTO dto, Text entity, TextType textType)
+        {
+            if (entity != null)
+            {
+                //entity.FK_TEXTTYPE = dto.TextTypeId;
+                entity.ACTIVE = dto.Active;
+                entity.FK_COUNTRY = dto.Country;
+                entity.FK_LANGUAGE = dto.Language;
+                entity.FK_PRICELIST = dto.Site;
+                //entity.FK_TEXTTYPE = dto.TextTypeId;
+                entity.FK_WEBSITE = dto.Website;
+                entity.NAME = dto.Name;
+
+                if (entity.FK_TEXTTYPE != dto.TextTypeId)
+                {
+                    if (dto.TextTypeId.HasValue)
+                    {
+                        entity.TEXTTYPE = textType;
+                    }
+                    else
+                    {
+                        entity.TEXTTYPE = null;
+                        entity.FK_TEXTTYPE = null;
+                    }
+                }
+
+                var lastRevision = entity.REVISIONS.OrderByDescending(d => d.CREATION_DATE).FirstOrDefault();
+                if (lastRevision != null && string.Equals(lastRevision.CONTENT, dto.TextRevision.Content, StringComparison.InvariantCultureIgnoreCase) == false)
+                {
+                    var revision = _mapper.Map<TextRevision>(dto.TextRevision);
+                    //revision.TEXT = entity;
+                    //revision.FK_TEXT = entity.ID;
+                    revision.REVISION_NUMBER = lastRevision.REVISION_NUMBER + 1;
+                    revision.CREATION_DATE = DateTime.Now;
+
+                    entity.REVISIONS.Add(revision);
+
+                    //await _textRevisionRepository.Create(revision);
+                }
+
+                var result = await _textRepository.Update(entity);
+
+                var r = _mapper.Map<TextDTO>(result);
+                return OperationResult<TextDTO>.MakeSuccess(r);
+            }
+            else
+            {
+                return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+            }
+        }
 
         private async Task<OperationResult> NotDuplicated(TextDTO dto)
         {
@@ -527,7 +560,7 @@ namespace TrinityText.Business.Services.Impl
 
                         i--;
                     }
-                    
+
 
                     await _textRepository.Delete(entity);
 
@@ -583,15 +616,20 @@ namespace TrinityText.Business.Services.Impl
             {
                 var counter = 0;
                 await _textRepository.BeginTransaction();
+
+                var typeId = type?.Id;
+                var textType = default(TextType);
+                if (type != null && type.Id.HasValue)
+                {
+                    textType = await _textTypeRevisionRepository.Read(type.Id.Value);
+                }
                 foreach (var r in texts)
                 {
-                    var typeId = type?.Id;
-
                     var t = _textRepository
                         .Repository
                         .Where(rx =>
                             rx.FK_TEXTTYPE == typeId
-                            && rx.NAME.Equals(r.Name, StringComparison.InvariantCultureIgnoreCase)
+                            && rx.NAME == r.Name
                             && rx.FK_LANGUAGE == r.Language
                             && rx.FK_WEBSITE == r.Website
                             && rx.FK_PRICELIST == r.Site
@@ -605,11 +643,20 @@ namespace TrinityText.Business.Services.Impl
                     {
                         if (exist)
                         {
-                            r.Id = t.ID;
+                            var updateRs = await Update(r, t, textType);
+                            if (updateRs.Success)
+                            {
+                                counter++;
+                            }
                         }
-
-                        await Save(r);
-                        counter++;
+                        else
+                        {
+                            var saveRs = await Create(r, textType);
+                            if (saveRs.Success)
+                            {
+                                counter++;
+                            }
+                        }
                     }
                 }
                 await _textRepository.CommitTransaction();
@@ -624,7 +671,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        
+
 
         //public int? GetIdByAttributes(string nome, string idVendor, string idIstanza, int? idTipologia, string idLingua, string idNazione)
         //{

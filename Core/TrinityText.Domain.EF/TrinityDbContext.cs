@@ -9,6 +9,7 @@ namespace TrinityText.Domain.EF
         public TrinityDbContext(DbContextOptions options) : base(options)
         {
             this.ChangeTracker.AutoDetectChangesEnabled = false;
+            this.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         }
 
         private IDbContextTransaction _transaction;
