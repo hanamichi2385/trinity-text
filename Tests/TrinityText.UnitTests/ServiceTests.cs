@@ -35,6 +35,7 @@ namespace TrinityText.UnitTests
             services.AddTransient(typeof(IRepository<>), typeof(EFRepository<>));
             services.AddTransient<ITextService, TextService>();
             services.AddTransient<ITextTypeService, TextTypeService>();
+            services.AddTransient<IPageService, PageService>();
             services.AddTransient<IPageTypeService, PageTypeService>();
             services.AddTransient<IWebsiteConfigurationService, WebsiteConfigurationService>();
             services.AddTransient<IFTPServerService, FTPServerService>();
@@ -72,6 +73,31 @@ namespace TrinityText.UnitTests
                     CreationUser = "test_admin",
                 },
 
+            };
+
+            var result = await repo.Save(dto);
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public async Task PageServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<IPageService>();
+
+            var dto = new PageDTO()
+            {
+                Active = true,
+                    Content = "Text sample 01",
+                    CreationDate = DateTime.Now,
+                    CreationUser = "test_admin",
+                    Language = "it",
+                    PageTypeId = 14,
+                    Title = "test",
+                    Website = "ABC"
             };
 
             var result = await repo.Save(dto);

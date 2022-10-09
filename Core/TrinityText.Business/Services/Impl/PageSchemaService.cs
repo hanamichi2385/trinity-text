@@ -244,7 +244,7 @@ namespace TrinityText.Business.Services.Impl
             }
 
             doc.Document.Add(content);
-            return doc.ToString();
+            return doc.ToString(SaveOptions.DisableFormatting);
         }
 
         public PageSchema ParseContent(Stream stream, PageSchema structure)

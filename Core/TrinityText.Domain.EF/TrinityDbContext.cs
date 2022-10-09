@@ -180,7 +180,8 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.CREATION_USER).HasColumnName("UTENTE_CREAZIONE");
                 entity.Property(e => e.LASTUPDATE_USER).HasColumnName("UTENTE_ULTIMA_MODIFICA");
                 entity.Property(e => e.FK_PAGETYPE).HasColumnName("FK_TIPOLOGIA");
-
+                entity.Navigation(e => e.PAGETYPE).AutoInclude();
+                
                 entity
                     .HasOne(e => e.PAGETYPE)
                     .WithMany(s => s.PAGES)
@@ -196,10 +197,10 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.PATH_PREVIEWPAGE).HasColumnName("PATH_PAGINAPREVIEW");
                 entity.Property(e => e.VISIBILITY).HasColumnName("VISIBILITA");
                 entity.Property(e => e.SCHEMA).HasColumnName("XMLSCHEMA");
-
-                entity.HasMany(e => e.PAGES)
-                    .WithOne(e => e.PAGETYPE)
-                    .HasForeignKey(e => e.FK_PAGETYPE);
+                entity.Navigation(e => e.PAGES).AutoInclude();
+                //entity.HasMany(e => e.PAGES)
+                //    .WithOne(e => e.PAGETYPE)
+                //    .HasForeignKey(e => e.FK_PAGETYPE);
             });
 
             builder.Entity<Publication>(entity =>

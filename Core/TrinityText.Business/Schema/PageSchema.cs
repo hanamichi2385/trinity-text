@@ -27,7 +27,7 @@ namespace TrinityText.Business.Schema
             {
                 var v = Body.ElementAt(i);
 
-                var validProperty = v.Validate(v.Id, $"ContentRoot.Parts[{i}]");
+                var validProperty = v.Validate(v.Id, $"PageSchema.Body[{i}]");
 
                 isValid.AppendErrors(validProperty.Errors);
             }

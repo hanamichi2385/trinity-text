@@ -66,7 +66,17 @@ namespace TrinityText.Business
                 .ForMember(d => d.Site, src => src.MapFrom(s => s.FK_PRICELIST))
                 .ForMember(d => d.Language, src => src.MapFrom(s => s.FK_LANGUAGE))
                 .ForMember(d => d.LastUpdateUser, src => src.MapFrom(s => s.LASTUPDATE_USER))
-                .ReverseMap();
+                .ForMember(d => d.PageTypeId, src => src.MapFrom(s => s.FK_PAGETYPE));
+
+            CreateMap<PageDTO, Page>()
+                .ForMember(d => d.CREATION_DATE, src => src.MapFrom(s => s.CreationDate))
+                .ForMember(d => d.CREATION_USER, src => src.MapFrom(s => s.CreationUser))
+                .ForMember(d => d.LASTUPDATE_DATE, src => src.MapFrom(s => s.LastUpdate))
+                .ForMember(d => d.FK_WEBSITE, src => src.MapFrom(s => s.Website))
+                .ForMember(d => d.FK_PRICELIST, src => src.MapFrom(s => s.Site))
+                .ForMember(d => d.FK_LANGUAGE, src => src.MapFrom(s => s.Language))
+                .ForMember(d => d.LASTUPDATE_USER, src => src.MapFrom(s => s.LastUpdateUser))
+                .ForMember(d => d.FK_PAGETYPE, src => src.MapFrom(s => s.PageTypeId));
 
             CreateMap<Widget, WidgetDTO>()
                 .ForMember(d => d.CreationDate, src => src.MapFrom(s => s.CREATION_DATE))

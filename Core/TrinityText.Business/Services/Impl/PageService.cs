@@ -13,13 +13,16 @@ namespace TrinityText.Business.Services.Impl
     {
         private readonly IRepository<Page> _pageRepository;
 
+        private readonly IRepository<PageType> _pageTypeRepository;
+
         private readonly ILogger<PageService> _logger;
 
         private readonly IMapper _mapper;
 
-        public PageService(IRepository<Page> pageRepository, IMapper mapper, ILogger<PageService> logger)
+        public PageService(IRepository<Page> pageRepository, IRepository<PageType> pageTypeRepository, IMapper mapper, ILogger<PageService> logger)
         {
             _pageRepository = pageRepository;
+            _pageTypeRepository = pageTypeRepository;
             _mapper = mapper;
             _logger = logger;
         }
@@ -163,6 +166,9 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
+                var typeId = dto.PageTypeId;
+                var pageType = await _pageTypeRepository.Read(typeId);
+
                 if (dto.Id.HasValue)
                 {
                     var entity = await _pageRepository
@@ -184,6 +190,9 @@ namespace TrinityText.Business.Services.Impl
                         var result = await _pageRepository.Update(entity);
 
                         var r = _mapper.Map<PageDTO>(result);
+                        var t = _mapper.Map<PageTypeDTO>(pageType);
+                        r.PageType = t;
+
                         return OperationResult<PageDTO>.MakeSuccess(r);
                     }
                     else
@@ -199,11 +208,15 @@ namespace TrinityText.Business.Services.Impl
                     {
                         var entity = _mapper.Map<Page>(dto);
                         entity.ACTIVE = true;
-                        entity.CREATION_USER = entity.CREATION_USER;
                         entity.CREATION_DATE = DateTime.Now;
+                        entity.LASTUPDATE_DATE = DateTime.Now;
+                        entity.LASTUPDATE_USER = entity.CREATION_USER;
+
                         await _pageRepository.Create(entity);
 
                         var r = _mapper.Map<PageDTO>(entity);
+                        var t = _mapper.Map<PageTypeDTO>(pageType);
+                        r.PageType = t;
 
                         return OperationResult<PageDTO>.MakeSuccess(r);
                     }
