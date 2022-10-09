@@ -59,16 +59,16 @@ namespace TrinityText.Business.Services.Impl
 
         private IQueryable<Page> GetPagesByFilter(SearchPageDTO search)
         {
-            var websites = search.UserWebsites;
-            var languages = search.WebsiteLanguages;
+            var websites = search.UserWebsites ?? new string[0];
+            var languages = search.WebsiteLanguages ?? new string[0];
 
             var query =
                 _pageRepository
                 .Repository
                 .Where(s =>
                     (string.IsNullOrWhiteSpace(s.FK_WEBSITE) ||
-                    (!string.IsNullOrWhiteSpace(s.FK_WEBSITE) && websites.Contains(s.FK_WEBSITE, StringComparer.InvariantCultureIgnoreCase)))
-                    && languages.Contains(s.FK_LANGUAGE, StringComparer.InvariantCultureIgnoreCase));
+                    (!string.IsNullOrWhiteSpace(s.FK_WEBSITE) && websites.Contains(s.FK_WEBSITE)))
+                    && languages.Contains(s.FK_LANGUAGE));
 
             if (search != null)
             {
@@ -111,7 +111,7 @@ namespace TrinityText.Business.Services.Impl
                 {
                     query =
                         query
-                        .Where(s => s.TITLE.Contains(search.Terms, StringComparison.InvariantCultureIgnoreCase));
+                        .Where(s => s.TITLE.Contains(search.Terms));
                 }
 
                 if (search.ShowOnlyActive.HasValue)
