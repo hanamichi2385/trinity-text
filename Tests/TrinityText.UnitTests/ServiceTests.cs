@@ -38,6 +38,7 @@ namespace TrinityText.UnitTests
             services.AddTransient<IPageService, PageService>();
             services.AddTransient<IPageTypeService, PageTypeService>();
             services.AddTransient<IWebsiteConfigurationService, WebsiteConfigurationService>();
+            services.AddTransient<IWidgetService, WidgetService>();
             services.AddTransient<IFTPServerService, FTPServerService>();
             services.AddTransient<ICDNSettingService, CDNSettingService>();
             services.AddLogging();
@@ -92,15 +93,15 @@ namespace TrinityText.UnitTests
             {
                 Active = true,
                 Id = 10,
-                    Content = "Text sample 01",
-                    CreationDate = DateTime.Now,
-                    CreationUser = "test_admin",
-                    Language = "it",
-                    PageTypeId = 14,
-                    Title = "test 3",
-                    Website = "ABC",
-                    LastUpdateUser = "test_admin",
-                    LastUpdate = DateTime.Now,
+                Content = "Text sample 01",
+                CreationDate = DateTime.Now,
+                CreationUser = "test_admin",
+                Language = "it",
+                PageTypeId = 14,
+                Title = "test 3",
+                Website = "ABC",
+                LastUpdateUser = "test_admin",
+                LastUpdate = DateTime.Now,
             };
 
             var result = await repo.Save(dto);
@@ -180,7 +181,7 @@ namespace TrinityText.UnitTests
             var repo = kernel.GetService<ITextService>();
             var searc = new SearchTextDTO()
             {
-                WebsiteLanguages = new [] {"it"},
+                WebsiteLanguages = new[] { "it" },
             };
             var result = await repo.Search(searc, 0, 10);
 
@@ -194,7 +195,7 @@ namespace TrinityText.UnitTests
             var kernel = InitServices();
 
             var repo = kernel.GetService<IWebsiteConfigurationService>();
-            
+
             var result = await repo.GetAll("ABC");
 
             Assert.IsTrue(result.Success);
@@ -264,7 +265,7 @@ namespace TrinityText.UnitTests
                 BaseUrl = "https://cdn.it",
             };
 
-            var result = await repo.Save(ftp, new[] { 1} );
+            var result = await repo.Save(ftp, new[] { 1 });
 
             Assert.IsTrue(result.Success);
         }
@@ -278,6 +279,45 @@ namespace TrinityText.UnitTests
             var repo = kernel.GetService<ICDNSettingService>();
 
             var result = await repo.GetAll();
+
+            Assert.IsTrue(result.Success);
+        }
+
+
+        [TestMethod]
+        public async Task WidgetServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<IWidgetService>();
+
+            var ftp = new WidgetDTO()
+            {
+                Key = "W1",
+                Language = "it",
+                CreationUser = "test_admin",
+                LastUpdateUser = "test_admin"
+            };
+
+            var result = await repo.Save(ftp);
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public async Task WidgetsServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<IWidgetService>();
+
+            var search = new SearchWidgetDTO()
+            {
+                WebsiteLanguages = new[] { "it" },
+            };
+            var result = await repo.Search(search, 0, 10);
 
             Assert.IsTrue(result.Success);
         }

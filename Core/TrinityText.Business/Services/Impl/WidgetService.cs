@@ -140,20 +140,120 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
+        public async Task<OperationResult<WidgetDTO>> Save(WidgetDTO dto)
+        {
+            try
+            {
+                if (dto.Id.HasValue)
+                {
+                    var entity = await _widgetRepository
+                        .Read(dto.Id.Value);
+                    if (entity != null)
+                    {
+                        //entity.ACTIVE = dto.Active;
+                        entity.FK_LANGUAGE = dto.Language;
+                        entity.FK_PRICELIST = dto.Site;
+                        entity.FK_WEBSITE = dto.Website;
+                        entity.KEY = dto.Key;
+                        entity.LASTUPDATE_DATE = DateTime.Now;
+                        entity.CONTENT = dto.Content;
+
+                        var result = await _widgetRepository.Update(entity);
+
+                        var r = _mapper.Map<WidgetDTO>(result);
+                        return OperationResult<WidgetDTO>.MakeSuccess(r);
+                    }
+                    else
+                    {
+                        return OperationResult<WidgetDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                    }
+                }
+                else
+                {
+                    var existRs = await NotDuplicated(dto);
+
+                    if (existRs.Success)
+                    {
+                        var entity = _mapper.Map<Widget>(dto);
+                        entity.LASTUPDATE_DATE = DateTime.Now;
+                        entity.CREATION_DATE = DateTime.Now;
+                        await _widgetRepository.Create(entity);
+
+                        var r = _mapper.Map<WidgetDTO>(entity);
+
+                        return OperationResult<WidgetDTO>.MakeSuccess(r);
+                    }
+                    else
+                    {
+                        return OperationResult<WidgetDTO>.MakeFailure(existRs.Errors);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("SAVE", ex);
+                return OperationResult<WidgetDTO>.MakeFailure(new[] { ErrorMessage.Create("SAVE", "GENERIC_ERROR") });
+            }
+        }
+
         #region Private methods
+
+        private async Task<OperationResult> NotDuplicated(WidgetDTO dto)
+        {
+            try
+            {
+                var query =
+                     _widgetRepository
+                     .Repository
+                     .Where(w => w.KEY == dto.Key && w.FK_LANGUAGE == dto.Language
+                     );
+
+
+                if (!string.IsNullOrWhiteSpace(dto.Website))
+                {
+                    query =
+                        query.Where(r => r.FK_WEBSITE == dto.Website);
+                }
+                else
+                {
+                    query =
+                        query.Where(r => r.FK_WEBSITE == null);
+                }
+
+                if (!string.IsNullOrWhiteSpace(dto.Site))
+                {
+                    query =
+                        query.Where(r => r.FK_PRICELIST == dto.Site);
+                }
+                else
+                {
+                    query =
+                        query.Where(r => r.FK_PRICELIST == null);
+                }
+
+                var resx = query.Count();
+
+                return await Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure(new[] { ErrorMessage.Create("DUPLICATED", "DUPLICATED") }));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("EXIST", ex);
+                return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("EXIST", "GENERIC_ERROR") });
+            }
+        }
 
         private IQueryable<Widget> GetWidgetsByFilter(SearchWidgetDTO search)
         {
-            var websites = search.UserWebsites;
-            var languages = search.WebsiteLanguages;
+            var websites = search.UserWebsites ?? new string[0];
+            var languages = search.WebsiteLanguages ?? new string[0];
 
             var query =
                 _widgetRepository
                 .Repository
                 .Where(s =>
                     (string.IsNullOrWhiteSpace(s.FK_WEBSITE) ||
-                    (!string.IsNullOrWhiteSpace(s.FK_WEBSITE) && websites.Contains(s.FK_WEBSITE, StringComparer.InvariantCultureIgnoreCase)))
-                    && languages.Contains(s.FK_LANGUAGE, StringComparer.InvariantCultureIgnoreCase));
+                    (!string.IsNullOrWhiteSpace(s.FK_WEBSITE) && websites.Contains(s.FK_WEBSITE)))
+                    && languages.Contains(s.FK_LANGUAGE));
 
             if (search != null)
             {
@@ -187,7 +287,7 @@ namespace TrinityText.Business.Services.Impl
                 {
                     query =
                         query
-                        .Where(s => s.KEY.Contains(search.Terms, StringComparison.InvariantCultureIgnoreCase));
+                        .Where(s => s.KEY.Contains(search.Terms));
                 }
 
                 if (search.ShowOnlyDedicated.HasValue)

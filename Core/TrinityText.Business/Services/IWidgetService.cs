@@ -9,5 +9,6 @@ namespace TrinityText.Business
         Task<OperationResult<WidgetDTO>> Get(int id);
         Task<OperationResult<WidgetDTO>> GetByKeys(string key, string website, string site, string language);
         Task<OperationResult> Remove(int id);
+        Task<OperationResult<WidgetDTO>> Save(WidgetDTO dto);
     }
 }

@@ -7,6 +7,7 @@ namespace TrinityText.Business.Schema
         bool IsRequired { get; set; }
         string Id { get; set; }
         AtomType Type { get; }
+        string Description { get; set; }
         OperationResult Validate(string id, string propertyBindingName);
         object Clone();
     }
