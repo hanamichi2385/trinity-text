@@ -91,13 +91,16 @@ namespace TrinityText.UnitTests
             var dto = new PageDTO()
             {
                 Active = true,
+                Id = 10,
                     Content = "Text sample 01",
                     CreationDate = DateTime.Now,
                     CreationUser = "test_admin",
                     Language = "it",
                     PageTypeId = 14,
-                    Title = "test",
-                    Website = "ABC"
+                    Title = "test 3",
+                    Website = "ABC",
+                    LastUpdateUser = "test_admin",
+                    LastUpdate = DateTime.Now,
             };
 
             var result = await repo.Save(dto);

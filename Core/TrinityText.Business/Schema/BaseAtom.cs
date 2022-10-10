@@ -9,6 +9,9 @@ namespace TrinityText.Business.Schema
             this.Type = type;
         }
         public bool IsRequired { get; set; }
+
+        public string Description { get; set; }
+
         public string Id { get; set; }
         public AtomType Type { get; private set; }
         public abstract OperationResult Validate(string id, string propertyBindingName);

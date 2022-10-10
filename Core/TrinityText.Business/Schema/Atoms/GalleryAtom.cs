@@ -8,10 +8,10 @@ namespace TrinityText.Business.Schema
     {
         public GalleryAtom() : base(AtomType.Gallery)
         {
-
+            Items = new List<ImageParticol>();
         }
 
-        public IList<Particol> Items { get; private set; }
+        public List<ImageParticol> Items { get; set; }
         public string ItemName { get; set; }
 
         public override OperationResult Validate(string propertyName, string propertyBinding)

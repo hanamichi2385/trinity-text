@@ -166,9 +166,6 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var typeId = dto.PageTypeId;
-                var pageType = await _pageTypeRepository.Read(typeId);
-
                 if (dto.Id.HasValue)
                 {
                     var entity = await _pageRepository
@@ -178,20 +175,22 @@ namespace TrinityText.Business.Services.Impl
                     {
                         entity.CONTENT = dto.Content;
                         entity.FK_PRICELIST = dto.Site;
-                        entity.FK_WEBSITE = dto.Website;
+                        //entity.FK_WEBSITE = dto.Website;
                         entity.FK_LANGUAGE = dto.Language;
-                        entity.FK_PAGETYPE = dto.PageTypeId;
+                       //entity.FK_PAGETYPE = dto.PageTypeId;
                         entity.TITLE = dto.Title;
                         entity.ACTIVE = dto.Active;
                         entity.GENERATE_PDF = dto.GeneratePdf;
                         entity.LASTUPDATE_USER = dto.LastUpdateUser;
                         entity.LASTUPDATE_DATE = DateTime.Now;
 
+                        //entity.PAGETYPE = null;
+
                         var result = await _pageRepository.Update(entity);
 
                         var r = _mapper.Map<PageDTO>(result);
-                        var t = _mapper.Map<PageTypeDTO>(pageType);
-                        r.PageType = t;
+                        //var t = _mapper.Map<PageTypeDTO>(pageType);
+                        //r.PageType = t;
 
                         return OperationResult<PageDTO>.MakeSuccess(r);
                     }
@@ -206,6 +205,9 @@ namespace TrinityText.Business.Services.Impl
 
                     if (existRs.Success)
                     {
+                        var typeId = dto.PageTypeId;
+                        var pageType = await _pageTypeRepository.Read(typeId);
+
                         var entity = _mapper.Map<Page>(dto);
                         entity.ACTIVE = true;
                         entity.CREATION_DATE = DateTime.Now;

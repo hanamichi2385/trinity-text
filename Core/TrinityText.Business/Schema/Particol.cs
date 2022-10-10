@@ -1,12 +1,12 @@
 ﻿namespace TrinityText.Business.Schema
 { 
-    public class Particol
+    public class ImageParticol : IParticol
     {
         public bool IsEmpty
         {
             get
             {
-                return string.IsNullOrEmpty(Path);
+                return string.IsNullOrWhiteSpace(Path);
             }
         }
 
@@ -15,5 +15,12 @@
         public string Caption { get; set; }
 
         public string Link { get; set; }
+
+        public string Order { get; set; }
+    }
+
+    public interface IParticol
+    {
+        bool IsEmpty { get; }
     }
 }

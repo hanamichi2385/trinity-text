@@ -47,6 +47,7 @@ namespace TrinityText.Business.Services.Impl
                 string partName = part.Name.ToString().ToLower();
                 bool isRequired = part.Attribute("isrequired") != null ? bool.Parse(part.Attribute("isrequired").Value) : false;
                 string partId = part.Attribute("id") != null ? part.Attribute("id").Value : string.Empty;
+                string description = part.Attribute("description") != null ? part.Attribute("description").Value : string.Empty;
 
                 switch (partName)
                 {
@@ -61,6 +62,7 @@ namespace TrinityText.Business.Services.Impl
                         textAtom.IsRequired = isRequired;
                         textAtom.MaxValue = maxLenght;
                         textAtom.MinValue = minLenght;
+                        textAtom.Description = description;
 
                         pageSchema.Body.Add(textAtom);
                         break;
@@ -70,6 +72,7 @@ namespace TrinityText.Business.Services.Impl
                         var imageAtom = new ImageAtom();
                         imageAtom.IsRequired = isRequired;
                         imageAtom.Id = partId;
+                        imageAtom.Description = description;
                         pageSchema.Body.Add(imageAtom);
                         break;
 
@@ -77,6 +80,8 @@ namespace TrinityText.Business.Services.Impl
                     case "gallerypart":
                         var galleryAtom = new GalleryAtom();
                         galleryAtom.IsRequired = isRequired;
+                        galleryAtom.Id = partId;
+                        galleryAtom.Description = description;
                         var item = part.Elements().FirstOrDefault();
 
                         if (item != null)
@@ -117,6 +122,8 @@ namespace TrinityText.Business.Services.Impl
                         numberAtom.IsRequired = isRequired;
                         numberAtom.MinValue = minValue;
                         numberAtom.MaxValue = maxValue;
+                        numberAtom.Id = partId;
+                        numberAtom.Description = description;
                         pageSchema.Body.Add(numberAtom);
                         break;
 
@@ -124,6 +131,8 @@ namespace TrinityText.Business.Services.Impl
                     case "checkboxpart":
                         var checkboxAtom = new CheckBoxAtom();
                         checkboxAtom.IsRequired = isRequired;
+                        checkboxAtom.Id = partId;
+                        checkboxAtom.Description = description;
                         pageSchema.Body.Add(checkboxAtom);
                         break;
 
@@ -183,20 +192,25 @@ namespace TrinityText.Business.Services.Impl
                                 var item = new XElement(gallery.ItemName);
 
                                 var path = new XElement("path");
-                                XCData pathData = new XCData(string.IsNullOrEmpty(i.Path) ? string.Empty : i.Path);
+                                XCData pathData = new XCData(string.IsNullOrWhiteSpace(i.Path) ? string.Empty : i.Path);
                                 path.Add(pathData);
 
                                 var caption = new XElement("caption");
-                                XCData captionData = new XCData(string.IsNullOrEmpty(i.Caption) ? string.Empty : i.Caption);
+                                XCData captionData = new XCData(string.IsNullOrWhiteSpace(i.Caption) ? string.Empty : i.Caption);
                                 caption.Add(captionData);
 
                                 var link = new XElement("link");
-                                XCData linkData = new XCData(string.IsNullOrEmpty(i.Link) ? string.Empty : i.Link);
+                                XCData linkData = new XCData(string.IsNullOrWhiteSpace(i.Link) ? string.Empty : i.Link);
                                 link.Add(linkData);
+
+                                var order = new XElement("order");
+                                XCData orderData = new XCData(string.IsNullOrWhiteSpace(i.Order) ? string.Empty : i.Order);
+                                order.Add(orderData);
 
                                 item.Add(path);
                                 item.Add(caption);
                                 item.Add(link);
+                                item.Add(order);
 
                                 elementPart.Add(item);
                             }
@@ -237,7 +251,7 @@ namespace TrinityText.Business.Services.Impl
                     //    break;
                     case TrinityText.Business.Schema.AtomType.Checkbox:
                         var checkbox = part as TextAtom;
-                        elementPart.Add(string.IsNullOrEmpty(checkbox.Value) ? "false" : checkbox.Value.ToLower());
+                        elementPart.Add(string.IsNullOrWhiteSpace(checkbox.Value) ? "false" : checkbox.Value.ToLower());
                         break;
                 }
                 content.Add(elementPart);
@@ -294,12 +308,14 @@ namespace TrinityText.Business.Services.Impl
                                 var path = item.Element("path") != null ? item.Element("path").Value : string.Empty;
                                 var caption = item.Element("caption") != null ? item.Element("caption").Value : string.Empty;
                                 var link = item.Element("link") != null ? item.Element("link").Value : string.Empty;
+                                var order = item.Element("order") != null ? item.Element("order").Value : string.Empty;
 
-                                var itemPart = new Particol()
+                                var itemPart = new ImageParticol()
                                 {
                                     Path = path,
                                     Caption = caption,
                                     Link = link,
+                                    Order = order,
                                 };
                                 gallery.Items.Add(itemPart);
                             }
