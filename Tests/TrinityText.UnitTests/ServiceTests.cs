@@ -189,6 +189,24 @@ namespace TrinityText.UnitTests
         }
 
         [TestMethod]
+        public async Task SearchPageServiceTest()
+        {
+
+            var kernel = InitServices();
+
+            var repo = kernel.GetService<IPageService>();
+            var searc = new SearchPageDTO()
+            {
+                WebsiteLanguages = new[] { "it" },
+                UserWebsites = new[] {"EXPERT", "KARTELL"},
+                ExcludeContent = true,
+            };
+            var result = await repo.Search(searc, 0, 100);
+
+            Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
         public async Task WebsiteConfigurationServiceTest()
         {
 

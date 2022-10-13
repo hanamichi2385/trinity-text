@@ -26,6 +26,8 @@ namespace TrinityText.Business
 
         public IList<string> WidgetKeys { get; private set; }
 
+        public bool ExcludeContent { get; set; }
+
         public string[] UserWebsites { get; set; }
 
         public string[] WebsiteLanguages { get; set; }

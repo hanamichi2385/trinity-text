@@ -34,6 +34,29 @@ namespace TrinityText.Business.Services.Impl
                 var query =
                     GetPagesByFilter(search);
 
+                if (search?.ExcludeContent ?? false)
+                {
+                    query =
+                        query
+                            .Select(q => new Page()
+                            {
+                                ACTIVE = q.ACTIVE,
+                                CONTENT = string.Empty,
+                                ID = q.ID,
+                                CREATION_DATE = q.CREATION_DATE,
+                                CREATION_USER = q.CREATION_USER,
+                                FK_LANGUAGE = q.FK_LANGUAGE,
+                                FK_PAGETYPE = q.FK_PAGETYPE,
+                                FK_PRICELIST = q.FK_PRICELIST,
+                                FK_WEBSITE = q.FK_WEBSITE,
+                                GENERATE_PDF = q.GENERATE_PDF,
+                                LASTUPDATE_DATE = q.LASTUPDATE_DATE,
+                                LASTUPDATE_USER = q.LASTUPDATE_USER,
+                                PAGETYPE = q.PAGETYPE,
+                                TITLE = q.TITLE,
+                            });
+                }
+
                 var totalCount = query.Count();
 
                 var list = query
@@ -177,7 +200,7 @@ namespace TrinityText.Business.Services.Impl
                         entity.FK_PRICELIST = dto.Site;
                         //entity.FK_WEBSITE = dto.Website;
                         entity.FK_LANGUAGE = dto.Language;
-                       //entity.FK_PAGETYPE = dto.PageTypeId;
+                        //entity.FK_PAGETYPE = dto.PageTypeId;
                         entity.TITLE = dto.Title;
                         entity.ACTIVE = dto.Active;
                         entity.GENERATE_PDF = dto.GeneratePdf;
@@ -299,7 +322,7 @@ namespace TrinityText.Business.Services.Impl
 
                 var list = _mapper.Map<List<PageDTO>>(contents);
 
-                var result = list.GroupBy(c => c.Language).ToDictionary(c=> c.Key, c=>c.ToList());
+                var result = list.GroupBy(c => c.Language).ToDictionary(c => c.Key, c => c.ToList());
 
 
                 return await Task.FromResult(OperationResult<Dictionary<string, List<PageDTO>>>.MakeSuccess(result));
