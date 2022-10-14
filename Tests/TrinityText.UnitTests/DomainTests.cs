@@ -134,7 +134,7 @@ namespace TrinityText.UnitTests
                     FK_WEBSITE = "TRINITY",
                     NAME = "Folder 2",
                     NOTE = "Note",
-                    PARENT = cs0
+                    FK_PARENT = cs0.FK_PARENT
                 };
 
                 ctx.Add(cs1);
@@ -145,7 +145,7 @@ namespace TrinityText.UnitTests
                 {
                     CONTENT = new byte[0],
                     CREATION_DATE = System.DateTime.Now,
-                    FOLDER = cs1,
+                    FK_FOLDER = cs1.ID,
                     FILENAME = "File 1",
                     FK_WEBSITE = "TRINITY",
                     CREATION_USER = "hanamichi2385",
@@ -157,7 +157,7 @@ namespace TrinityText.UnitTests
 
                 ctx.SaveChanges();
 
-                var files = ctx.Set<File>().Where(f => f.FOLDER.ID == cs1.ID).ToList();
+                var files = ctx.Set<File>().Where(f => f.FK_FOLDER == cs1.ID).ToList();
 
                 Assert.IsTrue(files.Count == 1);
 

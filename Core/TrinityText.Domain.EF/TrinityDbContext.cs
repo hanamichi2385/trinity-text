@@ -10,6 +10,7 @@ namespace TrinityText.Domain.EF
         {
             this.ChangeTracker.AutoDetectChangesEnabled = false;
             this.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            
         }
 
         private IDbContextTransaction _transaction;
@@ -63,6 +64,7 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.NAME).HasColumnName("Nome");
                 entity.Property(e => e.TYPE).HasColumnName("Tipo");
                 entity.Navigation(e => e.FTPSERVERS).AutoInclude();
+                
 
                 entity.HasMany(e => e.CACHESETTINGS)
                     .WithOne(e => e.CDNSERVER)
@@ -133,13 +135,12 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.CREATION_USER).HasColumnName("UTENTE_CREAZIONE");
                 entity.Property(e => e.LASTUPDATE_DATE).HasColumnName("DATA_ULTIMA_MODIFICA");
                 entity.Property(e => e.LASTUPDATE_USER).HasColumnName("UTENTE_ULTIMA_MODIFICA");
-
                 entity.Property(e => e.CONTENT).HasMaxLength(int.MaxValue);
 
-                entity
-                    .HasOne(e => e.FOLDER)
-                    .WithMany(s => s.FILES)
-                    .HasForeignKey(s => s.FK_FOLDER);
+                //entity
+                //    .HasOne(e => e.FOLDER)
+                //    .WithMany(s => s.FILES)
+                //    .HasForeignKey(s => s.FK_FOLDER);
             });
 
             builder.Entity<Folder>(entity =>
@@ -149,19 +150,27 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.FK_WEBSITE).HasColumnName("FK_VENDOR");
                 entity.Property(e => e.FK_PARENT).HasColumnName("PARENT_FOLDER");
                 entity.Property(e => e.DELETABLE).HasColumnName("ELIMINABILE");
+                //entity.Navigation(e => e.SUBFOLDERS).AutoInclude();
+                //entity.Navigation(e => e.PARENT).AutoInclude();
+                //entity.Navigation(e => e.FILES).AutoInclude(false);
 
-                entity
-                    .HasOne(e => e.PARENT)
-                    .WithMany(s => s.SUBFOLDERS)
-                    .HasForeignKey(s => s.FK_PARENT);
+                //entity.HasOne(e => e.PARENT)
+                //.WithMany(e => e.SUBFOLDERS)
+                //.HasPrincipalKey(e => e.ID)
+                //.HasForeignKey(e => e.FK_PARENT);
+                //   .WithOne(e => e.PARENT)
+                //   .HasPrincipalKey(s => s.ID)
+                //   .HasForeignKey(e => e.FK_PARENT);
 
-                entity.HasMany(e => e.SUBFOLDERS)
-                   .WithOne(e => e.PARENT)
-                   .HasForeignKey(e => e.FK_PARENT);
+                //entity.HasMany(e => e.SUBFOLDERS)
+                //   .WithOne(e => e.PARENT)
+                //   .HasPrincipalKey(s => s.ID)
+                //   .HasForeignKey(e => e.FK_PARENT);
 
-                entity.HasMany(e => e.FILES)
-                   .WithOne(e => e.FOLDER)
-                   .HasForeignKey(e => e.FK_FOLDER);
+                //entity.HasMany(e => e.FILES)
+                //   .WithOne(e => e.FOLDER)
+                //   .HasPrincipalKey(s => s.ID)
+                //   .HasForeignKey(e => e.FK_FOLDER);
             });
 
             builder.Entity<Page>(entity =>

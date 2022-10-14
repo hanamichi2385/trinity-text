@@ -15,7 +15,9 @@ namespace TrinityText.Business
 
         //public string ClientId { get; set; }
 
-        public FolderDTO ParentFolder { get; set; }
+        //public FolderDTO ParentFolder { get; set; }
+
+        public int? ParentId { get; set; }
 
         public IList<FolderDTO> SubFolders { get; set; }
 

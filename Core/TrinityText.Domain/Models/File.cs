@@ -15,6 +15,6 @@ namespace TrinityText.Domain
         public virtual DateTime CREATION_DATE { get; set; }
         public virtual string LASTUPDATE_USER { get; set; }
     
-        public virtual Folder FOLDER { get; set; }
+        //public virtual Folder FOLDER { get; set; }
     }
 }

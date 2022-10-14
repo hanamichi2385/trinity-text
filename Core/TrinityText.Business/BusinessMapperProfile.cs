@@ -90,14 +90,26 @@ namespace TrinityText.Business
 
             CreateMap<Folder, FolderDTO>()
                 .ForMember(d => d.Website, src => src.MapFrom(s => s.FK_WEBSITE))
-                .ReverseMap();
+                //.ForMember(d => d.ParentFolder, src => src.Ignore())
+                .ForMember(d => d.ParentId, src => src.MapFrom(s => s.FK_PARENT))
+                .ForMember(d => d.SubFolders, src => src.Ignore());
+
+            CreateMap<FolderDTO, Folder>()
+                .ForMember(d => d.FK_WEBSITE, src => src.MapFrom(s => s.Website))
+                .ForMember(d => d.FK_PARENT, src => src.MapFrom(s => s.ParentId))
+                //.ForMember(d => d.PARENT, src => src.MapFrom(s => s.ParentFolder))
+                //.ForMember(d => d.SUBFOLDERS, src => src.Ignore())
+                //.ForMember(d => d.FILES, src => src.Ignore());
+                ;
+                
 
             CreateMap<File, FileDTO>()
                 .ForMember(d => d.CreationDate, src => src.MapFrom(s => s.CREATION_DATE))
                 .ForMember(d => d.CreationUser, src => src.MapFrom(s => s.CREATION_USER))
                 .ForMember(d => d.LastUpdate, src => src.MapFrom(s => s.LASTUPDATE_DATE))
                 .ForMember(d => d.LastUpdateUser, src => src.MapFrom(s => s.LASTUPDATE_USER))
-                .ForMember(d => d.Content, src => src.Ignore());
+                .ForMember(d => d.HasThumbnail, src => src.MapFrom(s => s.THUMBNAIL != null))
+                .ForMember(d => d.Content, src => src.MapFrom(s => s.CONTENT));
 
             CreateMap<FileDTO, File>()
                 .ForMember(d => d.CREATION_DATE, src => src.MapFrom(s => s.CreationDate))

@@ -37,10 +37,19 @@ namespace TrinityText.Business.Services.Impl
                 var folders =
                     _folderRepository
                     .Repository
-                    .Where(f => websites.Contains(f.FK_WEBSITE, StringComparer.InvariantCultureIgnoreCase) && f.PARENT == null)
+                    .Where(f => websites.Contains(f.FK_WEBSITE))
+                    .Select(s => new Folder()
+                    {
+                        FK_PARENT = s.FK_PARENT,
+                        FK_WEBSITE = s.FK_WEBSITE,
+                        ID = s.ID,
+                        NAME = s.NAME,
+                        NOTE = s.NOTE,
+                    })
                     .ToList();
 
-                var result = _mapper.Map<IList<FolderDTO>>(folders);
+                var dtos = _mapper.Map<IList<FolderDTO>>(folders);
+                var result = GetFolders(dtos, null);
 
                 return await Task.FromResult(OperationResult<IList<FolderDTO>>.MakeSuccess(result));
 
@@ -50,6 +59,16 @@ namespace TrinityText.Business.Services.Impl
                 _logger.LogError("GET_ALL", ex);
                 return OperationResult<IList<FolderDTO>>.MakeFailure(new[] { ErrorMessage.Create("GET_ALL", "GENERIC_ERROR") });
             }
+        }
+
+        private IList<FolderDTO> GetFolders(IList<FolderDTO> folders, int? parentId)
+        {
+            var fs = folders.Where(f => f.ParentId == parentId).ToList();
+            foreach (var f in fs)
+            {
+                f.SubFolders = GetFolders(folders, f.Id);
+            }
+            return fs;
         }
 
         public async Task<OperationResult<FolderDTO>> GetFolder(int id)
@@ -109,6 +128,7 @@ namespace TrinityText.Business.Services.Impl
                 {
                     var entity = _mapper.Map<Folder>(dto);
                     entity.DELETABLE = true;
+                    entity.FK_PARENT = parentFolderId;
                     var result = await _folderRepository.Create(entity);
 
                     var r = _mapper.Map<FolderDTO>(result);
@@ -156,21 +176,21 @@ namespace TrinityText.Business.Services.Impl
 
         private async Task EmptyFolder(Folder folder)
         {
-            while (folder.SUBFOLDERS.Any())
-            {
-                var subfolder = folder.SUBFOLDERS.First();
-                await EmptyFolder(subfolder);
+            //while (folder.SUBFOLDERS.Any())
+            //{
+            //    var subfolder = folder.SUBFOLDERS.First();
+            //    await EmptyFolder(subfolder);
 
-                folder.SUBFOLDERS.Remove(subfolder);
-            }
+            //    folder.SUBFOLDERS.Remove(subfolder);
+            //}
 
-            while (folder.FILES.Count > 0)
-            {
-                var file = folder.FILES.First();
-                folder.FILES.Remove(file);
+            //while (folder.FILES.Count > 0)
+            //{
+            //    var file = folder.FILES.First();
+            //    folder.FILES.Remove(file);
 
-                await _fileRepository.Delete(file);
-            }
+            //    await _fileRepository.Delete(file);
+            //}
 
             await _folderRepository.Delete(folder);
         }
@@ -184,7 +204,7 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var result = _mapper.Map<FileDTO>(entity, opts => opts.Items[nameof(FileDTO.Content)] = withThumb ? entity.THUMBNAIL : entity.CONTENT);
+                    var result = _mapper.Map<FileDTO>(entity, opts => opts.Items["Content"] = (withThumb ? entity.THUMBNAIL : entity.CONTENT));
 
                     return OperationResult<FileDTO>.MakeSuccess(result);
                 }
@@ -224,10 +244,11 @@ namespace TrinityText.Business.Services.Impl
                         FILENAME = f.FILENAME,
                         FK_FOLDER = f.FK_FOLDER,
                         FK_WEBSITE = f.FK_WEBSITE,
+                        THUMBNAIL = f.THUMBNAIL,
                         ID = f.ID,
                         LASTUPDATE_DATE = f.LASTUPDATE_DATE,
                         LASTUPDATE_USER = f.LASTUPDATE_USER,
-                        FOLDER = f.FOLDER,
+                        //FOLDER = f.FOLDER,
                     })
                     .OrderBy(s => s.FILENAME)
                     .ToList();
@@ -285,16 +306,29 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    string filePath = "/" + entity.FILENAME;
-                    var currentFolder = entity.FOLDER;
-                    while (currentFolder != null)
+                    string filePath = $"/{entity.FILENAME}";
+                    var currentFolderId =(int?)entity.FK_FOLDER;
+
+                    while(currentFolderId != null)
                     {
-                        filePath = "/" + currentFolder.NAME + filePath;
-                        currentFolder = currentFolder.PARENT;
+                        var folder = _folderRepository
+                            .Repository
+                            .Where(f => f.ID == currentFolderId.Value)
+                            .Select(f => new { Name = f.NAME, ParentId = f.FK_PARENT })
+                            .FirstOrDefault();
+
+                        if(folder != null)
+                        {
+                            filePath = $"/{folder.Name}{filePath}";
+                            currentFolderId = folder.ParentId;
+                        }
+                        else
+                        {
+                            currentFolderId = null;
+                        }
                     }
 
-                    var result = "@" + filePath;
-
+                    var result = $"@{filePath}";
 
                     return OperationResult<string>.MakeSuccess(result);
                 }
@@ -331,9 +365,9 @@ namespace TrinityText.Business.Services.Impl
                     if (@override == true)
                     {
                         var sameNameFile =
-                            folder
-                            .FILES
-                            .Where(f => f.FILENAME.Equals(dto.Filename, StringComparison.InvariantCultureIgnoreCase) == true)
+                            _fileRepository
+                            .Repository
+                            .Where(f => f.FK_FOLDER == folderId && f.FILENAME.Equals(dto.Filename) == true)
                             .FirstOrDefault();
 
                         if (sameNameFile != null)
@@ -354,7 +388,7 @@ namespace TrinityText.Business.Services.Impl
                                 CREATION_USER = user,
                                 FILENAME = dto.Filename,
                                 FK_FOLDER = folderId,
-                                FOLDER = folder,
+                                //FOLDER = folder,
                                 FK_WEBSITE = website,
                                 THUMBNAIL = thumb,
                                 LASTUPDATE_DATE = DateTime.Now,
@@ -374,7 +408,7 @@ namespace TrinityText.Business.Services.Impl
                             CREATION_USER = user,
                             FILENAME = newfilename,
                             FK_FOLDER = folderId,
-                            FOLDER = folder,
+                            //FOLDER = folder,
                             FK_WEBSITE = website,
                             THUMBNAIL = thumb,
                             LASTUPDATE_DATE = DateTime.Now,
@@ -407,10 +441,9 @@ namespace TrinityText.Business.Services.Impl
                 var filenameParts = filename.Split('.', StringSplitOptions.RemoveEmptyEntries);
                 string newFilename = $"{filenameParts[0]}({count}).{filenameParts[1]}";
 
-                sameNameFile =
-                    folder
-                    .FILES
-                    .Where(f => count == 0 ? f.FILENAME.Equals(filename, StringComparison.InvariantCultureIgnoreCase) : f.FILENAME.Equals(newFilename, StringComparison.InvariantCultureIgnoreCase))
+                sameNameFile = _fileRepository
+                    .Repository
+                    .Where(f => f.FK_FOLDER == folder.ID && (count == 0 ? f.FILENAME.Equals(filename) : f.FILENAME.Equals(newFilename)))
                     .SingleOrDefault();
 
                 if (sameNameFile == null)
@@ -493,39 +526,54 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var primaryFolder =
-                    _folderRepository
-                    .Repository
-                    .Where(f => f.FK_WEBSITE == website && f.PARENT == null)
-                    .Select(s => new Folder()
-                    {
-                        FK_PARENT = s.FK_PARENT,
-                        FK_WEBSITE = s.FK_WEBSITE,
-                        ID = s.ID,
-                        NAME = s.NAME,
-                        NOTE = s.NOTE,
-                    })
-                    .FirstOrDefault();
+                var websites = new[] { website };
 
-                if (primaryFolder != null)
+                var folderRs = await GetAllFolders(websites);
+
+                if (folderRs.Success)
                 {
-                    var dto = _mapper.Map<FolderDTO>(primaryFolder);
-                    dto.SubFolders = await GetAllSubfoldersByFolder(primaryFolder.ID);
+                    var folder = folderRs.Value.FirstOrDefault();
 
-                    return OperationResult<FolderDTO>.MakeSuccess(dto);
+                    return OperationResult<FolderDTO>.MakeSuccess(folder);
                 }
                 else
                 {
-                    var dto = new FolderDTO()
-                    {
-                        Id = 0,
-                        Name = website,
-                        SubFolders = new List<FolderDTO>(),
-                        Website = website,
-                    };
-
-                    return OperationResult<FolderDTO>.MakeSuccess(dto);
+                    return OperationResult<FolderDTO>.MakeFailure(folderRs.Errors);
                 }
+
+                //var primaryFolder =
+                //    _folderRepository
+                //    .Repository
+                //    .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == null)
+                //    .Select(s => new Folder()
+                //    {
+                //        FK_PARENT = s.FK_PARENT,
+                //        FK_WEBSITE = s.FK_WEBSITE,
+                //        ID = s.ID,
+                //        NAME = s.NAME,
+                //        NOTE = s.NOTE,
+                //    })
+                //    .FirstOrDefault();
+
+                //if (primaryFolder != null)
+                //{
+                //    var dto = _mapper.Map<FolderDTO>(primaryFolder);
+                //    dto.SubFolders = await GetAllSubfoldersByFolder(primaryFolder.ID);
+
+                //    return OperationResult<FolderDTO>.MakeSuccess(dto);
+                //}
+                //else
+                //{
+                //    var dto = new FolderDTO()
+                //    {
+                //        Id = 0,
+                //        Name = website,
+                //        SubFolders = new List<FolderDTO>(),
+                //        Website = website,
+                //    };
+
+                //    return OperationResult<FolderDTO>.MakeSuccess(dto);
+                //}
             }
             catch (Exception ex)
             {
@@ -569,7 +617,7 @@ namespace TrinityText.Business.Services.Impl
             {
                 var exist = _folderRepository
                     .Repository
-                    .Where(f => f.FK_WEBSITE == website && f.PARENT == null)
+                    .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == null)
                     .Any();
 
                 if (!exist)
@@ -605,7 +653,7 @@ namespace TrinityText.Business.Services.Impl
             {
                 var primaryFolder = _folderRepository
                     .Repository
-                    .Where(f => f.FK_WEBSITE == website && f.PARENT == null && f.NAME == website)
+                    .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == null && f.NAME == website)
                     .FirstOrDefault();
 
                 if (primaryFolder == null)
@@ -619,7 +667,7 @@ namespace TrinityText.Business.Services.Impl
 
                     primaryFolder = _folderRepository
                         .Repository
-                        .Where(f => f.FK_WEBSITE == website && f.PARENT == null && f.NAME == website)
+                        .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == null && f.NAME == website)
                         .FirstOrDefault();
                 }
 
@@ -627,8 +675,8 @@ namespace TrinityText.Business.Services.Impl
                 await _folderRepository.BeginTransaction();
 
                 var files =
-                    primaryFolder
-                        .SUBFOLDERS
+                    _folderRepository
+                        .Repository
                         .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == primaryFolder.ID && f.NAME.Equals("Files", StringComparison.InvariantCultureIgnoreCase))
                         .SingleOrDefault();
 
@@ -640,8 +688,8 @@ namespace TrinityText.Business.Services.Impl
 
 
                 var images =
-                    primaryFolder
-                        .SUBFOLDERS
+                    _folderRepository
+                        .Repository
                         .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == primaryFolder.ID && f.NAME.Equals("Images", StringComparison.InvariantCultureIgnoreCase))
                         .SingleOrDefault();
                 if (images == null)
@@ -649,15 +697,17 @@ namespace TrinityText.Business.Services.Impl
                     images = await CreateFolderByName(website, "Images", primaryFolder);
                 }
 
-                var instanceFileFolder = files
-                    .SUBFOLDERS
-                    .Where(c => c.FK_WEBSITE == website && c.FK_PARENT != null && c.FK_PARENT == files.ID && c.NAME.Equals(site, StringComparison.InvariantCultureIgnoreCase))
-                    .SingleOrDefault();
+                var instanceFileFolder = 
+                    _folderRepository
+                        .Repository
+                        .Where(c => c.FK_WEBSITE == website && c.FK_PARENT != null && c.FK_PARENT == files.ID && c.NAME.Equals(site, StringComparison.InvariantCultureIgnoreCase))
+                        .SingleOrDefault();
 
                 await CreateLanguagesFolder(website, site, instanceFileFolder, files, languages);
 
-                var instanceImageFolder = images
-                   .SUBFOLDERS
+                var instanceImageFolder = 
+                    _folderRepository
+                        .Repository
                    .Where(c => c.FK_WEBSITE == website && c.FK_PARENT != null && c.FK_PARENT == images.ID && c.NAME.Equals(site, StringComparison.InvariantCultureIgnoreCase))
                    .SingleOrDefault();
 
@@ -709,7 +759,7 @@ namespace TrinityText.Business.Services.Impl
                 folder.NAME = name;
                 folder.NOTE = $"System folder {name}";
                 folder.FK_WEBSITE = website;
-                folder.PARENT = parent;
+                folder.FK_PARENT = parent.ID;
 
                 var newFolder = await _folderRepository.Create(folder);
 
@@ -729,7 +779,7 @@ namespace TrinityText.Business.Services.Impl
 
                 var files = _fileRepository
                     .Repository
-                    .Where(f => f.FILENAME.Equals(fileName, StringComparison.InvariantCultureIgnoreCase))
+                    .Where(f => f.FILENAME.Equals(fileName))
                     .Select(s => new File()
                     {
                         ID = s.ID,
@@ -754,76 +804,78 @@ namespace TrinityText.Business.Services.Impl
                     else
                     {
                         var foldersName = fullFilename.Replace(fileName, "").Replace("@/", "").Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                        throw new NotImplementedException();
+                        //var filesFolder =
+                        //    files
+                        //    .Select(f => f.FOLDER)
+                        //    .ToList();
 
-                        var filesFolder =
-                            files
-                            .Select(f => f.FOLDER)
-                            .ToList();
+                        //Folder folderFound = null;
+                        //int folderIndex = foldersName.Length - 1;
+                        //do
+                        //{
+                            //var currentFolder = foldersName[folderIndex];
 
-                        Folder folderFound = null;
-                        int folderIndex = foldersName.Length - 1;
-                        do
-                        {
-                            var currentFolder = foldersName[folderIndex];
+                            //var folders =
+                            //    filesFolder
+                            //    .Where(f => f.NAME.Equals(currentFolder, StringComparison.InvariantCultureIgnoreCase))
+                            //    .ToList();
 
-                            var folders =
-                                filesFolder
-                                .Where(f => f.NAME.Equals(currentFolder, StringComparison.InvariantCultureIgnoreCase))
-                                .ToList();
+                            //if (folders.Count == 1)
+                            //{
+                            //    folderFound = folders.Single();
+                            //}
+                            //else
+                            //{
+                            //    filesFolder = folders
+                            //        .Where(f => f.FK_PARENT != null)
+                            //        .Select(f => f.FK_PARENT)
+                            //        .ToList();
 
-                            if (folders.Count == 1)
-                            {
-                                folderFound = folders.Single();
-                            }
-                            else
-                            {
-                                filesFolder = folders
-                                    .Where(f => f.PARENT != null)
-                                    .Select(f => f.PARENT)
-                                    .ToList();
+                            //    folderIndex--;
+                            //}
+                            throw new NotImplementedException();
 
-                                folderIndex--;
-                            }
+                        //} while (folderFound == null && folderIndex >= 0);
 
-                        } while (folderFound == null && folderIndex >= 0);
+                        //if (folderFound == null || folderIndex < 0)
+                        //{
+                        //    return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("GETFILEBYFULLNAME", "FOLDER_NOT_FOUND") }); ;
+                        //}
+                        //else
+                        //{
+                            //Folder fileFolder = folderFound;
 
-                        if (folderFound == null || folderIndex < 0)
-                        {
-                            return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("GETFILEBYFULLNAME", "FOLDER_NOT_FOUND") }); ;
-                        }
-                        else
-                        {
-                            Folder fileFolder = folderFound;
+                            //try
+                            //{
+                            //    for (int i = folderIndex; i < foldersName.Length - 1; i++)
+                            //    {
+                            //        var subFoldername = foldersName[i + 1];
+                            //        fileFolder =
+                            //            fileFolder.SUBFOLDERS
+                            //            .Where(f => f.NAME.Equals(subFoldername, StringComparison.InvariantCultureIgnoreCase))
+                            //            .Single();
+                            //    }
 
-                            try
-                            {
-                                for (int i = folderIndex; i < foldersName.Length - 1; i++)
-                                {
-                                    var subFoldername = foldersName[i + 1];
-                                    fileFolder =
-                                        fileFolder.SUBFOLDERS
-                                        .Where(f => f.NAME.Equals(subFoldername, StringComparison.InvariantCultureIgnoreCase))
-                                        .Single();
-                                }
+                            //    var file = fileFolder
+                            //        .FILES
+                            //        .Where(f => f.FILENAME.Equals(fileName, StringComparison.InvariantCultureIgnoreCase))
+                            //        .Single();
 
-                                var file = fileFolder
-                                    .FILES
-                                    .Where(f => f.FILENAME.Equals(fileName, StringComparison.InvariantCultureIgnoreCase))
-                                    .Single();
+                            //    var dto = new FileDTO()
+                            //    {
+                            //        Id = file.ID,
+                            //        Content = file.CONTENT,
+                            //    };
 
-                                var dto = new FileDTO()
-                                {
-                                    Id = file.ID,
-                                    Content = file.CONTENT,
-                                };
-
-                                return OperationResult<FileDTO>.MakeSuccess(dto);
-                            }
-                            catch
-                            {
-                                return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("GETFILEBYFULLNAME", "GENERIC_ERROR") });
-                            }
-                        }
+                            //    return OperationResult<FileDTO>.MakeSuccess(dto);
+                            //}
+                            //catch
+                            //{
+                            //    return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("GETFILEBYFULLNAME", "GENERIC_ERROR") });
+                            //}
+                            throw new NotImplementedException();
+                        //}
                     }
                 }
                 else
