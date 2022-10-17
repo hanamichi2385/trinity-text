@@ -13,6 +13,8 @@ namespace TrinityText.Utilities
     {
         private readonly ILogger<SFTPTransferService> _logger;
 
+        public string Key => "sftp";
+
         public SFTPTransferService(ILogger<SFTPTransferService> logger)
         {
             _logger = logger;

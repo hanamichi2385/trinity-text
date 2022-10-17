@@ -33,18 +33,18 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                 IsHtmlBody = true,
             };
 
-            var filesGenerationSettingRs = await _publicationService.Get(message.FilesGenerationId, true);
+            var publicationRs = await _publicationService.Get(message.PublicationId, true);
 
-            if (filesGenerationSettingRs.Success)
+            if (publicationRs.Success)
             {
-                var filesGenerationSetting = filesGenerationSettingRs.Value;
-                string website = filesGenerationSetting.Website;
-                string ftpServer = filesGenerationSetting.FtpServer.Name;
-                string tipoEsportazione = filesGenerationSetting.Format.ToString();
-                mail.To.Add(filesGenerationSetting.Email);
+                var setting = publicationRs.Value;
+                string website = setting.Website;
+                string ftpServer = setting.FtpServer.Name;
+                string format = setting.Format.ToString();
+                mail.To.Add(setting.Email);
                 mail.Subject = string.Format("[CMS] Website {0} updated with success!", website);
 
-                var operationsLogRs = await _generationService.Publish(filesGenerationSetting);
+                var operationsLogRs = await _generationService.Publish(setting);
 
                 var body = string.Empty;
 
@@ -64,14 +64,14 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                     }
                 }
 
-                mail.Body = string.Format(body, website, ftpServer, tipoEsportazione);
+                mail.Body = string.Format(body, website, ftpServer, format);
 
                 await context.Publish(mail);
                 try
                 {
-                    if (filesGenerationSetting.FtpServer != null || (filesGenerationSetting.FtpServer == null && filesGenerationSetting.ManualDelete == false))
+                    if (setting.FtpServer != null || (setting.FtpServer == null && setting.ManualDelete == false))
                     {
-                        await _publicationService.Remove(filesGenerationSetting.Id.Value);
+                        await _publicationService.Remove(setting.Id.Value);
                     }
                 }
                 catch (Exception ex)

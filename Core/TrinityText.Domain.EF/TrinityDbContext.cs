@@ -64,7 +64,8 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.NAME).HasColumnName("Nome");
                 entity.Property(e => e.TYPE).HasColumnName("Tipo");
                 entity.Navigation(e => e.FTPSERVERS).AutoInclude();
-                
+                entity.Ignore(e => e.PUBLICATIONS);
+
 
                 entity.HasMany(e => e.CACHESETTINGS)
                     .WithOne(e => e.CDNSERVER)
@@ -120,6 +121,7 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
                 entity.Property(e => e.NAME).HasColumnName("Nome");
                 entity.Property(e => e.TYPE).HasColumnName("Tipo");
+                entity.Ignore(e => e.PUBLICATIONS);
 
                 entity.HasMany(e => e.CDNSERVERS)
                     .WithOne(e => e.FTPSERVER)
@@ -225,6 +227,8 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.MANUALDELETE).HasColumnName("PRESERVACOPIA");
                 entity.Property(e => e.DATATYPE).HasColumnName("TIPO_ESPORTAZIONE");
                 entity.Property(e => e.LASTUPDATE_DATE).HasColumnName("ULTIMO_AGGIORNAMENTO");
+                entity.Navigation(e => e.CDNSERVER).AutoInclude();
+                entity.Navigation(e => e.FTPSERVER).AutoInclude();
 
                 entity
                    .HasOne(e => e.CDNSERVER)

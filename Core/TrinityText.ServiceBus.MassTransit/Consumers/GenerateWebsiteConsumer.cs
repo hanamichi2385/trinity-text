@@ -28,26 +28,26 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
         {
             var message = context.Message;
 
-            var filesGenerationSettingRs = await _publicationService.Get(message.FilesGenerationId, false);
+            var publicationSettingRs = await _publicationService.Get(message.PublicationId, false);
 
-            if (filesGenerationSettingRs.Success)
+            if (publicationSettingRs.Success)
             {
-                var filesGenerationSetting = filesGenerationSettingRs.Value;
-                var generateRs = await _generationService.Generate(filesGenerationSetting);
-                string tipoEsportazione = filesGenerationSetting.DataType.ToString();
-                string vendorName = filesGenerationSetting.Website;
+                var setting = publicationSettingRs.Value;
+                var generateRs = await _generationService.Generate(setting);
+                string dataType = setting.DataType.ToString();
+                string website = setting.Website;
 
                 //operation log empty = generate with success
                 if (generateRs.Success)
                 {
-                    bool includePublishing = filesGenerationSetting.FtpServer != null;
+                    bool includePublishing = setting.FtpServer != null;
                     if (includePublishing)
                     {
-                        var rs = await _publicationService.Update(filesGenerationSetting.Id.Value, PublicationStatus.Publishing, "Website update is on the way");
+                        var rs = await _publicationService.Update(setting.Id.Value, PublicationStatus.Publishing, "Website update is on the way", null);
 
                         if (rs.Success)
                         {
-                            var publishmsg = new PublishWebsiteMessage(filesGenerationSetting.Id.Value, message.Host);
+                            var publishmsg = new PublishWebsiteMessage(setting.Id.Value, message.Host);
                             await context.Publish(publishmsg);
                         }
                         else
@@ -57,30 +57,30 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                     }
                     else
                     {
-                        var rs = await _publicationService.Update(filesGenerationSetting.Id.Value, PublicationStatus.Success, "File created");
+                        var rs = await _publicationService.Update(setting.Id.Value, PublicationStatus.Success, "File created", null);
                         if (rs.Success)
                         {
-                            if (!string.IsNullOrWhiteSpace(filesGenerationSetting.Email))
+                            if (!string.IsNullOrWhiteSpace(setting.Email))
                             {
                                 string body = "<p>The {0} website update (type {2}) file is ready to download";
-                                string fileInfo = string.Format("<a href=\"{0}/Tools/DownloadZip/{1}\">Click here</a> to download the zip file", message.Host, filesGenerationSetting.Id);
+                                string fileInfo = string.Format("<a href=\"{0}/Tools/DownloadZip/{1}\">Click here</a> to download the zip file", message.Host, setting.Id);
 
-                                if (!filesGenerationSetting.ManualDelete)
+                                if (!setting.ManualDelete)
                                 {
                                     fileInfo += "<p>The file will erase after the download</p>";
                                 }
 
-                                body = string.Format(body, vendorName, fileInfo, tipoEsportazione);
+                                body = string.Format(body, website, fileInfo, dataType);
 
                                 SendMailMessage mail = new SendMailMessage()
                                 {
                                     Body = body,
                                     Id = Guid.NewGuid(),
                                     IsHtmlBody = true,
-                                    Subject = string.Format("[CMS] Website {0} updated completed with success", vendorName),
+                                    Subject = string.Format("[CMS] Website {0} updated completed with success", website),
                                 };
 
-                                mail.To.Add(filesGenerationSetting.Email);
+                                mail.To.Add(setting.Email);
 
                                 int retry = 5;
                                 while (retry > 0)
@@ -105,7 +105,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                 }
                 else
                 {
-                    var rs = await _publicationService.Update(filesGenerationSetting.Id.Value, PublicationStatus.Failed, "Website update failed");
+                    var rs = await _publicationService.Update(setting.Id.Value, PublicationStatus.Failed, "Website update failed", null);
                     if (rs.Success)
                     {
                         var mail = new SendMailMessage()
@@ -113,8 +113,8 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                             Id = Guid.NewGuid(),
                             IsHtmlBody = true,
                         };
-                        mail.To.Add(filesGenerationSetting.Email);
-                        mail.Subject = string.Format("[CMS] Website update {0} failed", vendorName);
+                        mail.To.Add(setting.Email);
+                        mail.Subject = string.Format("[CMS] Website update {0} failed", website);
 
                         var body = "<p>Website {0} update (type {1}) is failed!</p>";
                         body += "<p>These are the errors recorded during the update process. The updated was interrupted so run a new website update</p>";
@@ -123,7 +123,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                             body += "<p>" + e.Context + ":" + e.Description + "</p>";
                         }
 
-                        mail.Body = string.Format(body, vendorName, tipoEsportazione);
+                        mail.Body = string.Format(body, website, dataType);
                         await context.Publish(mail);
                     }
                     else
@@ -134,7 +134,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
             }
             else
             {
-                throw new Exception(string.Join(",", filesGenerationSettingRs.Errors.Select(s => s.Description)));
+                throw new Exception(string.Join(",", publicationSettingRs.Errors.Select(s => s.Description)));
             }
         }
     }

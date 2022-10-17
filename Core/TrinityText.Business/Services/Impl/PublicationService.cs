@@ -188,7 +188,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult> Update(int id, PublicationStatus status, string message)
+        public async Task<OperationResult> Update(int id, PublicationStatus status, string message, byte[] zipFile)
         {
             try
             {
@@ -199,6 +199,11 @@ namespace TrinityText.Business.Services.Impl
                 {
                     entity.STATUS_CODE = (int)status;
                     entity.STATUS_MESSAGE = message;
+
+                    if(zipFile != null)
+                    {
+                        entity.ZIP_FILE = zipFile;
+                    }
 
                     await _publicationRepository.Update(entity);
 

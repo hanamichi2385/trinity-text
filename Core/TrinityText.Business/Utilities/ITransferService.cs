@@ -7,6 +7,7 @@ namespace TrinityText.Business
 {
     public interface ITransferService
     {
+        string Key { get; }
         Task<string> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password, string path);
         Task<byte[]> GetFile(string tenant, string website, string file, string host, string username, string password, string path);
     }

@@ -17,7 +17,7 @@ namespace TrinityText.ServiceBus.Messages
         }
         #region Properties
 
-        public int FilesGenerationId { get; set; }
+        public int PublicationId { get; set; }
 
         public string Host { get; set; }
 
@@ -29,7 +29,7 @@ namespace TrinityText.ServiceBus.Messages
 
         public PublishWebsiteMessage(int filesGenerationId, string host)
         {
-            FilesGenerationId = filesGenerationId;
+            PublicationId = filesGenerationId;
             Host = host;
         }
     }

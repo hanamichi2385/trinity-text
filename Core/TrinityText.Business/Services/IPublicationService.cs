@@ -12,7 +12,7 @@ namespace TrinityText.Business
 
         Task<OperationResult<PublicationDTO>> Create(PublicationDTO dto);
 
-        Task<OperationResult> Update(int id, PublicationStatus status, string message);
+        Task<OperationResult> Update(int id, PublicationStatus status, string message, byte[] file);
 
         Task<OperationResult> Remove(int id);
     }

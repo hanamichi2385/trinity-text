@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
+using System.Linq;
 using System.Threading.Tasks;
 using TrinityText.Business;
 
@@ -12,9 +12,9 @@ namespace TrinityText.Utilities.Transfer
     {
         public IDictionary<string, ITransferService> Services { get; private set; }
 
-        public TransferService(IDictionary<string, ITransferService> services)
+        public TransferService(IList<ITransferService> services)
         {
-            Services = services;
+            Services = services.ToDictionary(s => s.Key, s => s);
         }
 
         public async Task<OperationResult<byte[]>> GetFile(string tenant, string website, string file, string host, string username, string password)
@@ -31,7 +31,7 @@ namespace TrinityText.Utilities.Transfer
                 var service = GetService(uri);
                 var ftpfile = await service.GetFile(tenant, website, file, uri.Host, username, password, directories);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 result.AppendError("GET_FILE", ex.Message);
             }
@@ -71,13 +71,20 @@ namespace TrinityText.Utilities.Transfer
 
         private ITransferService GetService(Uri host)
         {
-            var key = host.Scheme.ToLower();
-
-            if (Services.ContainsKey(key))
+            if (Services.Count > 1)
             {
-                return Services[key];
+                var key = host.Scheme.ToLower();
+
+                if (Services.ContainsKey(key))
+                {
+                    return Services[key];
+                }
+                throw new NotSupportedException(host.Scheme);
             }
-            throw new NotSupportedException(host.Scheme);
+            else
+            {
+                return Services.Select(s => s.Value)?.FirstOrDefault();
+            }
         }
     }
 }

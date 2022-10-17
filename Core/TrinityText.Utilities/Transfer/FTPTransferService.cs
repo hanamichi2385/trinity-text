@@ -14,6 +14,8 @@ namespace TrinityText.Utilities
     {
         private readonly ILogger<FTPTransferService> _logger;
 
+        public string Key => "ftp";
+
         public FTPTransferService(ILogger<FTPTransferService> logger)
         {
             _logger = logger;

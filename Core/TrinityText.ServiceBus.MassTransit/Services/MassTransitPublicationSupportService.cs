@@ -27,10 +27,13 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
         private readonly ICompressionFileService _compressionFileService;
 
-        public MassTransitPublicationSupportService(ITextService textService, IPageService pageService, IPageSchemaService pageSchemaService,
+        private readonly IPublicationService _publicationService;
+
+        public MassTransitPublicationSupportService(IPublicationService publicationService, ITextService textService, IPageService pageService, IPageSchemaService pageSchemaService,
             IFileManagerService fileManagerService, ICompressionFileService compressionFileService, ITransferServiceCoordinator transferServiceCoordinator,
             IOptions<PublicationSupportOptions> options)
         {
+            _publicationService = publicationService;
             _textService = textService;
             _pageService = pageService;
             _pageSchemaService = pageSchemaService;
@@ -55,7 +58,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 baseDirectory.Create();
             }
 
-            var currentDirectory = baseDirectory.CreateSubdirectory(string.Format("{0}_{1}_{2:dd-MM-yyyy_HH-mm-ss}", website, id, DateTime.Now));
+            var currentDirectory = baseDirectory.CreateSubdirectory($"{website}_{id}_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}");
 
             var textSubDirectory = currentDirectory.CreateSubdirectory("Text");
             var filesSubDirectory = currentDirectory.CreateSubdirectory("Files");
@@ -124,19 +127,19 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             }
         }
 
-        public async Task<OperationResult> Generate(PublicationDTO filesGenerationSettings)
+        public async Task<OperationResult> Generate(PublicationDTO setting)
         {
             var result = OperationResult.MakeSuccess();
             try
             {
-                var vendor = filesGenerationSettings.Website;
-                var exportType = filesGenerationSettings.DataType;
-                var filesGenerationDate = filesGenerationSettings.FilterDataDate;
-                var cdnServer = filesGenerationSettings.CdnServer;
+                var website = setting.Website;
+                var dataType = setting.DataType;
+                var filterDate = setting.FilterDataDate;
+                var cdnServer = setting.CdnServer;
 
-                var payload = filesGenerationSettings.Payload;
+                var payload = setting.Payload;
 
-                var filePathRs = await CreateExportFile(filesGenerationSettings.Id.Value, payload, exportType, filesGenerationSettings.Format, filesGenerationDate, true, filesGenerationSettings.CreationUser, cdnServer);
+                var filePathRs = await CreateExportFile(setting.Id.Value, payload, dataType, setting.Format, filterDate, true, setting.CreationUser, cdnServer);
 
                 if (filePathRs.Success)
                 {
@@ -144,10 +147,12 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                     byte[] byteArray = System.IO.File.ReadAllBytes(filePath);
                     System.IO.File.Delete(filePath);
 
-                    filesGenerationSettings.ZipFile = byteArray;
-                    filesGenerationSettings.HasZipFile = true;
-                    filesGenerationSettings.StatusMessage = "Zip file completed";
-                    filesGenerationSettings.StatusCode = PublicationStatus.Generated;
+                    var updateRs = await _publicationService.Update(setting.Id.Value, PublicationStatus.Generated, "Zip file completed", byteArray);
+
+                    if(updateRs.Success == false)
+                    {
+                        result.AppendErrors(updateRs.Errors);
+                    }
                 }
                 else
                 {
@@ -161,21 +166,21 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             return result;
         }
 
-        public async Task<OperationResult> Publish(PublicationDTO filesGenerationSettings)
+        public async Task<OperationResult> Publish(PublicationDTO setting)
         {
             var basePath = _options.LocalDirectory + "/Uploading/" + Guid.NewGuid();
             var result = OperationResult.MakeSuccess();
             try
             {
-                await _compressionFileService.DecompressFolder(basePath, filesGenerationSettings.ZipFile);
+                await _compressionFileService.DecompressFolder(basePath, setting.ZipFile);
 
-                var payload = filesGenerationSettings.Payload;
+                var payload = setting.Payload;
 
 
-                var server = filesGenerationSettings.FtpServer;
+                var server = setting.FtpServer;
                 var d = new DirectoryInfo(basePath);
 
-                var uploadRs = await _transferServiceCoordinator.Upload(payload.Tenant, filesGenerationSettings.Website, d, server.Host, server.Username, server.Password);
+                var uploadRs = await _transferServiceCoordinator.Upload(payload.Tenant, setting.Website, d, server.Host, server.Username, server.Password);
 
                 if(uploadRs.Success == false)
                 {
