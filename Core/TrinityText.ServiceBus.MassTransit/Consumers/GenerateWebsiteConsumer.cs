@@ -34,7 +34,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
             {
                 var filesGenerationSetting = filesGenerationSettingRs.Value;
                 var generateRs = await _generationService.Generate(filesGenerationSetting);
-                string tipoEsportazione = filesGenerationSetting.PublicationType.ToString();
+                string tipoEsportazione = filesGenerationSetting.DataType.ToString();
                 string vendorName = filesGenerationSetting.Website;
 
                 //operation log empty = generate with success
@@ -43,13 +43,11 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                     bool includePublishing = filesGenerationSetting.FtpServer != null;
                     if (includePublishing)
                     {
-                        filesGenerationSetting.StatusCode = PublicationStatus.Publishing;
-                        filesGenerationSetting.Status = "Website update is on the way";
-                        var rs = await _publicationService.Save(filesGenerationSetting);
+                        var rs = await _publicationService.Update(filesGenerationSetting.Id.Value, PublicationStatus.Publishing, "Website update is on the way");
 
                         if (rs.Success)
                         {
-                            var publishmsg = new PublishWebsiteMessage(rs.Value.Id.Value, message.Host);
+                            var publishmsg = new PublishWebsiteMessage(filesGenerationSetting.Id.Value, message.Host);
                             await context.Publish(publishmsg);
                         }
                         else
@@ -59,9 +57,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                     }
                     else
                     {
-                        filesGenerationSetting.StatusCode = PublicationStatus.Success;
-                        var rs = await _publicationService.Save(filesGenerationSetting);
-
+                        var rs = await _publicationService.Update(filesGenerationSetting.Id.Value, PublicationStatus.Success, "File created");
                         if (rs.Success)
                         {
                             if (!string.IsNullOrWhiteSpace(filesGenerationSetting.Email))
@@ -69,7 +65,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                                 string body = "<p>The {0} website update (type {2}) file is ready to download";
                                 string fileInfo = string.Format("<a href=\"{0}/Tools/DownloadZip/{1}\">Click here</a> to download the zip file", message.Host, filesGenerationSetting.Id);
 
-                                if (!filesGenerationSetting.PreserveCopy)
+                                if (!filesGenerationSetting.ManualDelete)
                                 {
                                     fileInfo += "<p>The file will erase after the download</p>";
                                 }
@@ -109,10 +105,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                 }
                 else
                 {
-                    filesGenerationSetting.StatusCode = PublicationStatus.Failed;
-                    filesGenerationSetting.Status = "Website update failed";
-                    var rs = await _publicationService.Save(filesGenerationSetting);
-
+                    var rs = await _publicationService.Update(filesGenerationSetting.Id.Value, PublicationStatus.Failed, "Website update failed");
                     if (rs.Success)
                     {
                         var mail = new SendMailMessage()

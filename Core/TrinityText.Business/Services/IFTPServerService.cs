@@ -10,5 +10,6 @@ namespace TrinityText.Business
         Task<OperationResult<IList<FTPServerDTO>>> GetAll();
         Task<OperationResult> Remove(int id);
         Task<OperationResult<FTPServerDTO>> Save(FTPServerDTO dto);
+        Task<OperationResult<IList<FTPServerDTO>>> GetAllByCDN(int cdn);
     }
 }

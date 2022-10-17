@@ -3,8 +3,8 @@
     public enum PublicationType
     {
         All = 0,
-        Resources = 1,
-        Contents = 2,
+        Texts = 1,
+        Pages = 2,
         PDF = 3,
         Files = 4,
     }

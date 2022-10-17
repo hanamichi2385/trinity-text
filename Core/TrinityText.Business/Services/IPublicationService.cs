@@ -10,8 +10,10 @@ namespace TrinityText.Business
 
         Task<OperationResult<PublicationDTO>> Get(int id, bool withContent);
 
-        Task<OperationResult<PublicationDTO>> Save(PublicationDTO dto);
+        Task<OperationResult<PublicationDTO>> Create(PublicationDTO dto);
 
-        Task<PublicationDTO> Remove(int id);
+        Task<OperationResult> Update(int id, PublicationStatus status, string message);
+
+        Task<OperationResult> Remove(int id);
     }
 }

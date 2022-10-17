@@ -69,6 +69,28 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
+        public async Task<OperationResult<IList<FTPServerDTO>>> GetAllByCDN(int cdn)
+        {
+
+            try
+            {
+                var list = _ftpServerRepository
+                    .Repository
+                    .Where(f => f.CDNSERVERS.Where(c => c.FK_CDNSERVER == cdn).Any())
+                    .OrderBy(t => t.TYPE)
+                    .ToList();
+
+                var result = _mapper.Map<IList<FTPServerDTO>>(list);
+
+                return await Task.FromResult(OperationResult<IList<FTPServerDTO>>.MakeSuccess(result));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("GETALL", ex);
+                return OperationResult<IList<FTPServerDTO>>.MakeFailure(new[] { ErrorMessage.Create("GETALL", "GENERIC_ERROR") });
+            }
+        }
+
         public async Task<OperationResult> Remove(int id)
         {
             try

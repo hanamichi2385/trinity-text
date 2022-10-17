@@ -8,13 +8,13 @@ namespace TrinityText.Business
     {
         public int? Id { get; set; }
 
-        public string Utente { get; set; }
+        public string CreationUser { get; set; }
 
         public string Email { get; set; }
 
         public DateTime LastUpdate { get; set; }
 
-        public string Status { get; set; }
+        public string StatusMessage { get; set; }
 
         public string Website { get; set; }
 
@@ -22,23 +22,23 @@ namespace TrinityText.Business
 
         public CdnServerDTO CdnServer { get; set; }
 
-        public PublicationType PublicationType { get; set; }
+        public PublicationType DataType { get; set; }
 
         public byte[] ZipFile { get; set; }
 
         public bool HasZipFile { get; set; }
 
-        public bool PreserveCopy { get; set; }
+        public bool ManualDelete { get; set; }
 
         public DateTime FilterDataDate { get; set; }
 
         public PublicationStatus StatusCode { get; set; }
 
-        public PublishType PublishType { get; set; }
+        public PublicationFormat Format { get; set; }
 
         public PayloadDTO Payload { get; private set; }
 
-        public string WebsiteUrl { get; set; }
+        //public string WebsiteUrl { get; set; }
 
         public string GetPayload()
         {
@@ -58,7 +58,7 @@ namespace TrinityText.Business
         }
     }
 
-    public enum PublishType
+    public enum PublicationFormat
     {
         JSON = 0,
         XML = 1

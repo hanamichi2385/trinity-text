@@ -40,7 +40,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             _options = options.Value;
         }
 
-        private async Task<OperationResult<string>> CreateExportFile(int id, PayloadDTO payload, PublicationType exportType, PublishType publishType, DateTime filesGenerationDate, bool compressFileOutput, string user, CdnServerDTO cdnServer)
+        private async Task<OperationResult<string>> CreateExportFile(int id, PayloadDTO payload, PublicationType exportType, PublicationFormat publishType, DateTime filesGenerationDate, bool compressFileOutput, string user, CdnServerDTO cdnServer)
         {
             var basePath = _options.LocalDirectory;
             var website = payload.Website;
@@ -62,7 +62,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
             foreach (var i in sites)
             {
-                if (exportType == PublicationType.All || exportType == PublicationType.Resources)
+                if (exportType == PublicationType.All || exportType == PublicationType.Texts)
                 {
                     var siteDirectory = textSubDirectory.CreateSubdirectory(i.Site.ToUpper());
                     var textsPerSiteRs = await _textService.GetPublishableTexts(website, i.Site, i.Languages.ToArray(), textTypes.ToArray());
@@ -78,14 +78,14 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                     }
                 }
 
-                if (exportType == PublicationType.All || exportType == PublicationType.Contents || exportType == PublicationType.PDF)
+                if (exportType == PublicationType.All || exportType == PublicationType.Pages || exportType == PublicationType.PDF)
                 {
                     var pagesPerSiteRs = await _pageService.GetPublishablePages(website, i.Site, i.Languages.ToArray());
 
                     if (pagesPerSiteRs.Success)
                     {
                         var pagesPerSite = pagesPerSiteRs.Value;
-                        if (exportType == PublicationType.All || exportType == PublicationType.Contents)
+                        if (exportType == PublicationType.All || exportType == PublicationType.Pages)
                         {
                             var instanceDirectory = textSubDirectory.CreateSubdirectory(i.Site.ToUpper());
                             await GeneratePagesFileBySite(tenant, website, i.Site, pagesPerSite, instanceDirectory.FullName, string.Empty, cdnServer, publishType);
@@ -130,13 +130,13 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             try
             {
                 var vendor = filesGenerationSettings.Website;
-                var exportType = filesGenerationSettings.PublicationType;
+                var exportType = filesGenerationSettings.DataType;
                 var filesGenerationDate = filesGenerationSettings.FilterDataDate;
                 var cdnServer = filesGenerationSettings.CdnServer;
 
                 var payload = filesGenerationSettings.Payload;
 
-                var filePathRs = await CreateExportFile(filesGenerationSettings.Id.Value, payload, exportType, filesGenerationSettings.PublishType, filesGenerationDate, true, filesGenerationSettings.Utente, cdnServer);
+                var filePathRs = await CreateExportFile(filesGenerationSettings.Id.Value, payload, exportType, filesGenerationSettings.Format, filesGenerationDate, true, filesGenerationSettings.CreationUser, cdnServer);
 
                 if (filePathRs.Success)
                 {
@@ -146,7 +146,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                     filesGenerationSettings.ZipFile = byteArray;
                     filesGenerationSettings.HasZipFile = true;
-                    filesGenerationSettings.Status = "Zip file completed";
+                    filesGenerationSettings.StatusMessage = "Zip file completed";
                     filesGenerationSettings.StatusCode = PublicationStatus.Generated;
                 }
                 else
@@ -214,7 +214,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             System.IO.File.WriteAllText(textFile, text);
         }
 
-        private void GenerateTextsFileBySite(string website, IDictionary<string, List<TextDTO>> textsPerLanguage, string directoryPath, PublishType type)
+        private void GenerateTextsFileBySite(string website, IDictionary<string, List<TextDTO>> textsPerLanguage, string directoryPath, PublicationFormat type)
         {
             if (string.IsNullOrEmpty(directoryPath))
             {
@@ -247,11 +247,11 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                     var file = new byte[0];
                     switch (type)
                     {
-                        case PublishType.XML:
+                        case PublicationFormat.XML:
                             file = CreateXmlResourcesDocument(textsPerType);
                             break;
 
-                        case PublishType.JSON:
+                        case PublicationFormat.JSON:
                             file = CreateJsonResourcesDocument(textsPerType);
                             break;
 
@@ -382,7 +382,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             //}
         }
 
-        private async Task GeneratePagesFileBySite(string tenant, string website, string site, IDictionary<string, List<PageDTO>> contentsPerLanguages, string directoryPath, string baseUrl, CdnServerDTO cdnServer, PublishType type)
+        private async Task GeneratePagesFileBySite(string tenant, string website, string site, IDictionary<string, List<PageDTO>> contentsPerLanguages, string directoryPath, string baseUrl, CdnServerDTO cdnServer, PublicationFormat type)
         {
             if (string.IsNullOrEmpty(directoryPath))
             {
@@ -420,11 +420,11 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                     switch (type)
                     {
-                        case PublishType.XML:
+                        case PublicationFormat.XML:
                             file = await _pageSchemaService.CreateXmlContentsDocument(structure, contentsPerType, tenant, website, site, lang, baseUrl, cdnServer);
                             break;
 
-                        case PublishType.JSON:
+                        case PublicationFormat.JSON:
                             file = await _pageSchemaService.CreateJsonContentsDocument(structure, contentsPerType, tenant, website, site, lang, baseUrl, cdnServer);
                             break;
 

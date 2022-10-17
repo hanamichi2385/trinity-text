@@ -218,10 +218,12 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
 
                 entity.Property(e => e.FK_WEBSITE).HasColumnName("FK_VENDOR");
+                entity.Property(e => e.STATUS_MESSAGE).HasColumnName("STATUS");
+                entity.Property(e => e.FORMAT).HasColumnName("TYPE");
                 entity.Property(e => e.FILTERDATA_DATE).HasColumnName("DATA_FILTROGENERAZIONE_FILE");
                 entity.Property(e => e.CREATION_USER).HasColumnName("FK_UTENTE");
                 entity.Property(e => e.MANUALDELETE).HasColumnName("PRESERVACOPIA");
-                entity.Property(e => e.PUBLICATIONTYPE).HasColumnName("TIPO_ESPORTAZIONE");
+                entity.Property(e => e.DATATYPE).HasColumnName("TIPO_ESPORTAZIONE");
                 entity.Property(e => e.LASTUPDATE_DATE).HasColumnName("ULTIMO_AGGIORNAMENTO");
 
                 entity

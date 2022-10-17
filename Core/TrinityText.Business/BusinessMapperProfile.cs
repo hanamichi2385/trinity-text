@@ -132,6 +132,24 @@ namespace TrinityText.Business
             CreateMap<CdnServer, CdnServerDTO>()
                 .ForMember(d => d.FtpServers, src => src.MapFrom(s => s.FTPSERVERS.Select(f => f.FTPSERVER)))
                 .ReverseMap();
+
+            CreateMap<Publication, PublicationDTO>()
+                .ForMember(d => d.CdnServer, src => src.MapFrom(s => s.CDNSERVER))
+                .ForMember(d => d.CreationUser, src => src.MapFrom(s => s.CREATION_USER))
+                .ForMember(d => d.DataType, src => src.MapFrom(s => s.DATATYPE))
+                .ForMember(d => d.Email, src => src.MapFrom(s => s.EMAIL))
+                .ForMember(d => d.FilterDataDate, src => src.MapFrom(s => s.FILTERDATA_DATE))
+                .ForMember(d => d.Format, src => src.MapFrom(s => s.FORMAT))
+                .ForMember(d => d.FtpServer, src => src.MapFrom(s => s.FTPSERVER))
+                .ForMember(d => d.Id, src => src.MapFrom(s => s.ID))
+                .ForMember(d => d.LastUpdate, src => src.MapFrom(s => s.LASTUPDATE_DATE))
+                .ForMember(d => d.ManualDelete, src => src.MapFrom(s => s.MANUALDELETE))
+                .ForMember(d => d.StatusCode, src => src.MapFrom(s => s.STATUS_CODE))
+                .ForMember(d => d.StatusMessage, src => src.MapFrom(s => s.STATUS_MESSAGE))
+                .ForMember(d => d.Website, src => src.MapFrom(s => s.FK_WEBSITE))
+                .ForMember(d => d.ZipFile, src => src.MapFrom(s => s.ZIP_FILE))
+                .ForMember(d => d.Payload, src => src.Ignore())
+                ;
         }
 
         private TextRevision GetTextRevision(ICollection<TextRevision> revisions)

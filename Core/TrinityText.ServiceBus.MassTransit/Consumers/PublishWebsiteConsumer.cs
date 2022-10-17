@@ -40,7 +40,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                 var filesGenerationSetting = filesGenerationSettingRs.Value;
                 string website = filesGenerationSetting.Website;
                 string ftpServer = filesGenerationSetting.FtpServer.Name;
-                string tipoEsportazione = filesGenerationSetting.PublishType.ToString();
+                string tipoEsportazione = filesGenerationSetting.Format.ToString();
                 mail.To.Add(filesGenerationSetting.Email);
                 mail.Subject = string.Format("[CMS] Website {0} updated with success!", website);
 
@@ -69,7 +69,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                 await context.Publish(mail);
                 try
                 {
-                    if (filesGenerationSetting.FtpServer != null || (filesGenerationSetting.FtpServer == null && filesGenerationSetting.PreserveCopy == false))
+                    if (filesGenerationSetting.FtpServer != null || (filesGenerationSetting.FtpServer == null && filesGenerationSetting.ManualDelete == false))
                     {
                         await _publicationService.Remove(filesGenerationSetting.Id.Value);
                     }
