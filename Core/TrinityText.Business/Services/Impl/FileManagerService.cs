@@ -355,6 +355,12 @@ namespace TrinityText.Business.Services.Impl
                 {
                     var content = dto.Content;
 
+                    var compressionRs = await _imageDrawingService.Compression(dto);
+                    if (compressionRs.Success)
+                    {
+                        content = compressionRs.Value;
+                    }
+
                     var thumb = default(byte[]);
                     var thumbRs = await _imageDrawingService.GenerateThumb(dto);
                     if (thumbRs.Success)

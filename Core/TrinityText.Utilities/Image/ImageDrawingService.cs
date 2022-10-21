@@ -27,7 +27,7 @@ namespace TrinityText.Utilities
             {
                 var bytes = default(byte[]);
 
-                var contentType = GetMimeTypeForFile(dto.Filename); ;
+                var contentType = ImageExtensions.GetMimeTypeForFile(dto.Filename); ;
                 //image/svg+xml è per i font ma non è una immagine
                 if (contentType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase) && !contentType.Equals("image/svg+xml", StringComparison.InvariantCultureIgnoreCase))
                 {
@@ -37,7 +37,7 @@ namespace TrinityText.Utilities
                         int w = 0;
                         int h = 0;
 
-                        CheckImageSize(img.Width, img.Height, out w, out h);
+                        ImageExtensions.CheckImageSize(_options, img.Width, img.Height, out w, out h);
 
                         var thumb = img.GetThumbnailImage(w, h, () => { return false; }, IntPtr.Zero);
 
@@ -63,44 +63,9 @@ namespace TrinityText.Utilities
             }
         }
 
-        private string GetMimeTypeForFile(string filePath)
+        public async Task<OperationResult<byte[]>> Compression(FileDTO dto)
         {
-            const string DefaultContentType = "application/octet-stream";
-
-            var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
-
-            if (!provider.TryGetContentType(filePath, out string contentType))
-            {
-                contentType = DefaultContentType;
-            }
-
-            return contentType;
-        }
-
-        private void CheckImageSize(int width, int height, out int newWidth, out int newHeight)
-        {
-            newWidth = width;
-            newHeight = height;
-
-            while (newWidth > _options.ThumbWidth)
-            {
-                decimal percWidth = (decimal)_options.ThumbWidth / (decimal)width;
-
-                var pw = (int)(percWidth * width);
-                var ph = (int)(percWidth * height);
-                newWidth = pw == 0 ? 1 : pw;
-                newHeight = ph == 0 ? 1 : ph;
-            }
-
-            while (newHeight > _options.ThumbHeight)
-            {
-                decimal percHeight = (decimal)_options.ThumbHeight / (decimal)height;
-
-                var pw = (int)(percHeight * width);
-                var ph = (int)(percHeight * height);
-                newWidth = pw == 0 ? 1 : pw;
-                newHeight = ph == 0 ? 1 : ph;
-            }
+            return await Task.FromResult(OperationResult<byte[]>.MakeFailure(new[] { ErrorMessage.Create("COMPRESSION", "NOT_SUPPORTED") }));
         }
     }
 }

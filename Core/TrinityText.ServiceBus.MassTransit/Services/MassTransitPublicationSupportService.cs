@@ -147,7 +147,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                     byte[] byteArray = System.IO.File.ReadAllBytes(filePath);
                     System.IO.File.Delete(filePath);
 
-                    var updateRs = await _publicationService.Update(setting.Id.Value, PublicationStatus.Generated, "Zip file completed", byteArray);
+                    var updateRs = await _publicationService.Update(setting.Id.Value, PublicationStatus.Generating, "Zip file completed", byteArray);
 
                     if(updateRs.Success == false)
                     {

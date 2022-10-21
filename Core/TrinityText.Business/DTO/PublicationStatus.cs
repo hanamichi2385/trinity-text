@@ -9,8 +9,8 @@ namespace TrinityText.Business
     public enum PublicationStatus
     {
         Failed = -1,
-        Started = 0,
-        Generated = 50,
+        Created = 0,
+        Generating = 50,
         Publishing = 100,
         Success = 999,
     }

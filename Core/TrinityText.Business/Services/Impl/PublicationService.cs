@@ -165,7 +165,7 @@ namespace TrinityText.Business.Services.Impl
                 entity.FK_WEBSITE = dto.Website;
                 entity.EMAIL = dto.Email;
                 entity.DATATYPE = (int)dto.DataType;
-                entity.STATUS_CODE = (int)PublicationStatus.Started;
+                entity.STATUS_CODE = (int)PublicationStatus.Created;
                 entity.LASTUPDATE_DATE = DateTime.Now;
                 entity.MANUALDELETE = dto.ManualDelete;
                 entity.FILTERDATA_DATE = dto.FilterDataDate;
