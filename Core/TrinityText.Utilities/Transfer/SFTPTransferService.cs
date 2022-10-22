@@ -27,7 +27,9 @@ namespace TrinityText.Utilities
             SftpClient ftp = null;
             try
             {
-                ftp = new SftpClient(host, username, password);
+                var h = new Uri(host);
+
+                ftp = new SftpClient(h.Host, username, password);
 
                 ftp.Connect();
 

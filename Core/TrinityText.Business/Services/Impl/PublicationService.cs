@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using TrinityText.Domain;
@@ -33,6 +34,12 @@ namespace TrinityText.Business.Services.Impl
 
                 if(entity != null)
                 {
+                    var bytes = default(byte[]);
+                    if (withContent)
+                    {
+                        bytes = await GetZipContent(id);
+                    }
+
                     var result = new PublicationDTO()
                     {
                         Id = entity.ID,
@@ -43,8 +50,8 @@ namespace TrinityText.Business.Services.Impl
                         CreationUser = entity.CREATION_USER,
                         FtpServer = entity.FK_FTPSERVER.HasValue ? new FTPServerDTO() { Id = entity.FTPSERVER.ID, Host = entity.FTPSERVER.HOST, Name = entity.FTPSERVER.NAME, Password = entity.FTPSERVER.PASSWORD, Port = entity.FTPSERVER.PORT, Username = entity.FTPSERVER.USERNAME } : null,
                         Website = entity.FK_WEBSITE,
-                        ZipFile = withContent ? entity.ZIP_FILE : null,
-                        HasZipFile = entity.ZIP_FILE != null && entity.ZIP_FILE.Length > 0,
+                        ZipFile = withContent ? bytes : null,
+                        HasZipFile = bytes != null && bytes.Length > 0,
                         ManualDelete = entity.MANUALDELETE,
                         FilterDataDate = entity.FILTERDATA_DATE,
                         StatusCode = (PublicationStatus)entity.STATUS_CODE,
@@ -69,6 +76,51 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
+        private async Task<byte[]> GetZipContent(int id)
+        {
+            var bytes = default(byte[]);
+            using (var sqlConnection = new SqlConnection(_publicationRepository.ConnectionString))
+            {
+                await sqlConnection.OpenAsync();
+                using (var sqlCommand = new SqlCommand(@"SELECT [ZIP_FILE] FROM [TRINITY].[dbo].[Generazioni] WHERE ID = @id", sqlConnection))
+                {
+                    sqlCommand.Parameters.Add(new SqlParameter("id", id));
+                    
+
+                    var reader = await sqlCommand.ExecuteReaderAsync();
+
+                    if(reader.Read())
+                    {
+                        bytes = (byte[])reader["ZIP_FILE"];
+                    }
+                }
+                await sqlConnection.CloseAsync();
+            }
+            return bytes;
+        }
+
+        private async Task UpdateZipContent(int id, byte[] zipFile)
+        {
+            try
+            {
+                using (var sqlConnection = new SqlConnection(_publicationRepository.ConnectionString))
+                {
+                    await sqlConnection.OpenAsync();
+                    using (var sqlCommand = new SqlCommand(@"UPDATE [TRINITY].[dbo].[Generazioni] SET [ZIP_FILE] = @zip  WHERE ID = @id", sqlConnection))
+                    {
+                        sqlCommand.Parameters.Add(new SqlParameter("id", id));
+                        sqlCommand.Parameters.Add(new SqlParameter("zip", zipFile));
+
+                        var result = await sqlCommand.ExecuteNonQueryAsync();
+                    }
+                    await sqlConnection.CloseAsync();
+                }
+            }catch(Exception ex)
+            {
+
+            }
+        }
+
         public async Task<OperationResult<IList<PublicationDTO>>> GetAll()
         {
             try
@@ -89,7 +141,7 @@ namespace TrinityText.Business.Services.Impl
                         FILTERDATA_DATE = f.FILTERDATA_DATE,
                         STATUS_CODE = f.STATUS_CODE,
                         CDNSERVER = f.CDNSERVER,
-                        HAS_FILEZIP = f.ZIP_FILE != null,
+                        HAS_FILEZIP = false,
                         FORMAT=f.FORMAT,
                     })
                     .ToList();
@@ -200,12 +252,21 @@ namespace TrinityText.Business.Services.Impl
                     entity.STATUS_CODE = (int)status;
                     entity.STATUS_MESSAGE = message;
 
-                    if(zipFile != null)
-                    {
-                        entity.ZIP_FILE = zipFile;
-                    }
+                    //if(zipFile != null)
+                    //{
+                    //    entity.ZIP_FILE = zipFile;
+                    //}
+
+                    
+
+
 
                     await _publicationRepository.Update(entity);
+
+                    if (zipFile != null)
+                    {
+                        await UpdateZipContent(id, zipFile);
+                    }
 
                     return OperationResult.MakeSuccess();
                 }
@@ -220,5 +281,7 @@ namespace TrinityText.Business.Services.Impl
                 return OperationResult.MakeFailure(new[] { ErrorMessage.Create("UPDATE", "GENERIC_ERROR") });
             }
         }
+
+       
     }
 }

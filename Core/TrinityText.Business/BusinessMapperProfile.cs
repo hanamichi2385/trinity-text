@@ -147,7 +147,7 @@ namespace TrinityText.Business
                 .ForMember(d => d.StatusCode, src => src.MapFrom(s => s.STATUS_CODE))
                 .ForMember(d => d.StatusMessage, src => src.MapFrom(s => s.STATUS_MESSAGE))
                 .ForMember(d => d.Website, src => src.MapFrom(s => s.FK_WEBSITE))
-                .ForMember(d => d.ZipFile, src => src.MapFrom(s => s.ZIP_FILE))
+                //.ForMember(d => d.ZipFile, src => src.MapFrom(s => s.ZIP_FILE))
                 .ForMember(d => d.Payload, src => src.Ignore())
                 ;
         }

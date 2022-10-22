@@ -358,7 +358,7 @@ namespace TrinityText.UnitTests
                     FORMAT =1,
                     LASTUPDATE_DATE = System.DateTime.Now,
                     //WEBSITE = "ciao",
-                    ZIP_FILE = new byte[0],
+                    //ZIP_FILE = new byte[0],
                     CREATION_USER = "user",
                     FK_WEBSITE = "website"
                 };

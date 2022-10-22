@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Infrastructure;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -14,6 +15,8 @@ namespace TrinityText.Domain.EF
         }
 
         public IQueryable<T> Repository => _trinityDbContext.Set<T>();
+
+        public string ConnectionString => _trinityDbContext.Database.GetDbConnection().ConnectionString;
 
         public async Task<T> Create(T newEntity)
         {

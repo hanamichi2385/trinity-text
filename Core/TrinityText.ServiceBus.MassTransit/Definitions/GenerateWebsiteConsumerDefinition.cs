@@ -8,7 +8,7 @@ namespace TrinityText.ServiceBus.MassTransit.Definitions
     {
         public GenerateWebsiteConsumerDefinition()
         {
-            EndpointName = "generatequeue";
+            EndpointName = "generate_queue";
             ConcurrentMessageLimit = 1;
         }
 

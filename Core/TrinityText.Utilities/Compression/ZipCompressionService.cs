@@ -38,6 +38,11 @@ namespace TrinityText.Utilities
         {
             try
             {
+                var f = new DirectoryInfo(basePath);
+                if(f.Exists == false)
+                {
+                    f.Create();
+                }
                 var filename = $"{basePath}\\{Guid.NewGuid().ToString().Replace("-", string.Empty)}.zip";
                 using (MemoryStream stream = new MemoryStream(zipFileByteArray))
                 {

@@ -10,6 +10,8 @@ namespace TrinityText.Domain
         Task<T> Update(T modifiedEntity);
         Task Delete(T entityToDelete);
 
+        string ConnectionString { get; }
+
         IQueryable<T> Repository { get; }
 
         Task BeginTransaction();
