@@ -119,7 +119,7 @@ namespace TrinityText.Business.Services.Impl
                 {
                     query =
                         query
-                        .Where(s => s.NAME.Contains(search.Terms, StringComparison.InvariantCultureIgnoreCase));
+                        .Where(s => s.NAME.Contains(search.Terms));
                 }
 
                 if (search.ShowOnlyDedicated.HasValue)
