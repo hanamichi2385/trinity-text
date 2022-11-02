@@ -84,7 +84,7 @@ namespace TrinityText.Business.Services.Impl
                     var filtered = entities.Where(e => 
                         (string.IsNullOrWhiteSpace(e.VISIBILITY) || 
                             (!string.IsNullOrWhiteSpace(e.VISIBILITY) 
-                                && visibilities.Intersect(e.VISIBILITY.Split(',', StringSplitOptions.RemoveEmptyEntries),StringComparer.InvariantCultureIgnoreCase).Any())))
+                                && visibilities.Intersect(e.VISIBILITY.Split('|', StringSplitOptions.RemoveEmptyEntries),StringComparer.InvariantCultureIgnoreCase).Any())))
                         .ToList();
 
                     var result = _mapper.Map<IList<PageTypeDTO>>(filtered);
