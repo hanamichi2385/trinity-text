@@ -48,7 +48,6 @@ namespace TrinityText.Business
                 .ForMember(d => d.OutputFilename, src => src.MapFrom(s => s.OUTPUT_FILENAME))
                 .ForMember(d => d.Name, src => src.MapFrom(s => s.NAME))
                 .ForMember(d => d.PrintElementName, src => src.MapFrom(s => s.PRINT_ELEMENT_NAME))
-                .ForMember(d => d.Visibility, src => src.MapFrom(s => s.VISIBILITY.Split(',', System.StringSplitOptions.RemoveEmptyEntries)))
                 .ForMember(d => d.HasSubfolder, src => src.Ignore());
 
             CreateMap<PageTypeDTO, PageType>()
@@ -56,7 +55,7 @@ namespace TrinityText.Business
                 .ForMember(d => d.OUTPUT_FILENAME, src => src.MapFrom(s => s.OutputFilename))
                 .ForMember(d => d.NAME, src => src.MapFrom(s => s.Name))
                 .ForMember(d => d.PRINT_ELEMENT_NAME, src => src.MapFrom(s => s.PrintElementName))
-                .ForMember(d => d.VISIBILITY, src => src.MapFrom(s => string.Join(",", s.Visibility)));
+                .ForMember(d => d.VISIBILITY, src => src.MapFrom(s => string.Join("|", s.Visibility)));
 
             CreateMap<Page, PageDTO>()
                 .ForMember(d => d.CreationDate, src => src.MapFrom(s => s.CREATION_DATE))

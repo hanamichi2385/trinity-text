@@ -253,7 +253,7 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.FK_WEBSITE).HasColumnName("FK_VENDOR");
                 entity.Property(e => e.FK_COUNTRY).HasColumnName("FK_NAZIONE");
                 entity.Property(e => e.FK_LANGUAGE).HasColumnName("FK_LINGUA");
-                entity.Property(e => e.FK_TEXTTYPE).HasColumnName("FK_TIPOLOGIA");
+                entity.Property(e => e.FK_TEXTTYPE).HasColumnName("FK_TIPOLOGIA").UsePropertyAccessMode(PropertyAccessMode.Field);
                 entity.Property(e => e.ACTIVE).HasColumnName("ATTIVA");
                 entity.Property(e => e.NAME).HasColumnName("NOME");
                 entity.Navigation(e => e.REVISIONS).AutoInclude();
