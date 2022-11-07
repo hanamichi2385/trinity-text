@@ -99,10 +99,10 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                             var instanceDirectory = filesSubDirectory.CreateSubdirectory(i.Site.ToUpper());
                             GeneratePDFPagesFileBySite(tenant, website, i.Site, pagesPerSite, instanceDirectory.FullName);
                         }
-                        else
-                        {
-                            return OperationResult<string>.MakeFailure(pagesPerSiteRs.Errors);
-                        }
+                    }
+                    else
+                    {
+                        return OperationResult<string>.MakeFailure(pagesPerSiteRs.Errors);
                     }
                 }
             }
@@ -240,14 +240,25 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                 IDictionary<string, string> types =
                     resources
-                    .GroupBy(r => r.TextType.Name)
-                    .ToDictionary(r => r.Key, r => r.First().TextType.Subfolder);
+                    .GroupBy(r => r.TextType?.Name ?? website)
+                    .ToDictionary(r => r.Key, r => r.First().TextType?.Subfolder ?? string.Empty);
 
                 foreach (var t in types.Keys)
                 {
-                    IList<TextDTO> textsPerType =
-                        resources.Where(r => r.TextType.Name == t)
+                    IList<TextDTO> textsPerType = new List<TextDTO>();
+
+                    if(t.Equals(website, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        textsPerType = resources.Where(r => r.TextType == null)
                         .ToList();
+                    }
+                    else
+                    {
+                        textsPerType = resources.Where(r => r.TextType != null && r.TextType.Name == t)
+                        .ToList();
+                    }
+
+                        
                     var fileName = string.IsNullOrWhiteSpace(t) ? website : t;
                     var file = new byte[0];
                     switch (type)

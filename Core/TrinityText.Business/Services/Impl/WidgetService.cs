@@ -85,7 +85,7 @@ namespace TrinityText.Business.Services.Impl
             {
                 var entity = _widgetRepository
                     .Repository
-                    .Where(w => w.KEY.Equals(key, StringComparison.InvariantCultureIgnoreCase)
+                    .Where(w => w.KEY.Equals(key)
                         && w.FK_LANGUAGE == language &&
                         (
                             (string.IsNullOrWhiteSpace(w.FK_PRICELIST) || w.FK_PRICELIST == site)
@@ -110,7 +110,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("GET", ex);
+                _logger.LogError("GET_BYKEYS", ex);
                 return OperationResult<WidgetDTO>.MakeFailure(new[] { ErrorMessage.Create("GET_BYKEYS", "GENERIC_ERROR") });
             }
         }

@@ -313,6 +313,8 @@ namespace TrinityText.Business.Services.Impl
                     Site = site,
                     LanguageIds = languages,
                     ShowOnlyActive = true,
+                    UserWebsites = new[] { website },
+                    WebsiteLanguages = languages,
                 };
 
                 var query =
