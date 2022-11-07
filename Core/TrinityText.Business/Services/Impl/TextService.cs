@@ -64,6 +64,7 @@ namespace TrinityText.Business.Services.Impl
         {
             var websites = search.UserWebsites ?? new string[0];
             var languages = search.WebsiteLanguages ?? new string[0];
+            var textTypes = search.TextTypeIds ?? new int?[0];
 
             var query = _textRepository
                 .Repository
@@ -74,21 +75,11 @@ namespace TrinityText.Business.Services.Impl
 
             if (search != null)
             {
-                if (search.TextTypeId.HasValue)
+                if (textTypes.Any())
                 {
-                    var typeId = search.TextTypeId.Value;
-                    if (typeId != -1)
-                    {
-                        query =
-                            query
-                            .Where(s => s.FK_TEXTTYPE == typeId);
-                    }
-                    else
-                    {
-                        query =
-                            query
-                            .Where(s => s.FK_TEXTTYPE == null);
-                    }
+                    query =
+                        query
+                        .Where(s => textTypes.Contains(s.FK_TEXTTYPE));
                 }
 
                 if (!string.IsNullOrWhiteSpace(search.Website))
@@ -243,7 +234,7 @@ namespace TrinityText.Business.Services.Impl
         {
             var entity = _mapper.Map<Text>(dto);
             entity.TEXTTYPE = textType;
-            
+
 
             var revision = entity.REVISIONS.ElementAt(0);
             revision.CREATION_DATE = DateTime.Now;
@@ -378,20 +369,25 @@ namespace TrinityText.Business.Services.Impl
             {
                 var publishableTexts = new Dictionary<string, List<TextDTO>>();
 
+                var textTypesIds = textTypes.Select(t => t.Id).Union(new int?[] { null }).ToArray();
+
                 var search = new SearchTextDTO()
                 {
                     Website = website,
                     Site = site,
                     LanguageIds = languages,
                     ShowOnlyActive = true,
-                    UserWebsites =  new[] { website },
+                    UserWebsites = new[] { website },
                     WebsiteLanguages = languages,
+                    TextTypeIds = textTypesIds,
                 };
 
                 var query =
                     GetTextsByFilter(search);
 
-                var all = _mapper.Map<IList<TextDTO>>(query.ToList());
+                var q = query.ToList();
+
+                var all = _mapper.Map<IList<TextDTO>>(q);
 
                 foreach (var l in languages)
                 {
@@ -401,19 +397,19 @@ namespace TrinityText.Business.Services.Impl
                         .OrderBy(n => n.Name)
                         .ToList();
 
-                    var types = texts
-                        .Select(t => t.TextType)
-                        .Distinct()
-                        .ToList();
+                    //var types = texts
+                    //    .Select(t => t.TextType)
+                    //    .Distinct()
+                    //    .ToList();
 
                     var list = new List<TextDTO>();
-                    foreach (var t in types)
+                    foreach (var t in textTypesIds)
                     {
                         var listForType = new List<TextDTO>();
 
                         var textsforType =
                             texts
-                            .Where(rft => rft.TextType == t)
+                            .Where(rft => rft.TextType?.Id == t)
                             .ToList();
 
                         foreach (var n in textsforType.Select(s => s.Name).Distinct())
@@ -434,7 +430,7 @@ namespace TrinityText.Business.Services.Impl
                                     .ToList();
 
                                 var globalTexts =
-                                    textByName.Where(resx => string.IsNullOrEmpty(resx.Website))
+                                    textByName.Where(resx => string.IsNullOrWhiteSpace(resx.Website))
                                     .ToList();
 
                                 if (textByWebsite.Count() == 1)
