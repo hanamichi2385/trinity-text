@@ -233,7 +233,7 @@ namespace TrinityText.Business.Services.Impl
         private async Task<OperationResult<TextDTO>> Create(TextDTO dto, TextType textType)
         {
             var entity = _mapper.Map<Text>(dto);
-            entity.TEXTTYPE = textType;
+            //entity.TEXTTYPE = textType;
 
 
             var revision = entity.REVISIONS.ElementAt(0);
@@ -243,6 +243,7 @@ namespace TrinityText.Business.Services.Impl
             await _textRepository.Create(entity);
 
             var r = _mapper.Map<TextDTO>(entity);
+            r.TextType = _mapper.Map<TextTypeDTO>(textType);
 
             return OperationResult<TextDTO>.MakeSuccess(r);
         }
