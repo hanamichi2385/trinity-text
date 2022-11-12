@@ -204,7 +204,11 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var result = _mapper.Map<FileDTO>(entity, opts => opts.Items["Content"] = (withThumb ? entity.THUMBNAIL : entity.CONTENT));
+                    var result = _mapper.Map<FileDTO>(entity);
+                    if (withThumb)
+                    {
+                        result.Content = entity.THUMBNAIL;
+                    }
 
                     return OperationResult<FileDTO>.MakeSuccess(result);
                 }

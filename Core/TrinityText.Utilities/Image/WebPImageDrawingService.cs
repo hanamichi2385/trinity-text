@@ -33,12 +33,6 @@ namespace TrinityText.Utilities
                 {
                     using (var fileStream = new MemoryStream(dto.Content))
                     {
-                        var img = Image.FromStream(fileStream);
-                        int w = 0;
-                        int h = 0;
-
-                        ImageExtensions.CheckImageSize(_options, img.Width, img.Height, out w, out h);
-
                         using (var outputFile = new MemoryStream())
                         {
                             using (var inputFile = new MemoryStream(dto.Content))
@@ -46,6 +40,12 @@ namespace TrinityText.Utilities
                             {
                                 using (var original = SKBitmap.Decode(inputStream))
                                 {
+                                    int w = 0;
+                                    int h = 0;
+
+                                    ImageExtensions.CheckImageSize(_options, original.Width, original.Height, out w, out h);
+
+
                                     var info = new SKImageInfo() { Width = w, Height = h, ColorType = original.ColorType, AlphaType = original.AlphaType, ColorSpace = original.ColorSpace };
                                     var thumb = original.Resize(info, SKFilterQuality.Medium);
 
