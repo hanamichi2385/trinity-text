@@ -149,7 +149,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                     var updateRs = await _publicationService.Update(setting.Id.Value, PublicationStatus.Generating, "Zip file completed", byteArray);
 
-                    if(updateRs.Success == false)
+                    if (updateRs.Success == false)
                     {
                         result.AppendErrors(updateRs.Errors);
                     }
@@ -182,7 +182,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                 var uploadRs = await _transferServiceCoordinator.Upload(payload.Tenant, setting.Website, d, server.Host, server.Username, server.Password);
 
-                if(uploadRs.Success == false)
+                if (uploadRs.Success == false)
                 {
                     result.AppendErrors(uploadRs.Errors);
                 }
@@ -247,7 +247,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 {
                     IList<TextDTO> textsPerType = new List<TextDTO>();
 
-                    if(t.Equals(website, StringComparison.InvariantCultureIgnoreCase))
+                    if (t.Equals(website, StringComparison.InvariantCultureIgnoreCase))
                     {
                         textsPerType = resources.Where(r => r.TextType == null)
                         .ToList();
@@ -258,7 +258,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                         .ToList();
                     }
 
-                        
+
                     var fileName = string.IsNullOrWhiteSpace(t) ? website : t;
                     var file = new byte[0];
                     switch (type)
@@ -484,7 +484,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 {
                     element.SetAttributeValue("country", r.Country);
                 }
-                XCData cdata = new XCData(r.TextRevision.Content);
+                XCData cdata = new XCData(r.TextRevision?.Content ?? string.Empty);
                 element.Add(cdata);
 
                 root.Add(element);
@@ -501,7 +501,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 .Select(rt => new
                 {
                     Name = rt.Name,
-                    Text = rt.TextRevision.Content,
+                    Text = rt.TextRevision?.Content ?? string.Empty,
                     Country = rt.Country,
                 }).ToList();
 
