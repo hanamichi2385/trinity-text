@@ -34,12 +34,18 @@ namespace TrinityText.Business
                 .ForMember(d => d.REVISIONS, src => src.MapFrom(s => new[] { s.TextRevision }));
 
             CreateMap<TextRevision, TextRevisionDTO>()
-                .ForMember(d => d.Content, src => src.MapFrom(s => s.CONTENT))
+                .ForMember(d => d.Content, src => src.MapFrom(s => string.IsNullOrWhiteSpace(s.CONTENT) ? string.Empty : s.CONTENT))
                 .ForMember(d => d.CreationDate, src => src.MapFrom(s => s.CREATION_DATE))
                 .ForMember(d => d.CreationUser, src => src.MapFrom(s => s.CREATION_USER))
                 .ForMember(d => d.Id, src => src.MapFrom(s => s.ID))
-                .ForMember(d => d.Index, src => src.MapFrom(s => s.REVISION_NUMBER))
-                .ReverseMap();
+                .ForMember(d => d.Index, src => src.MapFrom(s => s.REVISION_NUMBER));
+
+            CreateMap<TextRevisionDTO, TextRevision>()
+                .ForMember(d => d.CONTENT, src => src.MapFrom(s => string.IsNullOrWhiteSpace(s.Content) ? string.Empty : s.Content))
+                .ForMember(d => d.CREATION_DATE, src => src.MapFrom(s => s.CreationDate))
+                .ForMember(d => d.CREATION_USER, src => src.MapFrom(s => s.CreationUser))
+                .ForMember(d => d.ID, src => src.MapFrom(s => s.Id))
+                .ForMember(d => d.REVISION_NUMBER, src => src.MapFrom(s => s.Index));
 
             CreateMap<PageType, PageTypeDTO>()
                 .ForMember(d => d.PageTotals, src => src.MapFrom(s => s.PAGES != null ? s.PAGES.Count : 0))
