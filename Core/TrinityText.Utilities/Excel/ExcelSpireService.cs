@@ -51,9 +51,9 @@ namespace TrinityText.Utilities
                             {
                                 var key = Convert.ToString(currentWorksheet.Range[i, 1].Value).Trim();
                                 var typeName = Convert.ToString(currentWorksheet.Range[i, 2].Value).ToUpper().Trim();
-                                var vendor = Convert.ToString(currentWorksheet.Range[i, 3].Value).Trim();
-                                var istance = Convert.ToString(currentWorksheet.Range[i, 4].Value).Trim();
-                                var nation = Convert.ToString(currentWorksheet.Range[i, 5].Value).Trim();
+                                var website = Convert.ToString(currentWorksheet.Range[i, 3].Value).Trim();
+                                var site = Convert.ToString(currentWorksheet.Range[i, 4].Value).Trim();
+                                var country = Convert.ToString(currentWorksheet.Range[i, 5].Value).Trim();
                                 var lang = Convert.ToString(currentWorksheet.Range[i, 6].Value).Trim();
                                 var text = Convert.ToString(currentWorksheet.Range[i, 7].Value).Trim();
 
@@ -86,11 +86,11 @@ namespace TrinityText.Utilities
                                                 CreationDate = DateTime.Now
                                             },
                                             Active = true,
-                                            TextType = type,
+                                            //TextType = type,
                                             TextTypeId = type != null ? type.Id : null,
-                                            Website = "*".Equals(vendor) ? null : vendor,
-                                            Country = "*".Equals(nation) ? null : nation,
-                                            Site = "*".Equals(istance) ? null : istance,
+                                            Website = "*".Equals(website, StringComparison.InvariantCultureIgnoreCase) ? null : website,
+                                            Country = "*".Equals(country, StringComparison.InvariantCultureIgnoreCase) ? null : country,
+                                            Site = "*".Equals(site, StringComparison.InvariantCultureIgnoreCase) ? null : site,
                                         };
 
                                         list.Add(dto);
