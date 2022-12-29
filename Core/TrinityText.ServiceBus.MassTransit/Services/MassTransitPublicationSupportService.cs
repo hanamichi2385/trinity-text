@@ -114,6 +114,8 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
             GenerateFileTimestamp(currentDirectory, user);
 
+            DeleteEmptySubdirectories(currentDirectory.FullName);
+
             if (compressFileOutput)
             {
                 var filePath = await _compressionFileService.CompressFolder(currentDirectory.FullName, basePath);
@@ -124,6 +126,23 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             else
             {
                 return OperationResult<string>.MakeSuccess(currentDirectory.FullName);
+            }
+        }
+
+        public void FastDeleteEmptySubdirectories(string parentDirectory)
+        {
+            System.Threading.Tasks.Parallel.ForEach(System.IO.Directory.GetDirectories(parentDirectory), directory => {
+                FastDeleteEmptySubdirectories(directory);
+                if (!System.IO.Directory.EnumerateFileSystemEntries(directory).Any()) System.IO.Directory.Delete(directory, false);
+            });
+        }
+
+        public void DeleteEmptySubdirectories(string parentDirectory)
+        {
+            foreach (string directory in System.IO.Directory.GetDirectories(parentDirectory))
+            {
+                DeleteEmptySubdirectories(directory);
+                if (!System.IO.Directory.EnumerateFileSystemEntries(directory).Any()) System.IO.Directory.Delete(directory, false);
             }
         }
 
