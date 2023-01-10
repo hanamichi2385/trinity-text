@@ -224,10 +224,11 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    var existRs = await NotDuplicated(dto);
+                    //VERIFY
+                    //var existRs = await NotDuplicated(dto);
 
-                    if (existRs.Success)
-                    {
+                    //if (existRs.Success)
+                    //{
                         var typeId = dto.PageTypeId;
                         var pageType = await _pageTypeRepository.Read(typeId);
 
@@ -244,11 +245,11 @@ namespace TrinityText.Business.Services.Impl
                         r.PageType = t;
 
                         return OperationResult<PageDTO>.MakeSuccess(r);
-                    }
-                    else
-                    {
-                        return OperationResult<PageDTO>.MakeFailure(existRs.Errors);
-                    }
+                    //}
+                    //else
+                    //{
+                    //    return OperationResult<PageDTO>.MakeFailure(existRs.Errors);
+                    //}
                 }
             }
             catch (Exception ex)
