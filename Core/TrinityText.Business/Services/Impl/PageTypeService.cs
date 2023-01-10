@@ -121,7 +121,7 @@ namespace TrinityText.Business.Services.Impl
                         entity.PATH_PREVIEWPAGE = dto.PathPreviewPage;
                         entity.OUTPUT_FILENAME = dto.OutputFilename;
                         entity.PRINT_ELEMENT_NAME = dto.PrintElementName;
-                        entity.VISIBILITY = dto.Visibility != null && dto.Visibility.Count() > 0 ? string.Join(",", dto.Visibility) : null;
+                        entity.VISIBILITY = dto.Visibility != null && dto.Visibility.Count() > 0 ? string.Join("|", dto.Visibility) : null;
 
                         var result = await _pageTypeRepository.Update(entity);
 

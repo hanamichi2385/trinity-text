@@ -16,11 +16,6 @@
 
         public string Link { get; set; }
 
-        public string Order { get; set; }
-    }
-
-    public interface IParticol
-    {
-        bool IsEmpty { get; }
+        public int? Order { get; set; }
     }
 }

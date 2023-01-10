@@ -204,8 +204,9 @@ namespace TrinityText.Business.Services.Impl
                                 link.Add(linkData);
 
                                 var order = new XElement("order");
-                                XCData orderData = new XCData(string.IsNullOrWhiteSpace(i.Order) ? string.Empty : i.Order);
-                                order.Add(orderData);
+                                order.Value = i.Order.HasValue ? i.Order.Value.ToString() : "0";
+                                //XCData orderData = new XCData(string.IsNullOrWhiteSpace(i.Order) ? string.Empty : i.Order);
+                                //order.Add(orderData);
 
                                 item.Add(path);
                                 item.Add(caption);
@@ -308,7 +309,16 @@ namespace TrinityText.Business.Services.Impl
                                 var path = item.Element("path") != null ? item.Element("path").Value : string.Empty;
                                 var caption = item.Element("caption") != null ? item.Element("caption").Value : string.Empty;
                                 var link = item.Element("link") != null ? item.Element("link").Value : string.Empty;
-                                var order = item.Element("order") != null ? item.Element("order").Value : string.Empty;
+                                var order = 0;
+
+                                var orderValue = item.Element("order") != null ? item.Element("order").Value : string.Empty;
+                                if (!string.IsNullOrWhiteSpace(orderValue))
+                                {
+                                    if(int.TryParse(orderValue, out order) == false)
+                                    {
+                                        order = 0;
+                                    }
+                                }
 
                                 var itemPart = new ImageParticol()
                                 {
