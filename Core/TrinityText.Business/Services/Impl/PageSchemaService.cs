@@ -352,6 +352,51 @@ namespace TrinityText.Business.Services.Impl
                             //    break;
                     }
                 }
+                else
+                {
+                    switch (part.Type)
+                    {
+                        case TrinityText.Business.Schema.AtomType.Text:
+                            var text = clonePart as TextAtom;
+                            rootPart.Body.Add(text);
+                            break;
+                        case TrinityText.Business.Schema.AtomType.Number:
+                            var number = clonePart as NumberAtom;
+                            rootPart.Body.Add(number);
+                            break;
+                        case TrinityText.Business.Schema.AtomType.Checkbox:
+                            var checkbox = clonePart as CheckBoxAtom;
+                            rootPart.Body.Add(checkbox);
+                            break;
+                        case TrinityText.Business.Schema.AtomType.Image:
+                            var imageAtom = clonePart as ImageAtom;
+                            rootPart.Body.Add(imageAtom);
+                            break;
+                        case TrinityText.Business.Schema.AtomType.Gallery:
+                            var gallery = clonePart as GalleryAtom;
+                            rootPart.Body.Add(gallery);
+                            break;
+
+                            //case TrinityText.Business.Schema.AtomType.Blog:
+                            //    foreach (var item in element.Elements(clonePart.ItemName))
+                            //    {
+                            //        var title = item.Element("title") != null ? item.Element("title").Value : string.Empty;
+                            //        var text = item.Element("text") != null ? item.Element("text").Value : string.Empty;
+                            //        var author = item.Element("author") != null ? item.Element("author").Value : string.Empty;
+                            //        var link = item.Element("link") != null ? item.Element("link").Value : string.Empty;
+
+                            //        NewsPart newsPart = new NewsPart()
+                            //        {
+                            //            Title = title,
+                            //            Text = text,
+                            //            Link = link,
+                            //            Author = author,
+                            //        };
+                            //        clonePart.News.Add(newsPart);
+                            //    }
+                            //    break;
+                    }
+                }
 
 
             }
@@ -360,7 +405,7 @@ namespace TrinityText.Business.Services.Impl
 
         public PageSchema ParseContent(string xml, PageSchema structure)
         {
-            if (string.IsNullOrEmpty(xml))
+            if (string.IsNullOrWhiteSpace(xml))
             {
                 return structure;
             }
