@@ -40,7 +40,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                 var setting = publicationRs.Value;
                 string website = setting.Website;
                 string ftpServer = setting.FtpServer.Name;
-                string format = setting.Format.ToString();
+                string format = setting.DataType.ToString();
                 mail.To.Add(setting.Email);
                 mail.Subject = string.Format("[CMS] Website {0} updated with success!", website);
 

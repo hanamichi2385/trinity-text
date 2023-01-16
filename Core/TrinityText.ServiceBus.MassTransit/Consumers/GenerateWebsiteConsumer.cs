@@ -63,15 +63,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                         {
                             if (!string.IsNullOrWhiteSpace(setting.Email))
                             {
-                                string body = "<p>The {0} website update (type {2}) file is ready to download";
-                                string fileInfo = string.Format("<a href=\"{0}/Tools/DownloadZip/{1}\">Click here</a> to download the zip file", message.Host, setting.Id);
-
-                                if (!setting.ManualDelete)
-                                {
-                                    fileInfo += "<p>The file will erase after the download</p>";
-                                }
-
-                                body = string.Format(body, website, fileInfo, dataType);
+                                string body = $"<p>The {website} website update file (type {dataType}) is ready to download";
 
                                 SendMailMessage mail = new SendMailMessage()
                                 {
@@ -115,7 +107,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                             IsHtmlBody = true,
                         };
                         mail.To.Add(setting.Email);
-                        mail.Subject = string.Format("[CMS] Website update {0} failed", website);
+                        mail.Subject = string.Format("[CMS] Website {0} update failed", website);
 
                         var body = "<p>Website {0} update (type {1}) is failed!</p>";
                         body += "<p>These are the errors recorded during the update process. The updated was interrupted so run a new website update</p>";
