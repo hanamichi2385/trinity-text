@@ -19,7 +19,7 @@ namespace TrinityText.Business.Schema
 
             if (IsRequired)
             {
-                if (string.IsNullOrEmpty(Value))
+                if (string.IsNullOrWhiteSpace(Value))
                 {
                     errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} is mandatory"));
                 }
@@ -29,7 +29,8 @@ namespace TrinityText.Business.Schema
 
             if (bool.TryParse(Value, out boolean) == false)
             {
-                errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} not valid format (boolean)"));
+                //errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} not valid format (boolean)"));
+                boolean = false;
             }
 
             if (errors.Any() == false)
