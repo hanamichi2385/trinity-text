@@ -292,7 +292,16 @@ namespace TrinityText.Business.Services.Impl
                             break;
                         case TrinityText.Business.Schema.AtomType.Checkbox:
                             var checkbox = clonePart as CheckBoxAtom;
-                            checkbox.Value = element.Value;
+
+                            if (string.IsNullOrWhiteSpace(element.Value))
+                            {
+                                checkbox.Value = "false";
+                            }
+                            else
+                            {
+                                checkbox.Value = element.Value;
+                            }
+
                             rootPart.Body.Add(checkbox);
                             break;
                         case TrinityText.Business.Schema.AtomType.Image:
