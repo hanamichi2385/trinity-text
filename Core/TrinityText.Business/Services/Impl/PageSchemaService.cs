@@ -251,7 +251,7 @@ namespace TrinityText.Business.Services.Impl
                     //    }
                     //    break;
                     case TrinityText.Business.Schema.AtomType.Checkbox:
-                        var checkbox = part as TextAtom;
+                        var checkbox = part as CheckBoxAtom;
                         elementPart.Add(string.IsNullOrWhiteSpace(checkbox.Value) ? "false" : checkbox.Value.ToLower());
                         break;
                 }
