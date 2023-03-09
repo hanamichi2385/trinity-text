@@ -203,24 +203,23 @@ namespace TrinityText.Business.Services.Impl
                     textType = await _textTypeRevisionRepository.Read(dto.TextTypeId.Value);
                 }
 
-                if (dto.Id.HasValue)
+                var existRs = await NotDuplicated(dto);
+                if (existRs.Success)
                 {
-                    var entity = await _textRepository
-                        .Read(dto.Id.Value);
-                    return await Update(dto, entity, textType);
-                }
-                else
-                {
-                    var existRs = await NotDuplicated(dto);
-
-                    if (existRs.Success)
+                    if (dto.Id.HasValue)
                     {
-                        return await Create(dto, textType);
+                        var entity = await _textRepository.Read(dto.Id.Value);
+                        return await Update(dto, entity, textType);
                     }
                     else
                     {
-                        return OperationResult<TextDTO>.MakeFailure(existRs.Errors);
+                        return await Create(dto, textType);
                     }
+
+                }
+                else
+                {
+                    return OperationResult<TextDTO>.MakeFailure(existRs.Errors);
                 }
             }
             catch (Exception ex)
@@ -350,6 +349,11 @@ namespace TrinityText.Business.Services.Impl
                 {
                     query =
                         query.Where(r => r.FK_COUNTRY == null);
+                }
+
+                if (dto.Id.HasValue)
+                {
+                    query = query.Where(r => r.ID != dto.Id.Value);
                 }
 
                 var resx = query.Count();
