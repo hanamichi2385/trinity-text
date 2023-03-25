@@ -64,6 +64,7 @@ namespace TrinityText.Business.Schema
                 IsRequired = IsRequired,
                 MinValue = MinValue,
                 MaxValue = MaxValue,
+                Description = Description
             };
         }
     }

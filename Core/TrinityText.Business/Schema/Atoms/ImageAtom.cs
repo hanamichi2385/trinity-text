@@ -43,6 +43,7 @@ namespace TrinityText.Business.Schema
             {
                 Id = Id,
                 IsRequired = IsRequired,
+                Description = Description
             };
         }
     }
