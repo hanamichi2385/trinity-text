@@ -274,7 +274,7 @@ namespace TrinityText.Business.Services.Impl
                 }
 
                 var lastRevision = entity.REVISIONS.OrderByDescending(d => d.CREATION_DATE).FirstOrDefault();
-                if (lastRevision != null && string.Equals(lastRevision.CONTENT, dto.TextRevision.Content, StringComparison.InvariantCultureIgnoreCase) == false)
+                if (lastRevision != null && string.Equals(lastRevision.CONTENT, dto.TextRevision.Content) == false)
                 {
                     var revision = _mapper.Map<TextRevision>(dto.TextRevision);
                     //revision.TEXT = entity;
