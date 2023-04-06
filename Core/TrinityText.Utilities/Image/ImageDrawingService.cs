@@ -27,9 +27,7 @@ namespace TrinityText.Utilities
             {
                 var bytes = default(byte[]);
 
-                var contentType = ImageExtensions.GetMimeTypeForFile(dto.Filename); ;
-                //image/svg+xml è per i font ma non è una immagine
-                if (contentType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase) && !contentType.Equals("image/svg+xml", StringComparison.InvariantCultureIgnoreCase))
+                if (ImageExtensions.IsConvertible(dto))
                 {
                     using (var stream = new MemoryStream(dto.Content))
                     {

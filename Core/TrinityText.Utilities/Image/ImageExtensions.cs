@@ -1,8 +1,13 @@
-﻿namespace TrinityText.Utilities
+﻿using System;
+using System.Drawing;
+using System.IO;
+using TrinityText.Business;
+
+namespace TrinityText.Utilities
 {
     public static class ImageExtensions
     {
-        public static string GetMimeTypeForFile(string filePath)
+        private static string GetMimeTypeForFile(string filePath)
         {
             const string DefaultContentType = "application/octet-stream";
 
@@ -39,6 +44,34 @@
                 var ph = (int)(percHeight * height);
                 newWidth = pw == 0 ? 1 : pw;
                 newHeight = ph == 0 ? 1 : ph;
+            }
+        }
+
+        public static bool IsConvertible(FileDTO dto)
+        {
+            var contentType = GetMimeTypeForFile(dto.Filename);
+
+            if (contentType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
+            {
+                switch (contentType)
+                {
+                    case "image/svg+xml":
+                        return false;
+
+                    case "image/gif":
+                        using (var stream = new MemoryStream(dto.Content))
+                        using (var image = Image.FromStream(stream))
+                        {
+                            return ImageAnimator.CanAnimate(image) == false;
+                        }
+
+                    default:
+                        return true;
+                }
+            }
+            else
+            {
+                return false;
             }
         }
     }

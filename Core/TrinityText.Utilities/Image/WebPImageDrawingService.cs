@@ -3,7 +3,6 @@ using Microsoft.Extensions.Options;
 using Resulz;
 using SkiaSharp;
 using System;
-using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
 using TrinityText.Business;
@@ -27,9 +26,7 @@ namespace TrinityText.Utilities
             try
             {
                 var bytes = default(byte[]);
-                var contentType = ImageExtensions.GetMimeTypeForFile(dto.Filename);
-                //image/svg+xml è per i font ma non è una immagine
-                if (contentType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase) && !contentType.Equals("image/svg+xml", StringComparison.InvariantCultureIgnoreCase))
+                if (ImageExtensions.IsConvertible(dto))
                 {
                     using (var fileStream = new MemoryStream(dto.Content))
                     {
@@ -61,7 +58,7 @@ namespace TrinityText.Utilities
                     }
                 }
 
-                if(bytes != null && (bytes.Length < dto.Content.Length))
+                if (bytes != null && (bytes.Length < dto.Content.Length))
                 {
                     return await Task.FromResult(OperationResult<byte[]>.MakeSuccess(bytes));
                 }
@@ -77,14 +74,15 @@ namespace TrinityText.Utilities
             }
         }
 
+        
+
         public async Task<OperationResult<byte[]>> Compression(FileDTO dto)
         {
             try
             {
                 var bytes = default(byte[]);
-                var contentType = ImageExtensions.GetMimeTypeForFile(dto.Filename);
-                //image/svg+xml è per i font ma non è una immagine
-                if (contentType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase) && !contentType.Equals("image/svg+xml", StringComparison.InvariantCultureIgnoreCase))
+                
+                if (ImageExtensions.IsConvertible(dto))
                 {
                     using (var outputFile = new MemoryStream())
                     {
@@ -111,7 +109,6 @@ namespace TrinityText.Utilities
                 {
                     return OperationResult<byte[]>.MakeFailure(new[] { ErrorMessage.Create("COMPRESSION", "NOT_OPTIMIZED") });
                 }
-                //return await Task.FromResult(OperationResult<byte[]>.MakeSuccess(bytes));
             }
             catch (Exception ex)
             {
@@ -120,6 +117,6 @@ namespace TrinityText.Utilities
             }
         }
 
-        
+
     }
 }
