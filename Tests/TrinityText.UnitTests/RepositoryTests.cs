@@ -119,6 +119,7 @@ namespace TrinityText.UnitTests
 
             var list = repo.Repository.ToList();
 
+            await Task.CompletedTask;
         }
     }
 }

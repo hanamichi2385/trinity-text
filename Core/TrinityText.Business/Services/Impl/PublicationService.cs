@@ -117,7 +117,7 @@ namespace TrinityText.Business.Services.Impl
                 }
             }catch(Exception ex)
             {
-
+                _logger.LogError(ex, $"UPDATE_ZIP_CONTENT_{id}");
             }
         }
 

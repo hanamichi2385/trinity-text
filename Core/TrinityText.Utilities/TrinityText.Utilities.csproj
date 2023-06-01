@@ -1,25 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>netstandard2.1</TargetFramework>
+		 <TargetFramework>net6.0</TargetFramework>
 		<Description>Trinity Text utilities layer</Description>
 	</PropertyGroup>
 	<Import Project="..\..\SolutionItems\GlobalAssemblyInfo.proj" />
 
   <ItemGroup>
-    <PackageReference Include="FluentFTP" Version="38.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="3.1.27" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.27" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="3.1.27" />
+    <PackageReference Include="ExcelMapper" Version="5.2.429" />
+    <PackageReference Include="FluentFTP" Version="46.0.2" />
     <PackageReference Include="SkiaSharp" Version="2.88.3" />
     <PackageReference Include="Spire.XLS" Version="12.8.1" />
     <PackageReference Include="SSH.NET" Version="2020.0.2" />
-    <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\TrinityText.Business\TrinityText.Business.csproj" />
   </ItemGroup>
-
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
 </Project>

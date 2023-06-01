@@ -25,10 +25,10 @@ namespace TrinityText.Utilities
             _logger = logger;
         }
 
-        public async Task<IList<TextDTO>> GetTextsFromStream(string utente, Stream fileStream)
+        public async Task<TextDTO[]> GetTextsFromStream(string user, Stream fileStream)
         {
             
-            List<TextDTO> list = new List<TextDTO>();
+            var list = new List<TextDTO>();
             try
             {
                 using (Workbook workbook = new Workbook())
@@ -82,7 +82,7 @@ namespace TrinityText.Utilities
                                             TextRevision = new TextRevisionDTO()
                                             {
                                                 Content = text,
-                                                CreationUser = utente,
+                                                CreationUser = user,
                                                 CreationDate = DateTime.Now
                                             },
                                             Active = true,
@@ -110,10 +110,10 @@ namespace TrinityText.Utilities
             {
                 _logger.LogError(ex, "GETTEXTSFROMSTREAM");
             }
-            return list;
+            return list.ToArray();
         }
 
-        public async Task<byte[]> GetExcelFileStream(IList<PageDTO> list)
+        public async Task<byte[]> GetExcelFileStream(PageDTO[] list)
         {
             var basePath = _options.TempDirectory;
             var filePath = basePath + (basePath.EndsWith("/") ? string.Empty : "/") + "Pages" + Guid.NewGuid() + ".xlsx";
@@ -128,7 +128,7 @@ namespace TrinityText.Utilities
 
                 Dictionary<KeyValuePair<int, int>, string> cells = new Dictionary<KeyValuePair<int, int>, string>();
 
-                for (int i = 0; i < list.Count; i++)
+                for (int i = 0; i < list.Length; i++)
                 {
                     var w = list.ElementAt(i);
 
@@ -157,7 +157,7 @@ namespace TrinityText.Utilities
             }
         }
 
-        public async Task<byte[]> GetExcelFileStream(IList<WidgetDTO> list)
+        public async Task<byte[]> GetExcelFileStream(WidgetDTO[] list)
         {
             var basePath = _options.TempDirectory;
             var filePath = basePath + (basePath.EndsWith("/") ? string.Empty : "/") + "Widgets" + Guid.NewGuid() + ".xlsx";
@@ -172,7 +172,7 @@ namespace TrinityText.Utilities
 
                 Dictionary<KeyValuePair<int, int>, string> cells = new Dictionary<KeyValuePair<int, int>, string>();
 
-                for (int i = 0; i < list.Count; i++)
+                for (int i = 0; i < list.Length; i++)
                 {
                     var w = list.ElementAt(i);
 
@@ -201,7 +201,7 @@ namespace TrinityText.Utilities
             }
         }
 
-        public async Task<byte[]> GetExcelFileStream(IList<TextDTO> list)
+        public async Task<byte[]> GetExcelFileStream(TextDTO[] list)
         {
             var basePath = _options.TempDirectory;
             var filePath = basePath + (basePath.EndsWith("/") ? string.Empty : "/") + "Texts" + Guid.NewGuid() + ".xlsx";
@@ -218,7 +218,7 @@ namespace TrinityText.Utilities
 
                 Dictionary<KeyValuePair<int, int>, string> cells = new Dictionary<KeyValuePair<int, int>, string>();
 
-                for (int i = 0; i < list.Count; i++)
+                for (int i = 0; i < list.Length; i++)
                 {
                     var w = list.ElementAt(i);
 
@@ -249,7 +249,7 @@ namespace TrinityText.Utilities
             }
         }
 
-        public async Task<byte[]> GetExcelFileStream(IDictionary<KeyValuePair<string, string>, IList<TextDTO>> resourcesPerInstanceLang)
+        public async Task<byte[]> GetExcelFileStream(IDictionary<KeyValuePair<string, string>, TextDTO[]> resourcesPerInstanceLang)
         {
             var basePath = _options.TempDirectory;
             var filePath = basePath + (basePath.EndsWith("/") ? string.Empty : "/") + "Texts" + Guid.NewGuid() + ".xlsx";
@@ -279,7 +279,7 @@ namespace TrinityText.Utilities
                     Dictionary<KeyValuePair<int, int>, string> cells = new Dictionary<KeyValuePair<int, int>, string>();
 
                     var list = instance.Value;
-                    for (int i = 0; i < list.Count; i++)
+                    for (int i = 0; i < list.Length; i++)
                     {
                         var w = list.ElementAt(i);
 

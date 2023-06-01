@@ -15,11 +15,11 @@ jobs:
      solution-name: ${{ steps.setup-solution.outputs.solution }}
      suffix: ${{ steps.setup-solution.outputs.suffix }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 3.1.301
+        dotnet-version: 6.0.x
         
     - name: Setup Solution
       id: setup-solution
@@ -37,8 +37,8 @@ jobs:
         fi
         echo "Suffix:" $suffix
        
-        echo "::set-output name=solution::$SOLUTION_NAME"
-        echo "::set-output name=suffix::$suffix"
+        echo "solution=$SOLUTION_NAME" >> $GITHUB_OUTPUT
+        echo "suffix=$suffix" >> $GITHUB_OUTPUT
        
     - name: Determinate Version
       id: setup-version

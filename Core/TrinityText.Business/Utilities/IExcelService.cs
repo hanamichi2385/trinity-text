@@ -6,13 +6,13 @@ namespace TrinityText.Business
 {
     public interface IExcelService
     {
-        Task<IList<TextDTO>> GetTextsFromStream(string utente, Stream fileStream);
+        Task<TextDTO[]> GetTextsFromStream(string user, Stream fileStream);
 
-        Task<byte[]> GetExcelFileStream(IList<PageDTO> list);
+        Task<byte[]> GetExcelFileStream(PageDTO[] list);
 
-        Task<byte[]> GetExcelFileStream(IList<WidgetDTO> list);
+        Task<byte[]> GetExcelFileStream(WidgetDTO[] list);
 
-        Task<byte[]> GetExcelFileStream(IList<TextDTO> list);
-        Task<byte[]> GetExcelFileStream(IDictionary<KeyValuePair<string, string>, IList<TextDTO>> resourcesPerInstanceLang);
+        Task<byte[]> GetExcelFileStream(TextDTO[] list);
+        Task<byte[]> GetExcelFileStream(IDictionary<KeyValuePair<string, string>, TextDTO[]> resourcesPerInstanceLang);
     }
 }

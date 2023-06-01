@@ -292,7 +292,6 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                         default:
                             throw new NotSupportedException(type.ToString());
-                            break;
                     }
 
                     var folder = langDir.FullName;
@@ -465,7 +464,6 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                         default:
                             throw new NotSupportedException(type.ToString());
-                            break;
                     }
 
                     var folder = langDir.FullName;

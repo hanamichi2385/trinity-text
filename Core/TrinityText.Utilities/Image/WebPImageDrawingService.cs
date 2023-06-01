@@ -28,12 +28,13 @@ namespace TrinityText.Utilities
                 var bytes = default(byte[]);
                 if (ImageExtensions.IsConvertible(dto))
                 {
-                    using (var fileStream = new MemoryStream(dto.Content))
+
+                    using (var inputFile = new MemoryStream(dto.Content))
+                    using (var inputStream = new SKManagedStream(inputFile))
                     {
-                        using (var outputFile = new MemoryStream())
+                        if (CanGenerateThumb(dto.Filename, inputStream))
                         {
-                            using (var inputFile = new MemoryStream(dto.Content))
-                            using (var inputStream = new SKManagedStream(inputFile))
+                            using (var outputFile = new MemoryStream())
                             {
                                 using (var original = SKBitmap.Decode(inputStream))
                                 {
@@ -49,11 +50,9 @@ namespace TrinityText.Utilities
                                     thumb.Encode(SKEncodedImageFormat.Webp, _options.Quality)
                                             .SaveTo(outputFile);
                                 }
-
+                                bytes = outputFile.GetBuffer();
+                                outputFile.Close();
                             }
-                            bytes = outputFile.GetBuffer();
-
-                            outputFile.Close();
                         }
                     }
                 }
@@ -74,14 +73,12 @@ namespace TrinityText.Utilities
             }
         }
 
-        
-
         public async Task<OperationResult<byte[]>> Compression(FileDTO dto)
         {
             try
             {
                 var bytes = default(byte[]);
-                
+
                 if (ImageExtensions.IsConvertible(dto))
                 {
                     using (var outputFile = new MemoryStream())
@@ -117,6 +114,19 @@ namespace TrinityText.Utilities
             }
         }
 
+        private bool CanGenerateThumb(string filename, SKManagedStream stream)
+        {
+            var contentType = ImageExtensions.GetMimeTypeForFile(filename);
+            if ("image/gif".Equals(contentType, StringComparison.InvariantCultureIgnoreCase))
+            {
+                var codec = SKCodec.Create(stream);
 
+                return codec.FrameCount <= 1;
+            }
+            else
+            {
+                return true;
+            }
+        }
     }
 }

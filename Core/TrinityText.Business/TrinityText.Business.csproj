@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>netstandard2.1</TargetFramework>
+		 <TargetFramework>net6.0</TargetFramework>
 		<Description>Trinity Text business layer</Description>
 	</PropertyGroup>
 	<Import Project="..\..\SolutionItems\GlobalAssemblyInfo.proj" />
@@ -13,12 +13,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="AutoMapper" Version="10.1.1" />
-	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.27" />
-	  <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-	  <PackageReference Include="Resulz" Version="1.0.0" />
-	  <PackageReference Include="System.Data.SqlClient" Version="4.8.4" />
-	  <PackageReference Include="System.Text.Json" Version="5.0.2" />
+	  <PackageReference Include="AutoMapper" Version="12.0.1" />
+	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.3" />
+	  <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	  <PackageReference Include="Resulz" Version="1.2.0" />
+	  <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
 	</ItemGroup>
 
 	<ItemGroup>

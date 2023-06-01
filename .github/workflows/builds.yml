@@ -9,19 +9,19 @@ jobs:
     outputs:
      solution-name: ${{ steps.setup-solution.outputs.solution }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 3.1.301
+        dotnet-version: 6.0.x
         
     - name: Setup Solution
       id: setup-solution
       env: 
         SOLUTION_NAME: "Trinity.sln"
       run: |      
-        echo "::set-output name=solution::$SOLUTION_NAME"
-        echo "::set-output name=suffix::$suffix"
+        echo "solution=$SOLUTION_NAME" >> $GITHUB_OUTPUT
+        echo "suffix=$suffix" >> $GITHUB_OUTPUT
     - name: Install dependencies
       env: 
         SOLUTION_NAME: ${{ steps.setup-solution.outputs.solution }}

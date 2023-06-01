@@ -1,6 +1,7 @@
 ﻿using MassTransit;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using TrinityText.Business;
 using TrinityText.ServiceBus.Messages;
@@ -76,11 +77,12 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                 }
                 catch (Exception ex)
                 {
-
+                    _logger.LogError(ex, $"PUBLISH_WEBSITE_MESSAGE");
                 }
             }
             else
             {
+                throw new ApplicationException(string.Join(",", publicationRs.Errors.Select(s => s.Description)));
             }
         }
     }

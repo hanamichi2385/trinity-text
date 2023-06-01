@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Drawing;
-using System.IO;
 using TrinityText.Business;
 
 namespace TrinityText.Utilities
 {
     public static class ImageExtensions
     {
-        private static string GetMimeTypeForFile(string filePath)
+        public static string GetMimeTypeForFile(string filePath)
         {
             const string DefaultContentType = "application/octet-stream";
 
@@ -53,26 +51,12 @@ namespace TrinityText.Utilities
 
             if (contentType.StartsWith("image", StringComparison.InvariantCultureIgnoreCase))
             {
-                switch (contentType)
-                {
-                    case "image/svg+xml":
-                        return false;
-
-                    case "image/gif":
-                        using (var stream = new MemoryStream(dto.Content))
-                        using (var image = Image.FromStream(stream))
-                        {
-                            return ImageAnimator.CanAnimate(image) == false;
-                        }
-
-                    default:
-                        return true;
-                }
+                return contentType.Contains("svg+xml", StringComparison.InvariantCultureIgnoreCase) == false;
             }
             else
             {
                 return false;
             }
-        }
+        } 
     }
 }
