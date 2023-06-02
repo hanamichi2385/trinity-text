@@ -10,6 +10,7 @@ using TrinityText.Business;
 
 namespace TrinityText.Utilities
 {
+    [Obsolete]
     public class ExcelSpireService : IExcelService
     {
         private readonly ExcelOptions _options;
