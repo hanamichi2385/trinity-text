@@ -9,7 +9,7 @@ namespace TrinityText.Domain
             this.PAGES = new HashSet<Page>();
         }
     
-        public int ID { get; set; }
+        public virtual int ID { get; set; }
         public virtual string NAME { get; set; }
         public virtual string OUTPUT_FILENAME { get; set; }
         public virtual string SCHEMA { get; set; }

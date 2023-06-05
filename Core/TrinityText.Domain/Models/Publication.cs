@@ -12,7 +12,7 @@ namespace TrinityText.Domain
         public virtual System.DateTime FILTERDATA_DATE { get; set; }
         public virtual string STATUS_MESSAGE { get; set; }
         //public virtual byte[] ZIP_FILE { get; set; }
-        public DateTime LASTUPDATE_DATE { get; set; }
+        public virtual DateTime LASTUPDATE_DATE { get; set; }
         public virtual bool MANUALDELETE { get; set; }
         public virtual int STATUS_CODE { get; set; }
         //public virtual string WEBSITE { get; set; }

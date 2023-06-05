@@ -25,11 +25,11 @@ namespace TrinityText.UnitTests
 
             var connectionString = config.GetSection("ConnectionString").Value;
 
-            var options = new DbContextOptionsBuilder<TrinityDbContext>()
+            var options = new DbContextOptionsBuilder<TrinityEFContext>()
                 .UseSqlServer(connectionString)
                 .Options;
 
-            using (TrinityDbContext ctx = new TrinityDbContext(options))
+            using (TrinityEFContext ctx = new TrinityEFContext(options))
             {
                 var cs0 = new CdnServer()
                 {
@@ -111,11 +111,11 @@ namespace TrinityText.UnitTests
 
             var connectionString = config.GetSection("ConnectionString").Value;
 
-            var options = new DbContextOptionsBuilder<TrinityDbContext>()
+            var options = new DbContextOptionsBuilder<TrinityEFContext>()
                 .UseSqlServer(connectionString)
                 .Options;
 
-            using (TrinityDbContext ctx = new TrinityDbContext(options))
+            using (TrinityEFContext ctx = new TrinityEFContext(options))
             {
 
                 var cs0 = new Folder()
@@ -176,11 +176,11 @@ namespace TrinityText.UnitTests
 
             var connectionString = config.GetSection("ConnectionString").Value;
 
-            var options = new DbContextOptionsBuilder<TrinityDbContext>()
+            var options = new DbContextOptionsBuilder<TrinityEFContext>()
                 .UseSqlServer(connectionString)
                 .Options;
 
-            using (TrinityDbContext ctx = new TrinityDbContext(options))
+            using (TrinityEFContext ctx = new TrinityEFContext(options))
             {
 
                 var cs0 = new PageType()
@@ -232,11 +232,11 @@ namespace TrinityText.UnitTests
 
             var connectionString = config.GetSection("ConnectionString").Value;
 
-            var options = new DbContextOptionsBuilder<TrinityDbContext>()
+            var options = new DbContextOptionsBuilder<TrinityEFContext>()
                 .UseSqlServer(connectionString)
                 .Options;
 
-            using (TrinityDbContext ctx = new TrinityDbContext(options))
+            using (TrinityEFContext ctx = new TrinityEFContext(options))
             {
 
                 var cs0 = new TextType()
@@ -296,11 +296,11 @@ namespace TrinityText.UnitTests
 
             var connectionString = config.GetSection("ConnectionString").Value;
 
-            var options = new DbContextOptionsBuilder<TrinityDbContext>()
+            var options = new DbContextOptionsBuilder<TrinityEFContext>()
                 .UseSqlServer(connectionString)
                 .Options;
 
-            using (TrinityDbContext ctx = new TrinityDbContext(options))
+            using (TrinityEFContext ctx = new TrinityEFContext(options))
             {
 
                 var cs0 = new Widget()
@@ -332,11 +332,11 @@ namespace TrinityText.UnitTests
 
             var connectionString = config.GetSection("ConnectionString").Value;
 
-            var options = new DbContextOptionsBuilder<TrinityDbContext>()
+            var options = new DbContextOptionsBuilder<TrinityEFContext>()
                 .UseSqlServer(connectionString)
                 .Options;
 
-            using (TrinityDbContext ctx = new TrinityDbContext(options))
+            using (TrinityEFContext ctx = new TrinityEFContext(options))
             {
                 var cs0 = new CdnServer()
                 {

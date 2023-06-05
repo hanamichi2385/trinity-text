@@ -1,21 +1,20 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 
 namespace TrinityText.Domain.EF
 {
     public class EFRepository<T> : IRepository<T> where T : class, IEntity
     {
-        private readonly TrinityDbContext _trinityDbContext;
+        private readonly TrinityEFContext _trinityDbContext;
 
-        public EFRepository(TrinityDbContext trinityDbContext)
+        public EFRepository(TrinityEFContext trinityDbContext)
         {
             _trinityDbContext = trinityDbContext;
         }
 
         public IQueryable<T> Repository => _trinityDbContext.Set<T>();
 
-        public string ConnectionString => _trinityDbContext.Database.GetDbConnection().ConnectionString;
+        public string ConnectionString => _trinityDbContext.ConnectionString;
 
         public async Task<T> Create(T newEntity)
         {
@@ -54,12 +53,12 @@ namespace TrinityText.Domain.EF
 
         public async Task CommitTransaction()
         {
-            await _trinityDbContext.Commit();
+            await _trinityDbContext.CommitTransaction();
         }
 
         public async Task RollbackTransaction()
         {
-            await _trinityDbContext.Rollback();
+            await _trinityDbContext.RollbackTransaction();
         }
     }
 }

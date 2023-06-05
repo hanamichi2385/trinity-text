@@ -30,7 +30,7 @@ namespace TrinityText.UnitTests
             var connectionString = config.GetSection("ConnectionString").Value;
 
             var services = new ServiceCollection();
-            services.AddDbContextPool<TrinityDbContext>(s => s.UseSqlServer(connectionString));
+            services.AddDbContextPool<TrinityEFContext>(s => s.UseSqlServer(connectionString));
             services.AddTransient(typeof(IRepository<>), typeof(EFRepository<>));
             services.AddTransient<ITextService, TextService>();
             services.AddTransient<ITextTypeService, TextTypeService>();

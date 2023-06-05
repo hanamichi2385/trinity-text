@@ -1,3 +1,5 @@
+using System;
+
 namespace TrinityText.Domain
 {
   
@@ -11,7 +13,7 @@ namespace TrinityText.Domain
         public virtual string CONTENT { get; set; }
         public virtual string CREATION_USER { get; set; }
         public virtual string LASTUPDATE_USER { get; set; }
-        public System.DateTime CREATION_DATE { get; set; }
-        public System.DateTime LASTUPDATE_DATE { get; set; }
+        public virtual DateTime CREATION_DATE { get; set; }
+        public virtual DateTime LASTUPDATE_DATE { get; set; }
     }
 }

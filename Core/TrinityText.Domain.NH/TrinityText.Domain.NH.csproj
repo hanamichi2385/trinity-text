@@ -5,7 +5,9 @@
 	</PropertyGroup>
 	<Import Project="..\..\SolutionItems\GlobalAssemblyInfo.proj" />
 	<ItemGroup>
-	  <PackageReference Include="NHibernate" Version="5.4.2" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
+		<PackageReference Include="NHibernate" Version="5.4.2" />
+		<PackageReference Include="NHibernate.NetCore" Version="6.0.13" />
 	</ItemGroup>
 
 	<ItemGroup>

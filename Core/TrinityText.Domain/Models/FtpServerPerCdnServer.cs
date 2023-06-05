@@ -1,3 +1,5 @@
+using System;
+
 namespace TrinityText.Domain
 {
     public partial class FtpServerPerCdnServer : IEntity
