@@ -10,7 +10,6 @@
     <PackageReference Include="ExcelMapper" Version="5.2.429" />
     <PackageReference Include="FluentFTP" Version="46.0.2" />
     <PackageReference Include="SkiaSharp" Version="2.88.3" />
-    <PackageReference Include="Spire.XLS" Version="12.8.1" />
     <PackageReference Include="SSH.NET" Version="2020.0.2" />
   </ItemGroup>
 

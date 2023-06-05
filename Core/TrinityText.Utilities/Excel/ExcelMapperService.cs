@@ -1,12 +1,15 @@
 ﻿using Ganss.Excel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NPOI.HPSF;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using TrinityText.Business;
+using TrinityText.Domain;
 
 namespace TrinityText.Utilities.Excel
 {
@@ -37,8 +40,18 @@ namespace TrinityText.Utilities.Excel
                     CONTENT = l.Content
                 }).ToArray();
 
+            var fileName = "pages";
+            var filePath = GetFilePath(fileName);
 
-            return await CreateExcelFile(pages, "Pages");
+            var em = new ExcelMapper()
+            {
+                HeaderRow = true,
+                CreateMissingHeaders = true,
+            };
+            await em.SaveAsync(filePath, pages, fileName, xlsx: true);
+
+
+            return await GetStream(filePath);
         }
 
         public async Task<byte[]> GetExcelFileStream(WidgetDTO[] list)
@@ -53,8 +66,18 @@ namespace TrinityText.Utilities.Excel
                     CONTENT = l.Content
                 }).ToArray();
 
+            var fileName = "widgets";
+            var filePath = GetFilePath(fileName);
 
-            return await CreateExcelFile(widgets, "Widgets");
+            var em = new ExcelMapper()
+            {
+                HeaderRow = true,
+                CreateMissingHeaders = true,
+            };
+            await em.SaveAsync(filePath, widgets, fileName, xlsx: true);
+
+
+            return await GetStream(filePath);
         }
 
         public async Task<byte[]> GetExcelFileStream(TextDTO[] list)
@@ -68,10 +91,21 @@ namespace TrinityText.Utilities.Excel
                     SITE = !string.IsNullOrWhiteSpace(l.Site) ? l.Site : "*",
                     COUNTRY = !string.IsNullOrWhiteSpace(l.Country) ? l.Country : "*",
                     LANGUAGE = l.Language,
-                    TEXT = l.TextRevision.Content
+                    TEXT = l.TextRevision?.Content ?? "[NULL]"
                 }).ToArray();
 
-            return await CreateExcelFile(texts, "Texts");
+            var fileName = "texts";
+            var filePath = GetFilePath(fileName);
+
+            var em = new ExcelMapper()
+            {
+                HeaderRow = true,
+                CreateMissingHeaders = true,
+            };
+            await em.SaveAsync(filePath, texts, fileName, xlsx: true);
+
+
+            return await GetStream(filePath);
         }
 
         public async Task<byte[]> GetExcelFileStream(IDictionary<KeyValuePair<string, string>, TextDTO[]> textsForSiteLang)
@@ -102,8 +136,8 @@ namespace TrinityText.Utilities.Excel
                             TYPE = l.TextType != null ? l.TextType.Name : (!string.IsNullOrWhiteSpace(l.Site) ? l.Website : "*"),
                             WEBSITE = !string.IsNullOrWhiteSpace(l.Website) ? l.Website : "*",
                             SITE = !string.IsNullOrWhiteSpace(l.Site) ? l.Site : "*",
-                            LANGUAGE = l.Language,
-                            CONTENT = l.TextRevision.Content
+                            LANGUAGE = l.Language ?? "",
+                            CONTENT = l.TextRevision?.Content ?? string.Empty,
                         }).ToArray();
 
                     await em.SaveAsync(filePath, list, sheetIndex);
@@ -202,18 +236,19 @@ namespace TrinityText.Utilities.Excel
             return list.ToArray();
         }
 
-        private async Task<byte[]> CreateExcelFile(IEnumerable<dynamic> rows, string fileName)
+        private async Task<byte[]> GetStream(string filePath)
         {
-            var basePath = _options.TempDirectory;
-            var separator = basePath.EndsWith("/") ? string.Empty : "/";
-            var filePath = $@"{basePath}{separator}{fileName}{Guid.NewGuid()}.xlsx";
+            byte[] fileBytes = null;
             try
             {
-                var em = new ExcelMapper();
-
-                await em.SaveAsync(filePath, rows, xlsx: true);
-
-                return await GetStream(filePath);
+                using (System.IO.FileStream fs = System.IO.File.OpenRead(filePath))
+                {
+                    fileBytes = new byte[fs.Length];
+                    int br = await fs.ReadAsync(fileBytes, 0, fileBytes.Length);
+                    if (br != fs.Length)
+                        throw new System.IO.IOException(filePath);
+                    fs.Close();
+                }
             }
             catch (Exception e)
             {
@@ -228,22 +263,19 @@ namespace TrinityText.Utilities.Excel
                     file.Delete();
                 }
             }
-        }
-
-        private async Task<byte[]> GetStream(string filePath)
-        {
-            byte[] fileBytes = null;
-
-            using (System.IO.FileStream fs = System.IO.File.OpenRead(filePath))
-            {
-                fileBytes = new byte[fs.Length];
-                int br = await fs.ReadAsync(fileBytes, 0, fileBytes.Length);
-                if (br != fs.Length)
-                    throw new System.IO.IOException(filePath);
-                fs.Close();
-            }
 
             return fileBytes;
         }
+
+        private string GetFilePath(string fileName)
+        {
+            var basePath = _options.TempDirectory;
+            var separator = basePath.EndsWith("/") ? string.Empty : "/";
+            var filePath = $@"{basePath}{separator}{fileName}{Guid.NewGuid()}.xlsx";
+
+            return filePath;
+        }
     }
+
+    
 }
