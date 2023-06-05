@@ -8,12 +8,12 @@ using TrinityText.Domain.EF;
 namespace TrinityText.UnitTests
 {
     [TestClass]
-    public class DomainTests
+    public class EFDomainTests
     {
         public static IConfiguration InitConfiguration()
         {
             var config = new ConfigurationBuilder()
-               .AddUserSecrets<DomainTests>()
+               .AddUserSecrets<EFDomainTests>()
                .Build();
             return config;
         }

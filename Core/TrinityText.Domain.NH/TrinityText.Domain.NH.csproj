@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<Description>Trinity Text domain layer implementation with NHibernate</Description>
+	</PropertyGroup>
+	<Import Project="..\..\SolutionItems\GlobalAssemblyInfo.proj" />
+	<ItemGroup>
+	  <PackageReference Include="NHibernate" Version="5.4.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\TrinityText.Domain\TrinityText.Domain.csproj" />
+	</ItemGroup>
+</Project>

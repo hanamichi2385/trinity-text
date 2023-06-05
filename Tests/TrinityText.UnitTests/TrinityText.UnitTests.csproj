@@ -10,11 +10,15 @@
 
   <ItemGroup>
     <None Remove="appsettings.json" />
+    <None Remove="Config\Trinity.NHibernate.xml" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\Trinity.NHibernate.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
@@ -31,12 +35,15 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="NHibernate" Version="5.4.2" />
+    <PackageReference Include="NHibernate.NetCore" Version="6.0.13" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Core\TrinityText.Business\TrinityText.Business.csproj" />
     <ProjectReference Include="..\..\Core\TrinityText.Domain.EF\TrinityText.Domain.EF.csproj" />
+    <ProjectReference Include="..\..\Core\TrinityText.Domain.NH\TrinityText.Domain.NH.csproj" />
     <ProjectReference Include="..\..\Core\TrinityText.Domain\TrinityText.Domain.csproj" />
   </ItemGroup>
 

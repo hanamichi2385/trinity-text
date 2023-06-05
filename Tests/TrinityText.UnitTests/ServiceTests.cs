@@ -5,7 +5,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading.Tasks;
 using TrinityText.Business;
-using TrinityText.Business.Services;
 using TrinityText.Business.Services.Impl;
 using TrinityText.Domain;
 using TrinityText.Domain.EF;
@@ -18,7 +17,7 @@ namespace TrinityText.UnitTests
         public static IConfiguration InitConfiguration()
         {
             var config = new ConfigurationBuilder()
-               .AddUserSecrets<DomainTests>()
+               .AddUserSecrets<EFDomainTests>()
                .Build();
 
             return config;

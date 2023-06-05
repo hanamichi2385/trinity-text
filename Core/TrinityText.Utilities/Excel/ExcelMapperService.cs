@@ -1,15 +1,12 @@
 ﻿using Ganss.Excel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NPOI.HPSF;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using TrinityText.Business;
-using TrinityText.Domain;
 
 namespace TrinityText.Utilities.Excel
 {
@@ -140,16 +137,12 @@ namespace TrinityText.Utilities.Excel
                             CONTENT = l.TextRevision?.Content ?? string.Empty,
                         }).ToArray();
 
-                    await em.SaveAsync(filePath, list, sheetIndex);
+                    await em.SaveAsync(filePath, list, sheetName);
 
                     sheetIndex++;
                 }
 
                 return await GetStream(filePath);
-            }
-            catch (Exception e)
-            {
-                throw e;
             }
             finally
             {
@@ -249,10 +242,6 @@ namespace TrinityText.Utilities.Excel
                         throw new System.IO.IOException(filePath);
                     fs.Close();
                 }
-            }
-            catch (Exception e)
-            {
-                throw e;
             }
             finally
             {

@@ -18,7 +18,7 @@ namespace TrinityText.UnitTests
         public static IConfiguration InitConfiguration()
         {
             var config = new ConfigurationBuilder()
-               .AddUserSecrets<DomainTests>()
+               .AddUserSecrets<EFDomainTests>()
                .Build();
 
             return config;
@@ -119,7 +119,6 @@ namespace TrinityText.UnitTests
 
             var list = repo.Repository.ToList();
 
-            await Task.CompletedTask;
         }
     }
 }

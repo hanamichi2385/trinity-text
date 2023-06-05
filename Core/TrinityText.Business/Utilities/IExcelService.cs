@@ -7,12 +7,9 @@ namespace TrinityText.Business
     public interface IExcelService
     {
         Task<TextDTO[]> GetTextsFromStream(string user, Stream fileStream);
-
         Task<byte[]> GetExcelFileStream(PageDTO[] list);
-
         Task<byte[]> GetExcelFileStream(WidgetDTO[] list);
-
         Task<byte[]> GetExcelFileStream(TextDTO[] list);
-        Task<byte[]> GetExcelFileStream(IDictionary<KeyValuePair<string, string>, TextDTO[]> resourcesPerInstanceLang);
+        Task<byte[]> GetExcelFileStream(IDictionary<KeyValuePair<string, string>, TextDTO[]> textsForSiteLang);
     }
 }
