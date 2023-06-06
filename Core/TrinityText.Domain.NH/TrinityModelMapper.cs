@@ -39,7 +39,7 @@ namespace TrinityText.Domain.NH
                     m =>
                     {
                         m.Key(n => n.Column("FK_CDNSERVER"));
-                        m.Lazy(CollectionLazy.NoLazy);
+                        m.Lazy(CollectionLazy.Extra);
                         m.Inverse(true);
                         m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
                     },
@@ -50,7 +50,7 @@ namespace TrinityText.Domain.NH
                     m =>
                     {
                         m.Key(n => n.Column("FK_CDNSERVER"));
-                        m.Lazy(CollectionLazy.NoLazy);
+                        m.Lazy(CollectionLazy.Extra);
                         m.Inverse(true);
                         m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
                     },
@@ -61,7 +61,7 @@ namespace TrinityText.Domain.NH
                     m =>
                     {
                         m.Key(n => n.Column("FK_CDNSERVER"));
-                        m.Lazy(CollectionLazy.NoLazy);
+                        m.Lazy(CollectionLazy.Extra);
                         m.Inverse(true);
                         m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
                     },
@@ -220,7 +220,7 @@ namespace TrinityText.Domain.NH
                     m =>
                     {
                         m.Key(n => n.Column("FK_FTPSERVER"));
-                        m.Lazy(CollectionLazy.NoLazy);
+                        m.Lazy(CollectionLazy.Extra);
                         m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
                         m.Inverse(true);
                     },
@@ -271,8 +271,9 @@ namespace TrinityText.Domain.NH
                     prop.Column("CONTENT");
                     prop.Type(NHibernateUtil.BinaryBlob);
                     prop.Length(int.MaxValue);
+                    prop.Lazy(true);
                 });
-                classmapping.Property(e => e.THUMBNAIL);
+                classmapping.Property(e => e.THUMBNAIL, m => m.Lazy(true));
                 classmapping.Property(e => e.FILENAME);
                 classmapping.Property(e => e.FK_FOLDER);
                 return classmapping;
@@ -349,17 +350,17 @@ namespace TrinityText.Domain.NH
                 classmapping.Property(e => e.OUTPUT_FILENAME);
                 classmapping.Property(e => e.SUBFOLDER);
                 classmapping.Property(e => e.PRINT_ELEMENT_NAME);
-                classmapping.Bag(
-                    x => x.PAGES,
-                    m =>
-                    {
-                        m.Key(n => n.Column("FK_TIPOLOGIA"));
-                        m.Lazy(CollectionLazy.NoLazy);
-                        m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
-                        m.Inverse(true);
-                    },
-                    r => r.OneToMany()
-                );
+                //classmapping.Bag(
+                //    x => x.PAGES,
+                //    m =>
+                //    {
+                //        m.Key(n => n.Column("FK_TIPOLOGIA"));
+                //        m.Lazy(CollectionLazy.Lazy);
+                //        m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
+                //        m.Inverse(true);
+                //    },
+                //    r => r.OneToMany()
+                //);
                 return classmapping;
             });
 
@@ -439,7 +440,7 @@ namespace TrinityText.Domain.NH
                     classmapping.ManyToOne(e => e.PAGETYPE, prop =>
                     {
                         prop.Column("FK_TIPOLOGIA");
-                        prop.Lazy(LazyRelation.NoLazy);
+                        prop.Lazy(LazyRelation.Proxy);
                         prop.NotNullable(true);
                         prop.Insert(false);
                         prop.Update(false);
@@ -499,6 +500,7 @@ namespace TrinityText.Domain.NH
                     prop.Column("TIPO_ESPORTAZIONE");
                     prop.Type(NHibernateUtil.Int32);
                 });
+                classmapping.Property(e => e.STATUS_CODE);
                 classmapping.ManyToOne(
                     x => x.CDNSERVER,
                     m =>
@@ -577,7 +579,7 @@ namespace TrinityText.Domain.NH
                     m =>
                     {
                         m.Key(n => n.Column("RISORSA"));
-                        m.Lazy(CollectionLazy.NoLazy);
+                        m.Lazy(CollectionLazy.Extra);
                         m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
                         m.Inverse(true);
                     },
@@ -671,7 +673,7 @@ namespace TrinityText.Domain.NH
                     m =>
                     {
                         m.Key(n => n.Column("FK_TIPOLOGIA"));
-                        m.Lazy(CollectionLazy.NoLazy);
+                        m.Lazy(CollectionLazy.Extra);
                         m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
                         m.Inverse(true);
                     },
@@ -681,8 +683,8 @@ namespace TrinityText.Domain.NH
                     x => x.TEXTTYPEPERWEBSITES,
                     m =>
                     {
-                        m.Key(n => n.Column("FK_RESOURCETYPE"));
-                        m.Lazy(CollectionLazy.NoLazy);
+                        m.Key(n => n.Column("FK_RESOURCETYPE"));    
+                        m.Lazy(CollectionLazy.Extra);
                         m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
                         m.Inverse(true);
                     },

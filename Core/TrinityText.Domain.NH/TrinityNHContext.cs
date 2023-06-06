@@ -1,5 +1,4 @@
 ﻿using NHibernate;
-using NHibernate.Context;
 using System.Threading.Tasks;
 using TrinityText.Domain.Repositories;
 
@@ -7,11 +6,14 @@ namespace TrinityText.Domain.NH
 {
     public class TrinityNHContext : ITrinityContext
     {
-        private readonly ISessionFactory _sessionFactory;
+        //private readonly ISessionFactory _sessionFactory;
 
-        public TrinityNHContext(ISessionFactory sessionFactory)
+        private ISession _session;
+
+        public TrinityNHContext(ISession session)
         {
-            _sessionFactory = sessionFactory;
+            _session = session;
+            //_sessionFactory = sessionFactory;
         }
 
         private ITransaction _transaction;
@@ -20,11 +22,7 @@ namespace TrinityText.Domain.NH
         {
             get
             {
-                if(CurrentSessionContext.HasBind(_sessionFactory) == false) { 
-                    var session = _sessionFactory.OpenSession();
-                    CurrentSessionContext.Bind(session);
-                }
-                return _sessionFactory.GetCurrentSession();
+                return _session;
             }
         }
 
