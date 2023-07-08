@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NHibernate.Cfg;
 using NHibernate.Dialect;
 using System;
 using System.Linq;
@@ -55,7 +54,7 @@ namespace TrinityText.UnitTests
         }
 
         [TestMethod]
-        public void CdnServersDomainTests()
+        public void RepositoriesTest()
         {
             //var config = InitConfiguration();
             var services = InitServices();
@@ -91,6 +90,21 @@ namespace TrinityText.UnitTests
             var l13 = r13.Repository.ToList();
             var l14 = r14.Repository.ToList();
             var l15 = r15.Repository.ToList();
+        }
+
+        [TestMethod]
+        public void IsNullOrEmptyTest()
+        {
+            var services = InitServices();
+            var textsRepository = services.GetService<IRepository<Text>>();
+            var lastTexts = textsRepository
+                 .Repository
+                 .Where(t => ((t.FK_WEBSITE == null || t.FK_WEBSITE.Trim() == string.Empty)) && t.ACTIVE == true)
+                 .OrderByDescending(r => r.REVISIONS.Max(s => s.CREATION_DATE))
+                 .Take(5)
+                 .ToList();
+
+            Assert.IsTrue(lastTexts.Any());
         }
     }
 }
