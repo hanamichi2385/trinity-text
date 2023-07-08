@@ -13,6 +13,12 @@
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://github.com/hanamichi2385/trinity-text</PackageProjectUrl>
-		<PackageTags>trinity-text</PackageTags>
+		<PackageTags>trinity-text cms globalization htmllocalizer textlocalizer</PackageTags>
+		<SignAssembly>False</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\SolutionItems\trinity-text.snk</AssemblyOriginatorKeyFile>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
+	<ItemGroup>
+		<None Include="..\..\SolutionItems\README.md" Pack="true" PackagePath="\"/>
+	</ItemGroup>
 </Project>

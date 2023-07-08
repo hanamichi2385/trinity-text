@@ -20,13 +20,15 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_SolutionItems", "_SolutionItems", "{50EF363B-7C82-4653-81A5-F58FBAEDF4D9}"
 	ProjectSection(SolutionItems) = preProject
 		SolutionItems\GlobalAssemblyInfo.proj = SolutionItems\GlobalAssemblyInfo.proj
+		SolutionItems\README.md = SolutionItems\README.md
+		SolutionItems\trinity-text.snk = SolutionItems\trinity-text.snk
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinityText.ServiceBus", "Core\TrinityText.ServiceBus\TrinityText.ServiceBus.csproj", "{5D9244A8-E377-45C5-A51E-B830B09F298D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinityText.ServiceBus.MassTransit", "Core\TrinityText.ServiceBus.MassTransit\TrinityText.ServiceBus.MassTransit.csproj", "{7F34781B-9040-4998-803D-54A30677CF3E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrinityText.Domain.NH", "Core\TrinityText.Domain.NH\TrinityText.Domain.NH.csproj", "{4A3D098A-3045-4A85-9A79-7897E0090BB8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrinityText.Domain.NH", "Core\TrinityText.Domain.NH\TrinityText.Domain.NH.csproj", "{4A3D098A-3045-4A85-9A79-7897E0090BB8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
