@@ -26,6 +26,7 @@ namespace TrinityText.Business.Schema
         Image,
         Gallery,
         Checkbox,
+        DateTime
         //Blog,
     }
 }
