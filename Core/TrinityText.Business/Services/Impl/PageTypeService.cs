@@ -24,23 +24,23 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public async Task<OperationResult<IList<PageTypeDTO>>> GetAll()
+        public async Task<OperationResult<PageTypeDTO[]>> GetAll()
         {
             try
             {
                 var list = _pageTypeRepository
                     .Repository
                     .OrderBy(t => t.NAME)
-                    .ToList();
+                    .ToArray();
 
-                var result = _mapper.Map<IList<PageTypeDTO>>(list);
+                var result = _mapper.Map<PageTypeDTO[]>(list);
 
-                return await Task.FromResult(OperationResult<IList<PageTypeDTO>>.MakeSuccess(result));
+                return await Task.FromResult(OperationResult<PageTypeDTO[]>.MakeSuccess(result));
             }
             catch (Exception ex)
             {
                 _logger.LogError("GETALL", ex);
-                return OperationResult<IList<PageTypeDTO>>.MakeFailure(new[] { ErrorMessage.Create("GETALL", "GENERIC_ERROR") });
+                return OperationResult<PageTypeDTO[]>.MakeFailure(new[] { ErrorMessage.Create("GETALL", "GENERIC_ERROR") });
             }
         }
 

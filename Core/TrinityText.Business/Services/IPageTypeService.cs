@@ -6,7 +6,7 @@ namespace TrinityText.Business
 {
     public interface IPageTypeService
     {
-        Task<OperationResult<IList<PageTypeDTO>>> GetAll();
+        Task<OperationResult<PageTypeDTO[]>> GetAll();
 
         Task<OperationResult<PageTypeDTO>> Get(int id);
 

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Threading.Tasks;
@@ -30,7 +31,9 @@ namespace TrinityText.UnitTests
             var connectionString = config.GetSection("ConnectionString").Value;
 
             var services = new ServiceCollection();
-            services.AddDbContextPool<TrinityEFContext>(s => s.UseSqlServer(connectionString));
+            services.AddDbContextPool<TrinityEFContext>(s => s.UseSqlServer(connectionString)
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTrackingWithIdentityResolution)
+                );
             services.AddTransient(typeof(IRepository<>), typeof(EFRepository<>));
             services.AddTransient<ITextService, TextService>();
             services.AddTransient<ITextTypeService, TextTypeService>();
@@ -182,7 +185,7 @@ namespace TrinityText.UnitTests
             {
                 WebsiteLanguages = new[] { "it" },
             };
-            var result = await repo.Search(searc, 0, 10);
+            var result = await repo.Search(searc, 0, 100);
 
             Assert.IsTrue(result.Success);
         }

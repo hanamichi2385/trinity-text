@@ -1,16 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		 <TargetFramework>net6.0</TargetFramework>
+		 <TargetFramework>net8.0</TargetFramework>
 		<Description>Trinity Text utilities layer</Description>
 	</PropertyGroup>
 	<Import Project="..\..\SolutionItems\GlobalAssemblyInfo.proj" />
 
   <ItemGroup>
-    <PackageReference Include="ExcelMapper" Version="5.2.542" />
-    <PackageReference Include="FluentFTP" Version="46.0.2" />
-    <PackageReference Include="SkiaSharp" Version="2.88.6" />
-    <PackageReference Include="SSH.NET" Version="2020.0.2" />
+    <PackageReference Include="ExcelMapper" Version="5.2.564" />
+    <PackageReference Include="FluentFTP" Version="49.0.2" />
+    <PackageReference Include="SkiaSharp" Version="2.88.7" />
+    <PackageReference Include="SSH.NET" Version="2023.0.1" />
   </ItemGroup>
 
   <ItemGroup>

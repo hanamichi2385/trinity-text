@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace TrinityText.Domain.EF
@@ -12,7 +13,7 @@ namespace TrinityText.Domain.EF
             _trinityDbContext = trinityDbContext;
         }
 
-        public IQueryable<T> Repository => _trinityDbContext.Set<T>();
+        public IQueryable<T> Repository => _trinityDbContext.Set<T>().AsQueryable<T>();
 
         public string ConnectionString => _trinityDbContext.ConnectionString;
 

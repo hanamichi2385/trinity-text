@@ -23,11 +23,11 @@ namespace TrinityText.ServiceBus.MassTransit.Definitions
             _retryIntervalMinutes = retryIntervalMinutes;
         }
 
-        protected override void ConfigureConsumer(IReceiveEndpointConfigurator endpointConfigurator,
-            IConsumerConfigurator<GenerateWebsiteConsumer> consumerConfigurator)
+        protected override void ConfigureConsumer(IReceiveEndpointConfigurator endpointConfigurator, 
+            IConsumerConfigurator<GenerateWebsiteConsumer> consumerConfigurator, IRegistrationContext context)
         {
             endpointConfigurator.UseMessageRetry(r => r.Interval(_retry, TimeSpan.FromMinutes(_retryIntervalMinutes)));
-            endpointConfigurator.UseInMemoryOutbox();
+            endpointConfigurator.UseInMemoryOutbox(context);
         }
     }
 }

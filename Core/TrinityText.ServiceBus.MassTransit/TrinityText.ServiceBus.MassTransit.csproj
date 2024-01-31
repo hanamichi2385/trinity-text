@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-     <TargetFramework>net6.0</TargetFramework>
+     <TargetFramework>net8.0</TargetFramework>
 	  <Description>Trinity Text servicebus implementation with MassTransit</Description>
   </PropertyGroup>
   <Import Project="..\..\SolutionItems\GlobalAssemblyInfo.proj" />
 
   <ItemGroup>
-    <PackageReference Include="MassTransit" Version="8.0.16" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
+    <PackageReference Include="MassTransit" Version="8.1.3" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.1" />
   </ItemGroup>
 
   <ItemGroup>

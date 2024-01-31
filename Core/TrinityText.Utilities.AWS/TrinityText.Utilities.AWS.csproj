@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		 <TargetFramework>net6.0</TargetFramework>
+		 <TargetFramework>net8.0</TargetFramework>
 		<Description>Trinity Text utilities layer integration with Amazon AWS</Description>
 	</PropertyGroup>
 	<Import Project="..\..\SolutionItems\GlobalAssemblyInfo.proj" />
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.Translate" Version="3.7.200.47" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="6.0.0" />
+    <PackageReference Include="AWSSDK.Translate" Version="3.7.300.43" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.1" />
   </ItemGroup>
 
   <ItemGroup>

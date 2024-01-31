@@ -46,7 +46,7 @@ namespace TrinityText.Business
 
     public class PagedResult<T>
     {
-        public IList<T> Result { get; set; }
+        public IEnumerable<T> Result { get; set; }
 
         public int Page { get; set; }
 

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using TrinityText.Domain;
@@ -41,13 +42,13 @@ namespace TrinityText.Business.Services.Impl
 
                 var list = query
                     .GetPage(page, size)
-                    .ToList();
+                    .ToArray();
 
                 var result = new PagedResult<TextDTO>()
                 {
                     Page = page,
                     PageSize = size,
-                    Result = _mapper.Map<IList<TextDTO>>(list),
+                    Result = _mapper.Map<TextDTO[]>(list),
                     TotalCount = totalCount,
                 };
 
@@ -75,7 +76,7 @@ namespace TrinityText.Business.Services.Impl
 
             if (search != null)
             {
-                if (textTypes.Any())
+                if (textTypes.Length > 0)
                 {
                     query =
                         query

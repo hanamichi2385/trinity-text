@@ -156,7 +156,7 @@ namespace TrinityText.UnitTests
 
             var repo = kernel.GetService<IRepository<TextType>>();
 
-            var list = repo.Repository.ToList();
+            var list = await repo.Repository.ToListAsync();
 
         }
     }

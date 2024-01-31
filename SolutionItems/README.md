@@ -1,3 +1,6 @@
+#2024-01-31
+- Migrate to NET8
+
 #2023-10-05
 - Add DateTime Atom
 
