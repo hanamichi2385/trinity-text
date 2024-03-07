@@ -7,10 +7,10 @@
 	<Import Project="..\..\SolutionItems\GlobalAssemblyInfo.proj" />
 
   <ItemGroup>
-    <PackageReference Include="ExcelMapper" Version="5.2.564" />
+    <PackageReference Include="ExcelMapper" Version="5.2.568" />
     <PackageReference Include="FluentFTP" Version="49.0.2" />
     <PackageReference Include="SkiaSharp" Version="2.88.7" />
-    <PackageReference Include="SSH.NET" Version="2023.0.1" />
+    <PackageReference Include="SSH.NET" Version="2024.0.0" />
   </ItemGroup>
 
   <ItemGroup>

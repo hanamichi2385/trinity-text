@@ -39,7 +39,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("GETALL", ex);
+                _logger.LogError(ex, "GETALL {message}", ex.Message);
                 return OperationResult<PageTypeDTO[]>.MakeFailure(new[] { ErrorMessage.Create("GETALL", "GENERIC_ERROR") });
             }
         }
@@ -64,7 +64,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("GET", ex);
+                _logger.LogError(ex, "GET {message}", ex.Message);
                 return OperationResult<PageTypeDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "GENERIC_ERROR") });
             }
         }
@@ -98,7 +98,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("GET", ex);
+                _logger.LogError(ex, "GET {message}", ex.Message);
                 return OperationResult<IList<PageTypeDTO>>.MakeFailure(new[] { ErrorMessage.Create("GET_BYUSER", "GENERIC_ERROR") });
             }
         }
@@ -121,7 +121,7 @@ namespace TrinityText.Business.Services.Impl
                         entity.PATH_PREVIEWPAGE = dto.PathPreviewPage;
                         entity.OUTPUT_FILENAME = dto.OutputFilename;
                         entity.PRINT_ELEMENT_NAME = dto.PrintElementName;
-                        entity.VISIBILITY = dto.Visibility != null && dto.Visibility.Count() > 0 ? string.Join("|", dto.Visibility) : null;
+                        entity.VISIBILITY = dto.Visibility != null && dto.Visibility.Count > 0 ? string.Join("|", dto.Visibility) : null;
 
                         var result = await _pageTypeRepository.Update(entity);
 
@@ -146,7 +146,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("SAVE", ex);
+                _logger.LogError(ex, "SAVE {message}", ex.Message);
                 return OperationResult<PageTypeDTO>.MakeFailure(new[] { ErrorMessage.Create("SAVE", "GENERIC_ERROR") });
             }
         }
@@ -170,7 +170,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("REMOVE", ex);
+                _logger.LogError(ex, "REMOVE {message}", ex.Message);
                 return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "GENERIC_ERROR") });
             }
         }

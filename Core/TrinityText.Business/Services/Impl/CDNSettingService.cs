@@ -13,16 +13,13 @@ namespace TrinityText.Business.Services.Impl
     {
         private readonly IRepository<CdnServer> _cdnSettingsRepository;
 
-        //private readonly IRepository<FtpServerPerCdnServer> _ftpServerPerCdnServerRepository;
-
         private readonly ILogger<CDNSettingService> _logger;
 
         private readonly IMapper _mapper;
 
-        public CDNSettingService(IRepository<CdnServer> cdnSettingsRepository, IRepository<FtpServerPerCdnServer> ftpServerPerCdnServerRepository, IMapper mapper, ILogger<CDNSettingService> logger)
+        public CDNSettingService(IRepository<CdnServer> cdnSettingsRepository, IMapper mapper, ILogger<CDNSettingService> logger)
         {
             _cdnSettingsRepository = cdnSettingsRepository;
-            //_ftpServerPerCdnServerRepository = ftpServerPerCdnServerRepository;
             _mapper = mapper;
             _logger = logger;
         }
@@ -42,7 +39,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("GETALL", ex);
+                _logger.LogError(ex, "GETALL {message}", ex.Message);
                 return OperationResult<IList<CdnServerDTO>>.MakeFailure(new[] { ErrorMessage.Create("GETALL", "GENERIC_ERROR") });
             }
         }
@@ -63,7 +60,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("GETALL", ex);
+                _logger.LogError(ex, "GETALL {message}", ex.Message);
                 return OperationResult<IList<CdnServerDTO>>.MakeFailure(new[] { ErrorMessage.Create("GETALL", "GENERIC_ERROR") });
             }
         }
@@ -88,7 +85,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("GET", ex);
+                _logger.LogError(ex, "GET {message}", ex.Message);
                 return OperationResult<CdnServerDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "GENERIC_ERROR") });
             }
         }
@@ -112,7 +109,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("REMOVE", ex);
+                _logger.LogError(ex, "REMOVE {message}", ex.Message);
                 return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "GENERIC_ERROR") });
             }
         }
@@ -188,7 +185,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("SAVE", ex);
+                _logger.LogError(ex, "SAVE {message}", ex.Message);
                 return OperationResult<CdnServerDTO>.MakeFailure(new[] { ErrorMessage.Create("SAVE", "GENERIC_ERROR") });
             }
         }

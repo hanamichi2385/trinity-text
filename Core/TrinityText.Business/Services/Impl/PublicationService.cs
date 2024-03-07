@@ -71,7 +71,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("GET", ex);
+                _logger.LogError(ex, "GET {message}", ex.Message);
                 return OperationResult<PublicationDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "GENERIC_ERROR") });
             }
         }
@@ -117,7 +117,7 @@ namespace TrinityText.Business.Services.Impl
                 }
             }catch(Exception ex)
             {
-                _logger.LogError(ex, $"UPDATE_ZIP_CONTENT_{id}");
+                _logger.LogError(ex, "UPDATE_ZIP_CONTENT {id} : {message}", id, ex.Message);
             }
         }
 
@@ -169,7 +169,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("GETALL", ex);
+                _logger.LogError(ex, "GETALL {message}", ex.Message);
                 return OperationResult<IList<PublicationDTO>>.MakeFailure(new[] { ErrorMessage.Create("GETALL", "GENERIC_ERROR") });
             }
         }
@@ -194,7 +194,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("REMOVE", ex);
+                _logger.LogError(ex, "REMOVE {message}", ex.Message);
                 return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "GENERIC_ERROR") });
             }
         }
@@ -235,7 +235,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("CREATE", ex);
+                _logger.LogError(ex, "CREATE {message}", ex.Message);
                 return OperationResult<PublicationDTO>.MakeFailure(new[] { ErrorMessage.Create("CREATE", "GENERIC_ERROR") });
             }
         }
@@ -277,7 +277,7 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                _logger.LogError("UPDATE", ex);
+                _logger.LogError(ex, "UPDATE {message}", ex.Message);
                 return OperationResult.MakeFailure(new[] { ErrorMessage.Create("UPDATE", "GENERIC_ERROR") });
             }
         }

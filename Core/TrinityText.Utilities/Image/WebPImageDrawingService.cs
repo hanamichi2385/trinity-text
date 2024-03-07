@@ -68,7 +68,7 @@ namespace TrinityText.Utilities
             }
             catch (Exception ex)
             {
-                _logger.LogError("GENERATE_THUMB", ex);
+                _logger.LogError(ex, "GENERATE_THUMB {message}", ex.Message);
                 return OperationResult<byte[]>.MakeFailure(new[] { ErrorMessage.Create("GENERATE_THUMB", "GENERIC_ERROR") });
             }
         }
@@ -109,7 +109,7 @@ namespace TrinityText.Utilities
             }
             catch (Exception ex)
             {
-                _logger.LogError("COMPRESSION", ex);
+                _logger.LogError(ex, "COMPRESSION {message}", ex.Message);
                 return OperationResult<byte[]>.MakeFailure(new[] { ErrorMessage.Create("COMPRESSION", "GENERIC_ERROR") });
             }
         }

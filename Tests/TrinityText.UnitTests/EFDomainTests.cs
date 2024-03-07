@@ -143,7 +143,7 @@ namespace TrinityText.UnitTests
 
                 var f0 = new File()
                 {
-                    CONTENT = new byte[0],
+                    CONTENT = System.Array.Empty<byte>(),
                     CREATION_DATE = System.DateTime.Now,
                     FK_FOLDER = cs1.ID,
                     FILENAME = "File 1",
