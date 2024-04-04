@@ -21,7 +21,7 @@ namespace TrinityText.Utilities
         {
             try
             {
-                string fileZipName = destinationFilePath + "\\" + folder.Split('\\').Last() + ".zip";
+                string fileZipName = $"{destinationFilePath}\\{folder.Split('\\').Last()}.zip";
 
                 ZipFile.CreateFromDirectory(folder, fileZipName);
 

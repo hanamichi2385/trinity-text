@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using TrinityText.Business;
 using TrinityText.ServiceBus.Messages;
@@ -28,45 +29,42 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
         public async Task Consume(ConsumeContext<IPublishWebsiteMessage> context)
         {
             var message = context.Message;
-            var mail = new SendMailMessage()
-            {
-                Id = Guid.NewGuid(),
-                IsHtmlBody = true,
-            };
 
             var publicationRs = await _publicationService.Get(message.PublicationId, true);
-
             if (publicationRs.Success)
             {
                 var setting = publicationRs.Value;
                 string website = setting.Website;
                 string ftpServer = setting.FtpServer.Name;
                 string format = setting.DataType.ToString();
-                mail.To.Add(setting.Email);
-                mail.Subject = string.Format("[CMS] Website {0} updated with success!", website);
 
                 var operationsLogRs = await _generationService.Publish(setting);
-
-                var body = string.Empty;
-
+                var body = new StringBuilder();
+                var subject = new StringBuilder();
                 if (operationsLogRs.Success)
                 {
-                    body = "<p>The updating process (<strong>{2}</strong>) for website <strong>{0}</strong> via <strong>{1}</strong> was completed with success!</p>";
+                    subject.Append($"[CMS] Website {website} updated with success!");
+                    body.Append("<p>The updating process (<strong>{2}</strong>) for website <strong>{0}</strong> via <strong>{1}</strong> was completed with success!</p>");
                 }
                 else
                 {
-                    mail.Subject = string.Format("[CMS] Attention there was an error during updating {0} site", website);
+                    subject.Append("[CMS] Attention! There was an error during updating {website} site");
 
-                    body = "<p>There was an error during updating (<strong>{2}</strong>) for website <strong>{0}</strong> via <strong>{1}</strong>!</p>";
-                    body += "<p>All processes are terminated, please start a new update if the error is solve</p>";
+                    body.Append($"<p>There was an error during updating (<strong>{format}</strong>) for website <strong>{website}</strong> via <strong>{ftpServer}</strong>!</p>");
+                    body.Append("<p>All processes are terminated, please start a new update if the error is solve</p>");
                     foreach (var e in operationsLogRs.Errors)
                     {
-                        body += "<p>" + e.Context + ":" + e.Description + "</p>";
+                        body.Append($"<p>{e.Context}:{e.Description}</p>");
                     }
                 }
-
-                mail.Body = string.Format(body, website, ftpServer, format);
-
+                var mail = new SendMailMessage()
+                {
+                    Id = Guid.NewGuid(),
+                    IsHtmlBody = true,
+                    To = [setting.Email],
+                    Subject = subject.ToString(),
+                    Body = body.ToString()
+                };
                 await context.Publish(mail);
                 try
                 {

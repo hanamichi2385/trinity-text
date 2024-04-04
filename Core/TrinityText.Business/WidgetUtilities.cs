@@ -19,24 +19,24 @@ namespace TrinityText.Business
 
         public async Task<string> Replace(string tenant, string website, string site, string language, string text)
         {
-            var newText = text;
+            var newText = text
+                .Replace("@[PARTNER]", tenant, StringComparison.InvariantCultureIgnoreCase)
+                .Replace("@[CHANNEL]", website, StringComparison.InvariantCultureIgnoreCase)
+                .Replace("@[SITE]", site, StringComparison.InvariantCultureIgnoreCase)
+                .Replace("@[LANG]", language, StringComparison.InvariantCultureIgnoreCase)
+                .Replace("@[DATE]", DateTime.Now.ToShortDateString(), StringComparison.InvariantCultureIgnoreCase);
+            
+            var replaced = await ReplaceWidget(newText, site, website, tenant, language);
 
-            newText = newText.Replace("@[PARTNER]", tenant, StringComparison.InvariantCultureIgnoreCase);
-            newText = newText.Replace("@[CHANNEL]", website, StringComparison.InvariantCultureIgnoreCase);
-            newText = newText.Replace("@[SITE]", site, StringComparison.InvariantCultureIgnoreCase);
-            newText = newText.Replace("@[LANG]", language, StringComparison.InvariantCultureIgnoreCase);
-            newText = newText.Replace("@[DATE]", DateTime.Now.ToShortDateString(), StringComparison.InvariantCultureIgnoreCase);
-            newText = await ReplaceWidget(newText, site, website, tenant, language);
-
-            return newText;
+            return replaced;
         }
 
         public async Task<string> ReplaceWidget(string text, string site, string website, string tenant, string language)
         {
             var newText = text;
 
-            var pattern = @"(\@\[" + Regex.Escape("WIDGET") + @"\()(.+?)(\)\])";
-            Regex reg = new Regex(pattern);
+            var pattern = @$"(\@\[" + Regex.Escape("WIDGET") + @"\()(.+?)(\)\])";
+            var reg = new Regex(pattern);
 
             while (newText.Contains("@[WIDGET("))
             {
@@ -44,32 +44,32 @@ namespace TrinityText.Business
                     .OfType<Match>()
                     .Select(m => m.Value)
                     .Distinct()
-                    .ToList();
+                    .ToArray();
 
                 foreach (var m in matches)
                 {
-                    var chiave = m.Substring(9).Replace(")]", string.Empty);
+                    var key = m.Substring(9).Replace(")]", string.Empty);
 
-                    var widgetRs = await _widgetService.GetByKeys(chiave, website, site, language);
+                    var widgetRs = await _widgetService.GetByKeys(key, website, site, language);
 
                     if (widgetRs.Success)
                     {
                         var widget = widgetRs.Value;
                         var wContenuto = string.Empty;
-                        if (!string.IsNullOrEmpty(widget.Content))
+                        if (!string.IsNullOrWhiteSpace(widget.Content))
                         {
-                            wContenuto = widget.Content;
-                            wContenuto = wContenuto.Replace("@[PARTNER]", tenant, StringComparison.InvariantCultureIgnoreCase);
-                            wContenuto = wContenuto.Replace("@[CHANNEL]", website, StringComparison.InvariantCultureIgnoreCase);
-                            wContenuto = wContenuto.Replace("@[SITE]", site, StringComparison.InvariantCultureIgnoreCase);
-                            wContenuto = wContenuto.Replace("@[LANG]", language, StringComparison.InvariantCultureIgnoreCase);
-                            wContenuto = wContenuto.Replace("@[DATE]", DateTime.Now.ToShortDateString(), StringComparison.InvariantCultureIgnoreCase);
+                            wContenuto = widget.Content
+                                .Replace("@[PARTNER]", tenant, StringComparison.InvariantCultureIgnoreCase)
+                                .Replace("@[CHANNEL]", website, StringComparison.InvariantCultureIgnoreCase)
+                                .Replace("@[SITE]", site, StringComparison.InvariantCultureIgnoreCase)
+                                .Replace("@[LANG]", language, StringComparison.InvariantCultureIgnoreCase)
+                                .Replace("@[DATE]", DateTime.Now.ToShortDateString(), StringComparison.InvariantCultureIgnoreCase);
                         }
-                        newText = newText.Replace(string.Format("@[WIDGET({0})]", chiave), wContenuto);
+                        newText = newText.Replace($"@[WIDGET({key})]", wContenuto);
                     }
                     else
                     {
-                        newText = newText.Replace(string.Format("@[WIDGET({0})]", chiave), string.Format("", chiave));
+                        newText = newText.Replace($"@[WIDGET({key})]", key);
                     }
                 }
             }
@@ -80,7 +80,7 @@ namespace TrinityText.Business
         public async Task<string> ReplaceLink(string xml, string tenant, string website, string baseUrl, CdnServerDTO cdnServer)
         {
             var newXml = xml;
-            if (!string.IsNullOrEmpty(baseUrl))
+            if (!string.IsNullOrWhiteSpace(baseUrl))
             {
                 var pattern = @"(""?)(\@\/" + Regex.Escape(website) + @"\/)([^\""\s\t\]]+)(""?)";
 
@@ -89,7 +89,7 @@ namespace TrinityText.Business
                     .OfType<Match>()
                     .Select(v => v.Value)
                     .Distinct()
-                    .ToList();
+                    .ToArray();
 
                 foreach (var m in matches)
                 {
@@ -111,12 +111,12 @@ namespace TrinityText.Business
             }
 
             var vendorName = website;
-            var oldPath = string.Format("@/{0}", website);
+            var oldPath = $"@/{website}";
 
-            var newPath = string.Format("/Media/{0}/{1}", tenant, website);
-            if (cdnServer != null && !string.IsNullOrEmpty(cdnServer.BaseUrl))
+            var newPath = $"/Media/{tenant}/{website}";
+            if (cdnServer != null && !string.IsNullOrWhiteSpace(cdnServer.BaseUrl))
             {
-                newPath = string.Format("{0}/Media/{1}/{2}", cdnServer.BaseUrl, tenant, website);
+                newPath = $"{cdnServer.BaseUrl}/Media/{tenant}/{website}";
             }
 
             newXml = newXml.Replace(oldPath, newPath);

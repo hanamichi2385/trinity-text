@@ -59,7 +59,7 @@ namespace TrinityText.Utilities
                     catch (Exception e)
                     {
                         _logger.LogError(e, "UPLOAD");
-                        operationLog.AppendLine(string.Format("Problem with folder: {0}", (currentDirectory + "/" + d.Name)));
+                        operationLog.AppendLine(string.Format("Problem with folder: {0}", $"{currentDirectory}/{d.Name}"));
                         operationLog.AppendLine("--ex: " + e.Message);
                         if (e.InnerException != null && !string.IsNullOrEmpty(e.InnerException.Message))
                         {
@@ -115,7 +115,7 @@ namespace TrinityText.Utilities
                 currentDirectory = NavigateTo(tenant, ftp, operationLog);
                 currentDirectory = NavigateTo(vendor, ftp, operationLog);
 
-                if (ftp.Exists(currentDirectory + "/" + file))
+                if (ftp.Exists($"{currentDirectory}/{file}"))
                 {
                     using (Stream stream = ftp.OpenRead(file))
                     {
@@ -141,7 +141,7 @@ namespace TrinityText.Utilities
 
         private string NavigateTo(string directoryName, SftpClient ftp, StringBuilder operationLog)
         {
-            var currentDirectory = ftp.WorkingDirectory + "/" + directoryName;
+            var currentDirectory = $"{ftp.WorkingDirectory}/{directoryName}";
 
             if (!ftp.Exists(currentDirectory))
             {

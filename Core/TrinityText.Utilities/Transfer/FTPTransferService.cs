@@ -90,7 +90,7 @@ namespace TrinityText.Utilities
 
         private string NavigateTo(string directoryName, FtpClient ftp, StringBuilder operationLog)
         {
-            var currentDirectory = ftp.GetWorkingDirectory() + "/" + directoryName;
+            var currentDirectory = $"{ftp.GetWorkingDirectory()}/{directoryName}";
 
             if (!ftp.DirectoryExists(currentDirectory))
             {

@@ -25,8 +25,8 @@ namespace TrinityText.Utilities.Transfer
                 var uri = new Uri(host);
 
                 var directories = host
-                    .Replace(uri.Scheme + "://", "")
-                    .Replace(uri.Host, "");
+                    .Replace($"{uri.Scheme}://", string.Empty)
+                    .Replace(uri.Host, string.Empty);
 
                 var service = GetService(uri);
                 var ftpfile = await service.GetFile(tenant, website, file, uri.Host, username, password, directories);
@@ -46,8 +46,8 @@ namespace TrinityText.Utilities.Transfer
                 var uri = new Uri(host);
 
                 var directories = host
-                    .Replace(uri.Scheme + "://", "")
-                    .Replace(uri.Host, "");
+                    .Replace($"{uri.Scheme}://", string.Empty)
+                    .Replace(uri.Host, string.Empty);
 
                 var service = GetService(uri);
 

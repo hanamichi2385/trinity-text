@@ -58,7 +58,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 baseDirectory.Create();
             }
 
-            var currentDirectory = baseDirectory.CreateSubdirectory($"{website}_{id}_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}");
+            var currentDirectory = baseDirectory.CreateSubdirectory($"{website}_{id}_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}");
 
             var textSubDirectory = currentDirectory.CreateSubdirectory("Text");
             var filesSubDirectory = currentDirectory.CreateSubdirectory("Files");
@@ -187,7 +187,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
         public async Task<OperationResult> Publish(PublicationDTO setting)
         {
-            var basePath = _options.LocalDirectory + "/Uploading/" + Guid.NewGuid();
+            var basePath = $"{_options.LocalDirectory}/Uploading/{Guid.NewGuid()}";
             var result = OperationResult.MakeSuccess();
             try
             {
@@ -232,15 +232,15 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
         private void GenerateFileTimestamp(DirectoryInfo currentDirectory, string username)
         {
-            var textFile = currentDirectory + "\\trinity-text.txt";
-            var text = string.Format("{0}|{1:dd-MM-yyyy|HH-mm-ss}", username, DateTime.Now);
+            var textFile = $"{currentDirectory}\\trinity-text.txt";
+            var text = $"{username}|{DateTime.Now:dd-MM-yyyy|HH-mm-ss}";
 
             System.IO.File.WriteAllText(textFile, text);
         }
 
         private void GenerateTextsFileBySite(string website, IDictionary<string, List<TextDTO>> textsPerLanguage, string directoryPath, PublicationFormat type)
         {
-            if (string.IsNullOrEmpty(directoryPath))
+            if (string.IsNullOrWhiteSpace(directoryPath))
             {
                 directoryPath = _options.LocalDirectory;
             }
@@ -294,13 +294,13 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                             throw new NotSupportedException(type.ToString());
                     }
 
-                    var folder = langDir.FullName;
+                    var folder = new StringBuilder(langDir.FullName);
                     var subfolder = types[t];
-                    if (!string.IsNullOrEmpty(subfolder))
+                    if (!string.IsNullOrWhiteSpace(subfolder))
                     {
-                        folder += "\\" + subfolder;
+                        folder.Append($"\\{subfolder}");
 
-                        DirectoryInfo subfolderInfo = new DirectoryInfo(folder);
+                        DirectoryInfo subfolderInfo = new DirectoryInfo(folder.ToString());
                         if (!subfolderInfo.Exists)
                         {
                             subfolderInfo.Create();
@@ -343,19 +343,17 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                 foreach (var f in files)
                 {
-                    var fileName = folderPath + "\\" + f.Filename;
-                    FileInfo file = new FileInfo(fileName);
-                    using (FileStream stream = file.OpenWrite())
-                    {
-                        stream.Write(f.Content, 0, f.Content.Length);
-                        stream.Flush();
-                        stream.Close();
-                    }
+                    var fileName = $"{folderPath}\\{f.Filename}";
+                    var file = new FileInfo(fileName);
+                    using FileStream stream = file.OpenWrite();
+                    stream.Write(f.Content, 0, f.Content.Length);
+                    stream.Flush();
+                    stream.Close();
                 }
 
                 foreach (var sub in folder.SubFolders)
                 {
-                    string subfolderPath = folderPath + "\\" + sub.Name;
+                    string subfolderPath = $"{folderPath}\\{sub.Name}";
                     await CreateFolderAndFiles(website, sub, subfolderPath, filesGenerationDate);
                 }
             }
@@ -418,7 +416,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
         private async Task GeneratePagesFileBySite(string tenant, string website, string site, IDictionary<string, List<PageDTO>> contentsPerLanguages, string directoryPath, string baseUrl, CdnServerDTO cdnServer, PublicationFormat type)
         {
-            if (string.IsNullOrEmpty(directoryPath))
+            if (string.IsNullOrWhiteSpace(directoryPath))
             {
                 directoryPath = _options.LocalDirectory;
             }
@@ -466,13 +464,13 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                             throw new NotSupportedException(type.ToString());
                     }
 
-                    var folder = langDir.FullName;
+                    var folder = new StringBuilder(langDir.FullName);
                     var subfolder = types[t];
-                    if (!string.IsNullOrEmpty(subfolder))
+                    if (!string.IsNullOrWhiteSpace(subfolder))
                     {
-                        folder += "\\" + subfolder;
+                        folder.Append($"\\{subfolder}");
 
-                        DirectoryInfo subfolderInfo = new DirectoryInfo(folder);
+                        var subfolderInfo = new DirectoryInfo(folder.ToString());
                         if (!subfolderInfo.Exists)
                         {
                             subfolderInfo.Create();

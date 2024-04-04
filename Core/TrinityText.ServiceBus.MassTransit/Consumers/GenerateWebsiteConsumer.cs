@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using TrinityText.Business;
 using TrinityText.ServiceBus.Messages;
@@ -63,17 +64,14 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                         {
                             if (!string.IsNullOrWhiteSpace(setting.Email))
                             {
-                                string body = $"<p>The {website} website update file (type {dataType}) is ready to download";
-
-                                SendMailMessage mail = new SendMailMessage()
+                                var mail = new SendMailMessage()
                                 {
-                                    Body = body,
+                                    Body = $"<p>The {website} website update file (type {dataType}) is ready to download",
                                     Id = Guid.NewGuid(),
                                     IsHtmlBody = true,
-                                    Subject = string.Format("[CMS] Website {0} updated completed with success", website),
+                                    Subject = $"[CMS] Website {website} updated completed with success",
+                                    To = [setting.Email]
                                 };
-
-                                mail.To.Add(setting.Email);
 
                                 int retry = 5;
                                 while (retry > 0)
@@ -101,22 +99,21 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                     var rs = await _publicationService.Update(setting.Id.Value, PublicationStatus.Failed, "Website update failed", null);
                     if (rs.Success)
                     {
+                        var body = new StringBuilder(
+                            $"<p>Website {website} update (type {dataType}) is failed!</p><p>These are the errors recorded during the update process. The updated was interrupted so run a new website update</p>"
+                          );
+                        foreach (var e in generateRs.Errors)
+                        {
+                            body.Append($"<p>{e.Context}:{e.Description}</p>");
+                        }
                         var mail = new SendMailMessage()
                         {
                             Id = Guid.NewGuid(),
                             IsHtmlBody = true,
+                            Subject = $"[CMS] Website {website} update failed",
+                            Body = body.ToString(),
                         };
                         mail.To.Add(setting.Email);
-                        mail.Subject = string.Format("[CMS] Website {0} update failed", website);
-
-                        var body = "<p>Website {0} update (type {1}) is failed!</p>";
-                        body += "<p>These are the errors recorded during the update process. The updated was interrupted so run a new website update</p>";
-                        foreach (var e in generateRs.Errors)
-                        {
-                            body += "<p>" + e.Context + ":" + e.Description + "</p>";
-                        }
-
-                        mail.Body = string.Format(body, website, dataType);
                         await context.Publish(mail);
                     }
                     else
