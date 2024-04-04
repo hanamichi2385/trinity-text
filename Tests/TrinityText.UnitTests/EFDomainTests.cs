@@ -29,7 +29,7 @@ namespace TrinityText.UnitTests
                 .UseSqlServer(connectionString)
                 .Options;
 
-            using (TrinityEFContext ctx = new TrinityEFContext(options))
+            using (var ctx = new TrinityEFContext(options))
             {
                 var cs0 = new CdnServer()
                 {
@@ -143,7 +143,7 @@ namespace TrinityText.UnitTests
 
                 var f0 = new File()
                 {
-                    CONTENT = System.Array.Empty<byte>(),
+                    CONTENT = [],
                     CREATION_DATE = System.DateTime.Now,
                     FK_FOLDER = cs1.ID,
                     FILENAME = "File 1",

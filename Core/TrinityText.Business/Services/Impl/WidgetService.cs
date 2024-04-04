@@ -50,7 +50,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SEARCH {message}", ex.Message);
-                return OperationResult<PagedResult<WidgetDTO>>.MakeFailure(new[] { ErrorMessage.Create("SEARCH", "GENERIC_ERROR") });
+                return OperationResult<PagedResult<WidgetDTO>>.MakeFailure([ErrorMessage.Create("SEARCH", "GENERIC_ERROR")]);
             }
         }
 
@@ -69,13 +69,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<WidgetDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                    return OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET {message}", ex.Message);
-                return OperationResult<WidgetDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "GENERIC_ERROR") });
+                return OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("GET", "GENERIC_ERROR")]);
             }
         }
 
@@ -105,13 +105,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<WidgetDTO>.MakeFailure(new[] { ErrorMessage.Create("GET_BYKEYS", "NOT_FOUND") });
+                    return OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("GET_BYKEYS", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET_BYKEYS {message}", ex.Message);
-                return OperationResult<WidgetDTO>.MakeFailure(new[] { ErrorMessage.Create("GET_BYKEYS", "GENERIC_ERROR") });
+                return OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("GET_BYKEYS", "GENERIC_ERROR")]);
             }
         }
 
@@ -130,13 +130,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "NOT_FOUND") });
+                    return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "REMOVE {message}", ex.Message);
-                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "GENERIC_ERROR") });
+                return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "GENERIC_ERROR")]);
             }
         }
 
@@ -165,7 +165,7 @@ namespace TrinityText.Business.Services.Impl
                     }
                     else
                     {
-                        return OperationResult<WidgetDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                        return OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
                     }
                 }
                 else
@@ -192,7 +192,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SAVE {message}", ex.Message);
-                return OperationResult<WidgetDTO>.MakeFailure(new[] { ErrorMessage.Create("SAVE", "GENERIC_ERROR") });
+                return OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("SAVE", "GENERIC_ERROR")]);
             }
         }
 
@@ -233,19 +233,19 @@ namespace TrinityText.Business.Services.Impl
 
                 var resx = query.Count();
 
-                return await Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure(new[] { ErrorMessage.Create("DUPLICATED", "DUPLICATED") }));
+                return await Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure([ErrorMessage.Create("DUPLICATED", "DUPLICATED")]));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "EXIST {message}", ex.Message);
-                return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("EXIST", "GENERIC_ERROR") });
+                return OperationResult<TextDTO>.MakeFailure([ErrorMessage.Create("EXIST", "GENERIC_ERROR")]);
             }
         }
 
         private IQueryable<Widget> GetWidgetsByFilter(SearchWidgetDTO search)
         {
-            var websites = search.UserWebsites ?? Array.Empty<string>();
-            var languages = search.WebsiteLanguages ?? Array.Empty<string>();
+            var websites = search.UserWebsites ?? [];
+            var languages = search.WebsiteLanguages ?? [];
 
             var query =
                 _widgetRepository

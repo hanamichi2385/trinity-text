@@ -21,18 +21,16 @@ namespace TrinityText.Business.Services.Impl
         public PageSchema GetContentStructure(string xml)
         {
             byte[] byteArray = Encoding.UTF8.GetBytes(xml);
-            using (MemoryStream stream = new MemoryStream(byteArray))
-            {
-                PageSchema structure = GetContentStructure(stream);
-                stream.Close();
+            using var stream = new MemoryStream(byteArray);
+            PageSchema structure = GetContentStructure(stream);
+            stream.Close();
 
-                return structure;
-            }
+            return structure;
         }
 
         public PageSchema GetContentStructure(Stream stream)
         {
-            XDocument doc = XDocument.Load(stream);
+            var doc = XDocument.Load(stream);
             var root = doc.Root;
 
             var id = root.Attribute("id");
@@ -45,7 +43,7 @@ namespace TrinityText.Business.Services.Impl
             foreach (var part in content.Elements())
             {
                 string partName = part.Name.ToString().ToLower();
-                bool isRequired = part.Attribute("isrequired") != null ? bool.Parse(part.Attribute("isrequired").Value) : false;
+                bool isRequired = part.Attribute("isrequired") != null && bool.Parse(part.Attribute("isrequired").Value);
                 string partId = part.Attribute("id") != null ? part.Attribute("id").Value : string.Empty;
                 string description = part.Attribute("description") != null ? part.Attribute("description").Value : string.Empty;
 
@@ -54,7 +52,7 @@ namespace TrinityText.Business.Services.Impl
                     case "textatom":
                     case "textpart":
                         var textAtom = new TextAtom();
-                        bool isHtml = part.Attribute("ishtml") != null ? bool.Parse(part.Attribute("ishtml").Value) : false;
+                        bool isHtml = part.Attribute("ishtml") != null && bool.Parse(part.Attribute("ishtml").Value);
                         int? maxLenght = part.Attribute("maxlenght") != null ? int.Parse(part.Attribute("maxlenght").Value) : int.MaxValue;
                         int? minLenght = part.Attribute("minlenght") != null ? int.Parse(part.Attribute("minlenght").Value) : int.MinValue;
                         textAtom.Id = partId;
@@ -69,19 +67,23 @@ namespace TrinityText.Business.Services.Impl
 
                     case "imageatom":
                     case "imagepart":
-                        var imageAtom = new ImageAtom();
-                        imageAtom.IsRequired = isRequired;
-                        imageAtom.Id = partId;
-                        imageAtom.Description = description;
+                        var imageAtom = new ImageAtom
+                        {
+                            IsRequired = isRequired,
+                            Id = partId,
+                            Description = description
+                        };
                         pageSchema.Body.Add(imageAtom);
                         break;
 
                     case "galleryatom":
                     case "gallerypart":
-                        var galleryAtom = new GalleryAtom();
-                        galleryAtom.IsRequired = isRequired;
-                        galleryAtom.Id = partId;
-                        galleryAtom.Description = description;
+                        var galleryAtom = new GalleryAtom
+                        {
+                            IsRequired = isRequired,
+                            Id = partId,
+                            Description = description
+                        };
                         var item = part.Elements().FirstOrDefault();
 
                         if (item != null)
@@ -129,10 +131,12 @@ namespace TrinityText.Business.Services.Impl
 
                     case "checkboxatom":
                     case "checkboxpart":
-                        var checkboxAtom = new CheckBoxAtom();
-                        checkboxAtom.IsRequired = isRequired;
-                        checkboxAtom.Id = partId;
-                        checkboxAtom.Description = description;
+                        var checkboxAtom = new CheckBoxAtom
+                        {
+                            IsRequired = isRequired,
+                            Id = partId,
+                            Description = description
+                        };
                         pageSchema.Body.Add(checkboxAtom);
                         break;
 
@@ -145,40 +149,40 @@ namespace TrinityText.Business.Services.Impl
 
         public string GetXmlFromContent(PageSchema pageSchema)
         {
-            XDocument doc = new XDocument();
+            var doc = new XDocument();
             //XElement root = new XElement(PageSchema.RootName);
 
-            XElement content = new XElement(pageSchema.ChildName);
+            var content = new XElement(pageSchema.ChildName);
 
             foreach (var part in pageSchema.Body)
             {
-                XElement elementPart = new XElement(part.Id);
+                var elementPart = new XElement(part.Id);
                 switch (part.Type)
                 {
                     case TrinityText.Business.Schema.AtomType.Text:
                         var text = part as TextAtom;
-                        XCData dataText = new XCData(string.IsNullOrEmpty(text.Value) ? string.Empty : text.Value);
+                        var dataText = new XCData(string.IsNullOrEmpty(text.Value) ? string.Empty : text.Value);
                         elementPart.Add(dataText);
                         break;
                     case TrinityText.Business.Schema.AtomType.Number:
                         var number = part as NumberAtom;
-                        XCData dataNumber = new XCData(string.IsNullOrEmpty(number.Value) ? string.Empty : number.Value);
+                        var dataNumber = new XCData(string.IsNullOrEmpty(number.Value) ? string.Empty : number.Value);
                         elementPart.Add(dataNumber);
                         break;
                     case TrinityText.Business.Schema.AtomType.Image:
                         var image = part as ImageAtom;
                         var imageUrl = new XElement("url");
-                        XCData imageUrlData = new XCData(string.IsNullOrEmpty(image.Value) ? string.Empty : image.Value);
+                        var imageUrlData = new XCData(string.IsNullOrEmpty(image.Value) ? string.Empty : image.Value);
                         imageUrl.Add(imageUrlData);
                         elementPart.Add(imageUrl);
 
                         var imageCaption = new XElement("caption");
-                        XCData imageCaptionData = new XCData(string.IsNullOrEmpty(image.Caption) ? string.Empty : image.Caption);
+                        var imageCaptionData = new XCData(string.IsNullOrEmpty(image.Caption) ? string.Empty : image.Caption);
                         imageCaption.Add(imageCaptionData);
                         elementPart.Add(imageCaption);
 
                         var imageLink = new XElement("link");
-                        XCData imageLinkData = new XCData(string.IsNullOrEmpty(image.Link) ? string.Empty : image.Link);
+                        var imageLinkData = new XCData(string.IsNullOrEmpty(image.Link) ? string.Empty : image.Link);
                         imageLink.Add(imageLinkData);
                         elementPart.Add(imageLink);
 
@@ -192,19 +196,21 @@ namespace TrinityText.Business.Services.Impl
                                 var item = new XElement(gallery.ItemName);
 
                                 var path = new XElement("path");
-                                XCData pathData = new XCData(string.IsNullOrWhiteSpace(i.Path) ? string.Empty : i.Path);
+                                var pathData = new XCData(string.IsNullOrWhiteSpace(i.Path) ? string.Empty : i.Path);
                                 path.Add(pathData);
 
                                 var caption = new XElement("caption");
-                                XCData captionData = new XCData(string.IsNullOrWhiteSpace(i.Caption) ? string.Empty : i.Caption);
+                                var captionData = new XCData(string.IsNullOrWhiteSpace(i.Caption) ? string.Empty : i.Caption);
                                 caption.Add(captionData);
 
                                 var link = new XElement("link");
-                                XCData linkData = new XCData(string.IsNullOrWhiteSpace(i.Link) ? string.Empty : i.Link);
+                                var linkData = new XCData(string.IsNullOrWhiteSpace(i.Link) ? string.Empty : i.Link);
                                 link.Add(linkData);
 
-                                var order = new XElement("order");
-                                order.Value = i.Order.HasValue ? i.Order.Value.ToString() : "0";
+                                var order = new XElement("order")
+                                {
+                                    Value = i.Order.HasValue ? i.Order.Value.ToString() : "0"
+                                };
                                 //XCData orderData = new XCData(string.IsNullOrWhiteSpace(i.Order) ? string.Empty : i.Order);
                                 //order.Add(orderData);
 
@@ -264,10 +270,10 @@ namespace TrinityText.Business.Services.Impl
 
         public PageSchema ParseContent(Stream stream, PageSchema structure)
         {
-            XDocument doc = XDocument.Load(stream);
+            var doc = XDocument.Load(stream);
             var root = doc.Root;
 
-            PageSchema rootPart = new PageSchema() { RootName = structure.RootName, ChildName = root.Name.LocalName };
+            var rootPart = new PageSchema() { RootName = structure.RootName, ChildName = root.Name.LocalName };
 
             foreach (var part in structure.Body)
             {
@@ -421,22 +427,20 @@ namespace TrinityText.Business.Services.Impl
             else
             {
                 byte[] byteArray = Encoding.UTF8.GetBytes(xml);
-                using (MemoryStream stream = new MemoryStream(byteArray))
-                {
-                    var PageSchema = ParseContent(stream, structure);
-                    stream.Close();
+                using var stream = new MemoryStream(byteArray);
+                var pageSchema = ParseContent(stream, structure);
+                stream.Close();
 
-                    return PageSchema;
-                }
+                return pageSchema;
             }
         }
 
         public async Task<byte[]> CreateXmlContentsDocument(PageSchema structure, IList<PageDTO> contentsPerType, string tenant, string vendor, string instance, string language, string baseUrl, CdnServerDTO cdnServer)
         {
-            XDocument doc = new XDocument();
-            XDeclaration declaration = new XDeclaration("1.0", "utf-8", string.Empty);
+            var doc = new XDocument();
+            var declaration = new XDeclaration("1.0", "utf-8", string.Empty);
             doc.Declaration = declaration;
-            XElement root = new XElement(structure.RootName);
+            var root = new XElement(structure.RootName);
 
             foreach (var c in contentsPerType)
             {

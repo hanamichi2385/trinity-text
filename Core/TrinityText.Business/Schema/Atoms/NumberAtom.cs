@@ -1,6 +1,5 @@
 ﻿using Resulz;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace TrinityText.Business.Schema
 {
@@ -20,15 +19,13 @@ namespace TrinityText.Business.Schema
 
             if (IsRequired)
             {
-                if (string.IsNullOrEmpty(Value))
+                if (string.IsNullOrWhiteSpace(Value))
                 {
                     errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} is mandatory"));
                 }
             }
 
-            int integer = 0;
-
-            bool validFormat = int.TryParse(Value, out integer);
+            bool validFormat = int.TryParse(Value, out int integer);
 
             if (validFormat)
             {
@@ -53,7 +50,7 @@ namespace TrinityText.Business.Schema
                 errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} not valid format (integer)"));
             }
 
-            if (errors.Any() == false)
+            if (errors.Count == 0)
             {
                 return OperationResult.MakeSuccess();
             }

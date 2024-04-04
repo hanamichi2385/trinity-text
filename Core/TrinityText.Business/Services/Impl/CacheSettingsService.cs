@@ -40,7 +40,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<IList<CacheSettingsDTO>>.MakeFailure(new[] { ErrorMessage.Create("GETALL", "GENERIC_ERROR") });
+                return OperationResult<IList<CacheSettingsDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
             }
         }
 
@@ -59,13 +59,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<CacheSettingsDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                    return OperationResult<CacheSettingsDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET {message}", ex.Message);
-                return OperationResult<CacheSettingsDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "GENERIC_ERROR") });
+                return OperationResult<CacheSettingsDTO>.MakeFailure([ErrorMessage.Create("GET", "GENERIC_ERROR")]);
             }
         }
 
@@ -86,13 +86,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<CacheSettingsDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                    return OperationResult<CacheSettingsDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<CacheSettingsDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "GENERIC_ERROR") });
+                return OperationResult<CacheSettingsDTO>.MakeFailure([ErrorMessage.Create("GET", "GENERIC_ERROR")]);
             }
         }
 
@@ -117,7 +117,7 @@ namespace TrinityText.Business.Services.Impl
                     }
                     else
                     {
-                        return OperationResult<CacheSettingsDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                        return OperationResult<CacheSettingsDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
                     }
                 }
                 else
@@ -133,7 +133,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SAVE {message}", ex.Message);
-                return OperationResult<CacheSettingsDTO>.MakeFailure(new[] { ErrorMessage.Create("SAVE", "GENERIC_ERROR") });
+                return OperationResult<CacheSettingsDTO>.MakeFailure([ErrorMessage.Create("SAVE", "GENERIC_ERROR")]);
             }
         }
 
@@ -152,13 +152,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "NOT_FOUND") });
+                    return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "REMOVE {message}", ex.Message);
-                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "GENERIC_ERROR") });
+                return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "GENERIC_ERROR")]);
             }
         }
     }

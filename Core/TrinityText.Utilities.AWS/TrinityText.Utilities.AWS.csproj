@@ -7,7 +7,7 @@
 	<Import Project="..\..\SolutionItems\GlobalAssemblyInfo.proj" />
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.Translate" Version="3.7.300.54" />
+    <PackageReference Include="AWSSDK.Translate" Version="3.7.300.68" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
   </ItemGroup>
 

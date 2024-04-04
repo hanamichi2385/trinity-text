@@ -64,7 +64,7 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<PublicationDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                    return OperationResult<PublicationDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
                 }
 
 
@@ -72,7 +72,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET {message}", ex.Message);
-                return OperationResult<PublicationDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "GENERIC_ERROR") });
+                return OperationResult<PublicationDTO>.MakeFailure([ErrorMessage.Create("GET", "GENERIC_ERROR")]);
             }
         }
 
@@ -103,19 +103,18 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                using (var sqlConnection = new SqlConnection(_publicationRepository.ConnectionString))
+                using var sqlConnection = new SqlConnection(_publicationRepository.ConnectionString);
+                await sqlConnection.OpenAsync();
+                using (var sqlCommand = new SqlCommand(@"UPDATE [TRINITY].[dbo].[Generazioni] SET [ZIP_FILE] = @zip  WHERE ID = @id", sqlConnection))
                 {
-                    await sqlConnection.OpenAsync();
-                    using (var sqlCommand = new SqlCommand(@"UPDATE [TRINITY].[dbo].[Generazioni] SET [ZIP_FILE] = @zip  WHERE ID = @id", sqlConnection))
-                    {
-                        sqlCommand.Parameters.Add(new SqlParameter("id", id));
-                        sqlCommand.Parameters.Add(new SqlParameter("zip", zipFile));
+                    sqlCommand.Parameters.Add(new SqlParameter("id", id));
+                    sqlCommand.Parameters.Add(new SqlParameter("zip", zipFile));
 
-                        var result = await sqlCommand.ExecuteNonQueryAsync();
-                    }
-                    await sqlConnection.CloseAsync();
+                    var result = await sqlCommand.ExecuteNonQueryAsync();
                 }
-            }catch(Exception ex)
+                await sqlConnection.CloseAsync();
+            }
+            catch(Exception ex)
             {
                 _logger.LogError(ex, "UPDATE_ZIP_CONTENT {id} : {message}", id, ex.Message);
             }
@@ -170,7 +169,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<IList<PublicationDTO>>.MakeFailure(new[] { ErrorMessage.Create("GETALL", "GENERIC_ERROR") });
+                return OperationResult<IList<PublicationDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
             }
         }
 
@@ -189,13 +188,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "NOT_FOUND") });
+                    return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "REMOVE {message}", ex.Message);
-                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "GENERIC_ERROR") });
+                return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "GENERIC_ERROR")]);
             }
         }
 
@@ -236,7 +235,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CREATE {message}", ex.Message);
-                return OperationResult<PublicationDTO>.MakeFailure(new[] { ErrorMessage.Create("CREATE", "GENERIC_ERROR") });
+                return OperationResult<PublicationDTO>.MakeFailure([ErrorMessage.Create("CREATE", "GENERIC_ERROR")]);
             }
         }
 
@@ -272,13 +271,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult.MakeFailure(new[] { ErrorMessage.Create("UPDATE", "NOT_FOUND") });
+                    return OperationResult.MakeFailure([ErrorMessage.Create("UPDATE", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "UPDATE {message}", ex.Message);
-                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("UPDATE", "GENERIC_ERROR") });
+                return OperationResult.MakeFailure([ErrorMessage.Create("UPDATE", "GENERIC_ERROR")]);
             }
         }
 

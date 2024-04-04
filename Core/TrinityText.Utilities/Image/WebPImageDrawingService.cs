@@ -29,31 +29,24 @@ namespace TrinityText.Utilities
                 if (ImageExtensions.IsConvertible(dto))
                 {
 
-                    using (var inputFile = new MemoryStream(dto.Content))
-                    using (var inputStream = new SKManagedStream(inputFile))
+                    using var inputFile = new MemoryStream(dto.Content);
+                    using var inputStream = new SKManagedStream(inputFile);
+                    if (CanGenerateThumb(dto.Filename, inputStream))
                     {
-                        if (CanGenerateThumb(dto.Filename, inputStream))
+                        using var outputFile = new MemoryStream();
+                        using (var original = SKBitmap.Decode(inputStream))
                         {
-                            using (var outputFile = new MemoryStream())
-                            {
-                                using (var original = SKBitmap.Decode(inputStream))
-                                {
-                                    int w = 0;
-                                    int h = 0;
-
-                                    ImageExtensions.CheckImageSize(_options, original.Width, original.Height, out w, out h);
+                            ImageExtensions.CheckImageSize(_options, original.Width, original.Height, out int w, out int h);
 
 
-                                    var info = new SKImageInfo() { Width = w, Height = h, ColorType = original.ColorType, AlphaType = original.AlphaType, ColorSpace = original.ColorSpace };
-                                    var thumb = original.Resize(info, SKFilterQuality.Medium);
+                            var info = new SKImageInfo() { Width = w, Height = h, ColorType = original.ColorType, AlphaType = original.AlphaType, ColorSpace = original.ColorSpace };
+                            var thumb = original.Resize(info, SKFilterQuality.Medium);
 
-                                    thumb.Encode(SKEncodedImageFormat.Webp, _options.Quality)
-                                            .SaveTo(outputFile);
-                                }
-                                bytes = outputFile.GetBuffer();
-                                outputFile.Close();
-                            }
+                            thumb.Encode(SKEncodedImageFormat.Webp, _options.Quality)
+                                    .SaveTo(outputFile);
                         }
+                        bytes = outputFile.GetBuffer();
+                        outputFile.Close();
                     }
                 }
 
@@ -63,13 +56,13 @@ namespace TrinityText.Utilities
                 }
                 else
                 {
-                    return OperationResult<byte[]>.MakeFailure(new[] { ErrorMessage.Create("GENERATE_THUMB", "NOT_OPTIMIZED") });
+                    return OperationResult<byte[]>.MakeFailure([ErrorMessage.Create("GENERATE_THUMB", "NOT_OPTIMIZED")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GENERATE_THUMB {message}", ex.Message);
-                return OperationResult<byte[]>.MakeFailure(new[] { ErrorMessage.Create("GENERATE_THUMB", "GENERIC_ERROR") });
+                return OperationResult<byte[]>.MakeFailure([ErrorMessage.Create("GENERATE_THUMB", "GENERIC_ERROR")]);
             }
         }
 
@@ -81,22 +74,17 @@ namespace TrinityText.Utilities
 
                 if (ImageExtensions.IsConvertible(dto))
                 {
-                    using (var outputFile = new MemoryStream())
+                    using var outputFile = new MemoryStream();
+                    using (var inputFile = new MemoryStream(dto.Content))
+                    using (var inputStream = new SKManagedStream(inputFile))
                     {
-                        using (var inputFile = new MemoryStream(dto.Content))
-                        using (var inputStream = new SKManagedStream(inputFile))
-                        {
-                            using (var original = SKBitmap.Decode(inputStream))
-                            {
-                                original.Encode(SKEncodedImageFormat.Webp, _options.Quality)
-                                        .SaveTo(outputFile);
-
-                            }
-                        }
-                        bytes = outputFile.GetBuffer();
-
-                        outputFile.Close();
+                        using var original = SKBitmap.Decode(inputStream);
+                        original.Encode(SKEncodedImageFormat.Webp, _options.Quality)
+                                .SaveTo(outputFile);
                     }
+                    bytes = outputFile.GetBuffer();
+
+                    outputFile.Close();
                 }
                 if (bytes != null && (bytes.Length < dto.Content.Length))
                 {
@@ -104,13 +92,13 @@ namespace TrinityText.Utilities
                 }
                 else
                 {
-                    return OperationResult<byte[]>.MakeFailure(new[] { ErrorMessage.Create("COMPRESSION", "NOT_OPTIMIZED") });
+                    return OperationResult<byte[]>.MakeFailure([ErrorMessage.Create("COMPRESSION", "NOT_OPTIMIZED")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "COMPRESSION {message}", ex.Message);
-                return OperationResult<byte[]>.MakeFailure(new[] { ErrorMessage.Create("COMPRESSION", "GENERIC_ERROR") });
+                return OperationResult<byte[]>.MakeFailure([ErrorMessage.Create("COMPRESSION", "GENERIC_ERROR")]);
             }
         }
 

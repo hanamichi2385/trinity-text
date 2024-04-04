@@ -57,15 +57,15 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SEARCH {message}", ex.Message);
-                return OperationResult<PagedResult<TextDTO>>.MakeFailure(new[] { ErrorMessage.Create("SEARCH", "GENERIC_ERROR") });
+                return OperationResult<PagedResult<TextDTO>>.MakeFailure([ErrorMessage.Create("SEARCH", "GENERIC_ERROR")]);
             }
         }
 
         private IQueryable<Text> GetTextsByFilter(SearchTextDTO search)
         {
-            var websites = search.UserWebsites ?? Array.Empty<string>();
-            var languages = search.WebsiteLanguages ?? Array.Empty<string>();
-            var textTypes = search.TextTypeIds ?? Array.Empty<int?>();
+            var websites = search.UserWebsites ?? [];
+            var languages = search.WebsiteLanguages ?? [];
+            var textTypes = search.TextTypeIds ?? [];
 
             var query = _textRepository
                 .Repository
@@ -159,13 +159,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<IList<TextRevisionDTO>>.MakeFailure(new[] { ErrorMessage.Create("GETALLREVISIONS", "NOT_FOUND") });
+                    return OperationResult<IList<TextRevisionDTO>>.MakeFailure([ErrorMessage.Create("GETALLREVISIONS", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALLREVISIONS {message}", ex.Message);
-                return OperationResult<IList<TextRevisionDTO>>.MakeFailure(new[] { ErrorMessage.Create("GETALLREVISIONS", "GENERIC_ERROR") });
+                return OperationResult<IList<TextRevisionDTO>>.MakeFailure([ErrorMessage.Create("GETALLREVISIONS", "GENERIC_ERROR")]);
             }
         }
 
@@ -184,13 +184,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                    return OperationResult<TextDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET {message}", ex.Message);
-                return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "GENERIC_ERROR") });
+                return OperationResult<TextDTO>.MakeFailure([ErrorMessage.Create("GET", "GENERIC_ERROR")]);
             }
         }
 
@@ -226,7 +226,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SAVE {message}", ex.Message);
-                return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("SAVE", "GENERIC_ERROR") });
+                return OperationResult<TextDTO>.MakeFailure([ErrorMessage.Create("SAVE", "GENERIC_ERROR")]);
             }
         }
 
@@ -295,7 +295,7 @@ namespace TrinityText.Business.Services.Impl
             }
             else
             {
-                return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                return OperationResult<TextDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
             }
         }
 
@@ -359,12 +359,12 @@ namespace TrinityText.Business.Services.Impl
 
                 var resx = query.Count();
 
-                return await Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure(new[] { ErrorMessage.Create("DUPLICATED", "DUPLICATED") }));
+                return await Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure([ErrorMessage.Create("DUPLICATED", "DUPLICATED")]));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "EXIST {message}", ex.Message);
-                return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("EXIST", "GENERIC_ERROR") });
+                return OperationResult<TextDTO>.MakeFailure([ErrorMessage.Create("EXIST", "GENERIC_ERROR")]);
             }
         }
 
@@ -375,7 +375,7 @@ namespace TrinityText.Business.Services.Impl
             {
                 var publishableTexts = new Dictionary<string, List<TextDTO>>();
 
-                var textTypesIds = textTypes.Select(t => t.Id).Union(new int?[] { null }).ToArray();
+                var textTypesIds = textTypes.Select(t => t.Id).Union([null]).ToArray();
 
                 var search = new SearchTextDTO()
                 {
@@ -383,7 +383,7 @@ namespace TrinityText.Business.Services.Impl
                     Site = site,
                     LanguageIds = languages,
                     ShowOnlyActive = true,
-                    UserWebsites = new[] { website },
+                    UserWebsites = [website],
                     WebsiteLanguages = languages,
                     TextTypeIds = textTypesIds,
                 };
@@ -543,7 +543,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PUBLISH_TEXTS {message}", ex.Message);
-                return OperationResult<Dictionary<string, List<TextDTO>>>.MakeFailure(new[] { ErrorMessage.Create("PUBLISH_TEXTS", "GENERIC_ERROR") });
+                return OperationResult<Dictionary<string, List<TextDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_TEXTS", "GENERIC_ERROR")]);
             }
         }
 
@@ -572,13 +572,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "NOT_FOUND") });
+                    return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "REMOVE {message}", ex.Message);
-                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "GENERIC_ERROR") });
+                return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "GENERIC_ERROR")]);
             }
         }
 
@@ -610,7 +610,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CLEAN_REVISIONS {message}", ex.Message);
-                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("CLEAN_REVISIONS", "GENERIC_ERROR") });
+                return OperationResult.MakeFailure([ErrorMessage.Create("CLEAN_REVISIONS", "GENERIC_ERROR")]);
             }
         }
 
@@ -671,7 +671,7 @@ namespace TrinityText.Business.Services.Impl
             {
                 await _textRepository.RollbackTransaction();
                 _logger.LogError(ex, "IMPORT_TEXTS {message}", ex.Message);
-                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("IMPORT_TEXTS", "GENERIC_ERROR") });
+                return OperationResult.MakeFailure([ErrorMessage.Create("IMPORT_TEXTS", "GENERIC_ERROR")]);
             }
         }
 

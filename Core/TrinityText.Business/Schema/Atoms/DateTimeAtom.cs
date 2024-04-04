@@ -1,7 +1,6 @@
 ﻿using Resulz;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace TrinityText.Business.Schema.Atoms
 {
@@ -35,12 +34,12 @@ namespace TrinityText.Business.Schema.Atoms
                 }
             }
 
-            if (DateTime.TryParseExact(Value, "dd/MM/yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date) == false)
+            if (DateTime.TryParseExact(Value, "dd/MM/yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _) == false)
             {
                 errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} not valid format (integer)"));
             }
 
-            if (errors.Any() == false)
+            if (errors.Count == 0)
             {
                 return OperationResult.MakeSuccess();
             }

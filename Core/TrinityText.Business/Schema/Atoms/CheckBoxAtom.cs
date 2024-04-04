@@ -1,6 +1,5 @@
 ﻿using Resulz;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace TrinityText.Business.Schema
 {
@@ -25,15 +24,13 @@ namespace TrinityText.Business.Schema
                 }
             }
 
-            bool boolean = false;
+            //if (bool.TryParse(Value, out bool boolean) == false)
+            //{
+            //    //errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} not valid format (boolean)"));
+            //    boolean = false;
+            //}
 
-            if (bool.TryParse(Value, out boolean) == false)
-            {
-                //errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} not valid format (boolean)"));
-                boolean = false;
-            }
-
-            if (errors.Any() == false)
+            if (errors.Count == 0)
             {
                 return OperationResult.MakeSuccess();
             }

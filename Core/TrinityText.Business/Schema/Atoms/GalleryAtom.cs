@@ -1,6 +1,5 @@
 ﻿using Resulz;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace TrinityText.Business.Schema
 {
@@ -8,7 +7,7 @@ namespace TrinityText.Business.Schema
     {
         public GalleryAtom() : base(AtomType.Gallery)
         {
-            Items = new List<ImageParticol>();
+            Items = [];
         }
 
         public List<ImageParticol> Items { get; set; }
@@ -34,13 +33,13 @@ namespace TrinityText.Business.Schema
 
             if (IsRequired)
             {
-                if (ItemName.Any() == false)
+                if (ItemName.Length == 0)
                 {
                     errors.Add(ErrorMessage.Create($"{propertyBinding}", $"{propertyName} is mandatory"));
                 }
             }
             
-            if (errors.Any() == false)
+            if (errors.Count == 0)
             {
                 return OperationResult.MakeSuccess();
             }

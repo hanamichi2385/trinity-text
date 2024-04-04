@@ -32,21 +32,19 @@ namespace TrinityText.Utilities.AWS
                 var region = _options.Region;
                 var cfg = new AmazonTranslateConfig() { RegionEndpoint = RegionEndpoint.EUWest1 };
 
-                using (AmazonTranslateClient cfc = new AmazonTranslateClient(accessId, secretKey, RegionEndpoint.GetBySystemName(region)))
+                using var cfc = new AmazonTranslateClient(accessId, secretKey, RegionEndpoint.GetBySystemName(region));
+                var request = new TranslateTextRequest()
                 {
-                    var request = new TranslateTextRequest()
-                    {
-                        SourceLanguageCode = sourceLang,
-                        TargetLanguageCode = targetLang,
-                        Text = text,
-                    };
+                    SourceLanguageCode = sourceLang,
+                    TargetLanguageCode = targetLang,
+                    Text = text,
+                };
 
-                    var response = await cfc.TranslateTextAsync(request);
+                var response = await cfc.TranslateTextAsync(request);
 
-                    if (response.HttpStatusCode == System.Net.HttpStatusCode.OK)
-                    {
-                        translateText = response.TranslatedText;
-                    }
+                if (response.HttpStatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    translateText = response.TranslatedText;
                 }
             }
             catch (Exception ex)

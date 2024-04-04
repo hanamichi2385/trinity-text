@@ -57,7 +57,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<IList<FolderDTO>>.MakeFailure(new[] { ErrorMessage.Create("GET_ALL", "GENERIC_ERROR") });
+                return OperationResult<IList<FolderDTO>>.MakeFailure([ErrorMessage.Create("GET_ALL", "GENERIC_ERROR")]);
             }
         }
 
@@ -86,13 +86,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<FolderDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                    return OperationResult<FolderDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET {message}", ex.Message);
-                return OperationResult<FolderDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "GENERIC_ERROR") });
+                return OperationResult<FolderDTO>.MakeFailure([ErrorMessage.Create("GET", "GENERIC_ERROR")]);
             }
         }
 
@@ -121,7 +121,7 @@ namespace TrinityText.Business.Services.Impl
                     }
                     else
                     {
-                        return OperationResult<FolderDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                        return OperationResult<FolderDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
                     }
                 }
                 else
@@ -139,7 +139,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SAVE {message}", ex.Message);
-                return OperationResult<FolderDTO>.MakeFailure(new[] { ErrorMessage.Create("SAVE", "GENERIC_ERROR") });
+                return OperationResult<FolderDTO>.MakeFailure([ErrorMessage.Create("SAVE", "GENERIC_ERROR")]);
             }
         }
 
@@ -162,14 +162,14 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "NOT_FOUND") });
+                    return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 await _folderRepository.RollbackTransaction();
                 _logger.LogError(ex, "REMOVE {message}", ex.Message);
-                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "GENERIC_ERROR") });
+                return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "GENERIC_ERROR")]);
             }
         }
 
@@ -214,13 +214,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                    return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET {message}", ex.Message);
-                return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "GENERIC_ERROR") });
+                return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GET", "GENERIC_ERROR")]);
             }
         }
 
@@ -270,7 +270,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET {message}", ex.Message);
-                return OperationResult<IList<FileDTO>>.MakeFailure(new[] { ErrorMessage.Create("GETFILES_BYFOLDER", "GENERIC_ERROR") });
+                return OperationResult<IList<FileDTO>>.MakeFailure([ErrorMessage.Create("GETFILES_BYFOLDER", "GENERIC_ERROR")]);
             }
         }
 
@@ -291,13 +291,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "NOT_FOUND") });
+                    return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "REMOVE {message}", ex.Message);
-                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "GENERIC_ERROR") });
+                return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "GENERIC_ERROR")]);
             }
         }
 
@@ -338,13 +338,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<string>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                    return OperationResult<string>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET {message}", ex.Message);
-                return OperationResult<string>.MakeFailure(new[] { ErrorMessage.Create("GET", "GENERIC_ERROR") });
+                return OperationResult<string>.MakeFailure([ErrorMessage.Create("GET", "GENERIC_ERROR")]);
             }
         }
 
@@ -432,13 +432,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<string>.MakeFailure(new[] { ErrorMessage.Create("ADDFILE_TO_FOLDER", "FOLDER_NOT_FOUND") });
+                    return OperationResult<string>.MakeFailure([ErrorMessage.Create("ADDFILE_TO_FOLDER", "FOLDER_NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "ADDFILE_TO_FOLDEER {message}", ex.Message);
-                return OperationResult<string>.MakeFailure(new[] { ErrorMessage.Create("ADDFILE_TO_FOLDER", "GENERIC_ERROR") });
+                return OperationResult<string>.MakeFailure([ErrorMessage.Create("ADDFILE_TO_FOLDER", "GENERIC_ERROR")]);
             }
         }
 
@@ -511,19 +511,19 @@ namespace TrinityText.Business.Services.Impl
                     }
                     else
                     {
-                        return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("PASTEFILE", "FILE_NOT_FOUND") });
+                        return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "FILE_NOT_FOUND")]);
                     }
                 }
                 else
                 {
-                    return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("PASTEFILE", "FOLDER_NOT_FOUND") });
+                    return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "FOLDER_NOT_FOUND")]);
                 }
 
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PASTEFILE {message}", ex.Message);
-                return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("PASTEFILE", "GENERIC_ERROR") });
+                return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "GENERIC_ERROR")]);
             }
         }
 
@@ -588,7 +588,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALLFOLDERSBYWEBSITE {message}", ex.Message);
-                return OperationResult<FolderDTO>.MakeFailure(new[] { ErrorMessage.Create("GETALLFOLDERSBYWEBSITE", "GENERIC_ERROR") });
+                return OperationResult<FolderDTO>.MakeFailure([ErrorMessage.Create("GETALLFOLDERSBYWEBSITE", "GENERIC_ERROR")]);
             }
         }
 
@@ -646,14 +646,14 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult.MakeFailure(new[] { ErrorMessage.Create("CREATEDEFAULTFOLDERS", "NOT_FOUND") });
+                    return OperationResult.MakeFailure([ErrorMessage.Create("CREATEDEFAULTFOLDERS", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 await _folderRepository.RollbackTransaction();
                 _logger.LogError(ex, "CREATEDEFAULTFOLDERS {message}", ex.Message);
-                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("CREATEDEFAULTFOLDERS", "GENERIC_ERROR") });
+                return OperationResult.MakeFailure([ErrorMessage.Create("CREATEDEFAULTFOLDERS", "GENERIC_ERROR")]);
             }
         }
 
@@ -689,11 +689,7 @@ namespace TrinityText.Business.Services.Impl
                         .Repository
                         .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == primaryFolder.ID && f.NAME.Equals("Files", StringComparison.InvariantCultureIgnoreCase))
                         .SingleOrDefault();
-
-                if (files == null)
-                {
-                    files = await CreateFolderByName(website, "Files", primaryFolder);
-                }
+                files ??= await CreateFolderByName(website, "Files", primaryFolder);
 
 
 
@@ -702,10 +698,7 @@ namespace TrinityText.Business.Services.Impl
                         .Repository
                         .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == primaryFolder.ID && f.NAME.Equals("Images", StringComparison.InvariantCultureIgnoreCase))
                         .SingleOrDefault();
-                if (images == null)
-                {
-                    images = await CreateFolderByName(website, "Images", primaryFolder);
-                }
+                images ??= await CreateFolderByName(website, "Images", primaryFolder);
 
                 var instanceFileFolder = 
                     _folderRepository
@@ -733,7 +726,7 @@ namespace TrinityText.Business.Services.Impl
             {
                 await _folderRepository.RollbackTransaction();
                 _logger.LogError(ex, "CREATEDEFAULTFOLDERS {message}", ex.Message);
-                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("CREATEDEFAULTFOLDERS", "GENERIC_ERROR") });
+                return OperationResult.MakeFailure([ErrorMessage.Create("CREATEDEFAULTFOLDERS", "GENERIC_ERROR")]);
             }
         }
 
@@ -815,7 +808,7 @@ namespace TrinityText.Business.Services.Impl
                     }
                     else
                     {
-                        var foldersName = fullFilename.Replace(fileName, "").Replace("@/", "").Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                        var foldersName = fullFilename.Replace(fileName, "").Replace("@/", "").Split('/', StringSplitOptions.RemoveEmptyEntries);
                         throw new NotImplementedException();
                         //var filesFolder =
                         //    files
@@ -892,13 +885,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("GETFILEBYFULLNAME", "GENERIC_ERROR") });
+                    return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GETFILEBYFULLNAME", "GENERIC_ERROR")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETFILEBYFULLNAME {message}", ex.Message);
-                return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("GETFILEBYFULLNAME", "GENERIC_ERROR") });
+                return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GETFILEBYFULLNAME", "GENERIC_ERROR")]);
             }
         }
 
@@ -943,13 +936,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("SAVE", "NOT_FOUND") });
+                    return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("SAVE", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SAVE {message}", ex.Message);
-                return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("SAVE", "GENERIC_ERROR") });
+                return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("SAVE", "GENERIC_ERROR")]);
             }
         }
 

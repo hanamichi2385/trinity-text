@@ -12,10 +12,14 @@
 
         public string Path { get; set; }
 
+        public string PathMobile { get; set; }
+
         public string Caption { get; set; }
 
         public string Link { get; set; }
 
         public int? Order { get; set; }
+
+        public string Target { get; set; }
     }
 }

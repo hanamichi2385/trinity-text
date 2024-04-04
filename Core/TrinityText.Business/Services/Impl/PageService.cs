@@ -76,14 +76,14 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SEARCH {message}", ex.Message);
-                return OperationResult<PagedResult<PageDTO>>.MakeFailure(new[] { ErrorMessage.Create("SEARCH", "GENERIC_ERROR") });
+                return OperationResult<PagedResult<PageDTO>>.MakeFailure([ErrorMessage.Create("SEARCH", "GENERIC_ERROR")]);
             }
         }
 
         private IQueryable<Page> GetPagesByFilter(SearchPageDTO search)
         {
-            var websites = search.UserWebsites ?? Array.Empty<string>();
-            var languages = search.WebsiteLanguages ?? Array.Empty<string>();
+            var websites = search.UserWebsites ?? [];
+            var languages = search.WebsiteLanguages ?? [];
 
             var query =
                 _pageRepository
@@ -175,13 +175,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<PageDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                    return OperationResult<PageDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET {message}", ex.Message);
-                return OperationResult<PageDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "GENERIC_ERROR") });
+                return OperationResult<PageDTO>.MakeFailure([ErrorMessage.Create("GET", "GENERIC_ERROR")]);
             }
         }
 
@@ -219,7 +219,7 @@ namespace TrinityText.Business.Services.Impl
                     }
                     else
                     {
-                        return OperationResult<PageDTO>.MakeFailure(new[] { ErrorMessage.Create("GET", "NOT_FOUND") });
+                        return OperationResult<PageDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
                     }
                 }
                 else
@@ -255,54 +255,54 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SAVE {message}", ex.Message);
-                return OperationResult<PageDTO>.MakeFailure(new[] { ErrorMessage.Create("SAVE", "GENERIC_ERROR") });
+                return OperationResult<PageDTO>.MakeFailure([ErrorMessage.Create("SAVE", "GENERIC_ERROR")]);
             }
         }
 
-        private async Task<OperationResult> NotDuplicated(PageDTO dto)
-        {
-            try
-            {
-                var query =
-                    _pageRepository.Repository
-                        .Where(r =>
-                        r.FK_PAGETYPE == dto.PageTypeId
-                            && r.TITLE == dto.Title
-                            && r.FK_LANGUAGE == dto.Language
-                            );
+        //private async Task<OperationResult> NotDuplicated(PageDTO dto)
+        //{
+        //    try
+        //    {
+        //        var query =
+        //            _pageRepository.Repository
+        //                .Where(r =>
+        //                r.FK_PAGETYPE == dto.PageTypeId
+        //                    && r.TITLE == dto.Title
+        //                    && r.FK_LANGUAGE == dto.Language
+        //                    );
 
-                if (!string.IsNullOrWhiteSpace(dto.Website))
-                {
-                    query =
-                        query.Where(r => r.FK_WEBSITE == dto.Website);
-                }
-                else
-                {
-                    query =
-                        query.Where(r => r.FK_WEBSITE == null);
-                }
+        //        if (!string.IsNullOrWhiteSpace(dto.Website))
+        //        {
+        //            query =
+        //                query.Where(r => r.FK_WEBSITE == dto.Website);
+        //        }
+        //        else
+        //        {
+        //            query =
+        //                query.Where(r => r.FK_WEBSITE == null);
+        //        }
 
-                if (!string.IsNullOrWhiteSpace(dto.Site))
-                {
-                    query =
-                        query.Where(r => r.FK_PRICELIST == dto.Site);
-                }
-                else
-                {
-                    query =
-                        query.Where(r => r.FK_PRICELIST == null);
-                }
+        //        if (!string.IsNullOrWhiteSpace(dto.Site))
+        //        {
+        //            query =
+        //                query.Where(r => r.FK_PRICELIST == dto.Site);
+        //        }
+        //        else
+        //        {
+        //            query =
+        //                query.Where(r => r.FK_PRICELIST == null);
+        //        }
 
-                var resx = query.Count();
+        //        var resx = query.Count();
 
-                return await Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure(new[] { ErrorMessage.Create("DUPLICATED", "DUPLICATED") }));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "EXIST {message}", ex.Message);
-                return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("EXIST", "GENERIC_ERROR") });
-            }
-        }
+        //        return await Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure(new[] { ErrorMessage.Create("DUPLICATED", "DUPLICATED") }));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "EXIST {message}", ex.Message);
+        //        return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("EXIST", "GENERIC_ERROR") });
+        //    }
+        //}
 
         public async Task<OperationResult<Dictionary<string, List<PageDTO>>>> GetPublishablePages(string website, string site, string[] languages)
         {
@@ -314,7 +314,7 @@ namespace TrinityText.Business.Services.Impl
                     Site = site,
                     LanguageIds = languages,
                     ShowOnlyActive = true,
-                    UserWebsites = new[] { website },
+                    UserWebsites = [website],
                     WebsiteLanguages = languages,
                 };
 
@@ -333,7 +333,7 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PUBLISH_PAGES {message}", ex.Message);
-                return OperationResult<Dictionary<string, List<PageDTO>>>.MakeFailure(new[] { ErrorMessage.Create("PUBLISH_PAGES", "GENERIC_ERROR") });
+                return OperationResult<Dictionary<string, List<PageDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_PAGES", "GENERIC_ERROR")]);
             }
         }
 
@@ -352,13 +352,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "NOT_FOUND") });
+                    return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "REMOVE {message}", ex.Message);
-                return OperationResult.MakeFailure(new[] { ErrorMessage.Create("REMOVE", "GENERIC_ERROR") });
+                return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "GENERIC_ERROR")]);
             }
         }
     }

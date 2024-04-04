@@ -1,6 +1,5 @@
 ﻿using Resulz;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace TrinityText.Business.Schema
 {
@@ -22,13 +21,13 @@ namespace TrinityText.Business.Schema
 
             if (IsRequired)
             {
-                if (string.IsNullOrEmpty(Value))
+                if (string.IsNullOrWhiteSpace(Value))
                 {
                     errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} is mandatory"));
                 }
             }
 
-            var length = string.IsNullOrEmpty(Value) ? 0 : Value.Length;
+            var length = string.IsNullOrWhiteSpace(Value) ? 0 : Value.Length;
 
             if (MinValue.HasValue)
             {
@@ -46,7 +45,7 @@ namespace TrinityText.Business.Schema
                 }
             }
 
-            if (errors.Any() == false)
+            if (errors.Count == 0)
             {
                 return OperationResult.MakeSuccess();
             }

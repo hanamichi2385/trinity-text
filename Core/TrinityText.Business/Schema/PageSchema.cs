@@ -23,7 +23,7 @@ namespace TrinityText.Business.Schema
         {
             var isValid = OperationResult.MakeSuccess();
 
-            for (int i = 0; i < Body.Count(); i++)
+            for (int i = 0; i < Body.Count; i++)
             {
                 var v = Body.ElementAt(i);
 
