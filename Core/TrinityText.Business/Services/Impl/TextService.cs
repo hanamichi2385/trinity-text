@@ -101,7 +101,7 @@ namespace TrinityText.Business.Services.Impl
                         (!string.IsNullOrWhiteSpace(s.FK_PRICELIST) && s.FK_PRICELIST == search.Site)));
                 }
 
-                if (search.LanguageIds?.Length != 0)
+                if ((search.LanguageIds?.Length ?? 0) != 0)
                 {
                     query =
                         query.Where(r => search.LanguageIds.Contains(r.FK_LANGUAGE));
