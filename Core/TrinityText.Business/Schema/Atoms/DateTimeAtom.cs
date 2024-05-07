@@ -36,7 +36,7 @@ namespace TrinityText.Business.Schema
 
             if (DateTime.TryParseExact(Value, "dd/MM/yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _) == false)
             {
-                errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} not valid format (integer)"));
+                errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} not valid format (dd/MM/yyyy HH:mm:ss)"));
             }
 
             if (errors.Count == 0)

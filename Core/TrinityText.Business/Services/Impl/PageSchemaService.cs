@@ -278,7 +278,7 @@ namespace TrinityText.Business.Services.Impl
 
                         if (DateTime.TryParseExact(dateTime.Value, "dd/MM/yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
                         {
-                            elementPart.Add(date);
+                            elementPart.Add(date.ToString("dd/MM/yyyy HH:mm:ss"));
                         }
                         break;
                 }
