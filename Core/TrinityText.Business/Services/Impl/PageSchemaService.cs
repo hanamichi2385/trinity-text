@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -38,7 +39,7 @@ namespace TrinityText.Business.Services.Impl
 
             var content = root.Element("content");
             var contentId = content.Attribute("id");
-            PageSchema pageSchema = new PageSchema() { RootName = id.Value, ChildName = contentId.Value };
+            var pageSchema = new PageSchema() { RootName = id.Value, ChildName = contentId.Value };
 
             foreach (var part in content.Elements())
             {
@@ -138,6 +139,17 @@ namespace TrinityText.Business.Services.Impl
                             Description = description
                         };
                         pageSchema.Body.Add(checkboxAtom);
+                        break;
+
+                    case "datetimeatom":
+                    case "datetimepart":
+                        var datetimeAtom = new DateTimeAtom
+                        {
+                            IsRequired = isRequired,
+                            Id = partId,
+                            Description = description
+                        };
+                        pageSchema.Body.Add(datetimeAtom);
                         break;
 
                     default:
@@ -260,6 +272,15 @@ namespace TrinityText.Business.Services.Impl
                         var checkbox = part as CheckBoxAtom;
                         elementPart.Add(string.IsNullOrWhiteSpace(checkbox.Value) ? "false" : checkbox.Value.ToLower());
                         break;
+
+                    case TrinityText.Business.Schema.AtomType.DateTime:
+                        var dateTime = part as DateTimeAtom;
+
+                        if (DateTime.TryParseExact(dateTime.Value, "dd/MM/yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
+                        {
+                            elementPart.Add(date);
+                        }
+                        break;
                 }
                 content.Add(elementPart);
             }
@@ -309,6 +330,17 @@ namespace TrinityText.Business.Services.Impl
                             }
 
                             rootPart.Body.Add(checkbox);
+                            break;
+                        case TrinityText.Business.Schema.AtomType.DateTime:
+                            var dateTime = clonePart as DateTimeAtom;
+
+                            if (!string.IsNullOrWhiteSpace(element.Value) && DateTime.TryParseExact(dateTime.Value, "dd/MM/yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
+                            {
+                                dateTime.Value = date.ToString("dd/MM/yyyy HH:mm:ss");
+                            }
+                            
+
+                            rootPart.Body.Add(dateTime);
                             break;
                         case TrinityText.Business.Schema.AtomType.Image:
                             var imageAtom = clonePart as ImageAtom;
@@ -390,6 +422,11 @@ namespace TrinityText.Business.Services.Impl
                         case TrinityText.Business.Schema.AtomType.Gallery:
                             var gallery = clonePart as GalleryAtom;
                             rootPart.Body.Add(gallery);
+                            break;
+
+                        case TrinityText.Business.Schema.AtomType.DateTime:
+                            var dateTime = clonePart as DateTimeAtom;
+                            rootPart.Body.Add(dateTime);
                             break;
 
                             //case TrinityText.Business.Schema.AtomType.Blog:

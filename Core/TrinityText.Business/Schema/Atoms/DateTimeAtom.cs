@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace TrinityText.Business.Schema.Atoms
+namespace TrinityText.Business.Schema
 {
     public class DateTimeAtom : BaseAtom<DateTimeAtom>
     {
