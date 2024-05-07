@@ -23,7 +23,7 @@ namespace TrinityText.Business.Services.Impl
         {
             byte[] byteArray = Encoding.UTF8.GetBytes(xml);
             using var stream = new MemoryStream(byteArray);
-            PageSchema structure = GetContentStructure(stream);
+            var structure = GetContentStructure(stream);
             stream.Close();
 
             return structure;
@@ -276,9 +276,9 @@ namespace TrinityText.Business.Services.Impl
                     case TrinityText.Business.Schema.AtomType.DateTime:
                         var dateTime = part as DateTimeAtom;
 
-                        if (DateTime.TryParseExact(dateTime.Value, "dd/MM/yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
+                        if (DateTime.TryParseExact(dateTime.Value, DateTimeAtom.Format, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
                         {
-                            elementPart.Add(date.ToString("dd/MM/yyyy HH:mm:ss"));
+                            elementPart.Add(date.ToString(DateTimeAtom.Format));
                         }
                         break;
                 }
@@ -334,10 +334,11 @@ namespace TrinityText.Business.Services.Impl
                         case TrinityText.Business.Schema.AtomType.DateTime:
                             var dateTime = clonePart as DateTimeAtom;
 
-                            if (!string.IsNullOrWhiteSpace(element.Value) && DateTime.TryParseExact(element.Value, "dd/MM/yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
-                            {
-                                dateTime.Value = date.ToString("dd/MM/yyyy HH:mm:ss");
-                            }
+                            //if (!string.IsNullOrWhiteSpace(element.Value) && DateTime.TryParseExact(element.Value, "dd/MM/yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
+                            //{
+                            //    dateTime.Value = date.ToString("dd/MM/yyyy HH:mm:ss");
+                            //}
+                            dateTime.Value = element.Value;
 
                             rootPart.Body.Add(dateTime);
                             break;

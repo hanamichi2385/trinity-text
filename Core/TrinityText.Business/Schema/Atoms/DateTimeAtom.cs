@@ -10,7 +10,9 @@ namespace TrinityText.Business.Schema
         {
         }
 
-        public string Value { get; set; }   
+        public string Value { get; set; }
+
+        public const string Format = "dd/MM/yyyy HH:mm:ss";
 
         public override object Clone()
         {
@@ -32,11 +34,14 @@ namespace TrinityText.Business.Schema
                 {
                     errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} is mandatory"));
                 }
+                else
+                {
+                    ValidateDateTime(propertyName, propertyBinding, errors);
+                }
             }
-
-            if (DateTime.TryParseExact(Value, "dd/MM/yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _) == false)
+            else
             {
-                errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} not valid format (dd/MM/yyyy HH:mm:ss)"));
+                ValidateDateTime(propertyName, propertyBinding, errors);
             }
 
             if (errors.Count == 0)
@@ -46,6 +51,14 @@ namespace TrinityText.Business.Schema
             else
             {
                 return OperationResult.MakeFailure(errors);
+            }
+        }
+
+        private void ValidateDateTime(string propertyName, string propertyBinding, List<ErrorMessage> errors)
+        {
+            if (DateTime.TryParseExact(Value, Format, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _) == false)
+            {
+                errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} not valid format ({Format})"));
             }
         }
     }

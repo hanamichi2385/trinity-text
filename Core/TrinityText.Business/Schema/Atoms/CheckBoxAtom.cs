@@ -24,12 +24,6 @@ namespace TrinityText.Business.Schema
                 }
             }
 
-            //if (bool.TryParse(Value, out bool boolean) == false)
-            //{
-            //    //errors.Add(ErrorMessage.Create($"{propertyBinding}.Value", $"{propertyName} not valid format (boolean)"));
-            //    boolean = false;
-            //}
-
             if (errors.Count == 0)
             {
                 return OperationResult.MakeSuccess();
