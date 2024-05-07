@@ -334,11 +334,10 @@ namespace TrinityText.Business.Services.Impl
                         case TrinityText.Business.Schema.AtomType.DateTime:
                             var dateTime = clonePart as DateTimeAtom;
 
-                            if (!string.IsNullOrWhiteSpace(element.Value) && DateTime.TryParseExact(dateTime.Value, "dd/MM/yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
+                            if (!string.IsNullOrWhiteSpace(element.Value) && DateTime.TryParseExact(element.Value, "dd/MM/yyyy HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
                             {
                                 dateTime.Value = date.ToString("dd/MM/yyyy HH:mm:ss");
                             }
-                            
 
                             rootPart.Body.Add(dateTime);
                             break;
