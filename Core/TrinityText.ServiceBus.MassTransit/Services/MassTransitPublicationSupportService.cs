@@ -9,6 +9,8 @@ using System.Xml.Linq;
 using TrinityText.Business;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
+using System.Collections.Frozen;
+using System.Collections.ObjectModel;
 
 namespace TrinityText.ServiceBus.MassTransit.Services
 {
@@ -52,7 +54,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             var textTypes = payload.TextTypes;
 
 
-            DirectoryInfo baseDirectory = new DirectoryInfo(basePath);
+            var baseDirectory = new DirectoryInfo(basePath);
             if (!baseDirectory.Exists)
             {
                 baseDirectory.Create();
@@ -68,7 +70,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 if (exportType == PublicationType.All || exportType == PublicationType.Texts)
                 {
                     var siteDirectory = textSubDirectory.CreateSubdirectory(i.Site.ToUpper());
-                    var textsPerSiteRs = await _textService.GetPublishableTexts(website, i.Site, i.Languages.ToArray(), textTypes.ToArray());
+                    var textsPerSiteRs = await _textService.GetPublishableTexts(website, i.Site, i.Languages, textTypes);
 
                     if (textsPerSiteRs.Success)
                     {
@@ -83,7 +85,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                 if (exportType == PublicationType.All || exportType == PublicationType.Pages || exportType == PublicationType.PDF)
                 {
-                    var pagesPerSiteRs = await _pageService.GetPublishablePages(website, i.Site, i.Languages.ToArray());
+                    var pagesPerSiteRs = await _pageService.GetPublishablePages(website, i.Site, i.Languages);
 
                     if (pagesPerSiteRs.Success)
                     {
@@ -94,11 +96,11 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                             await GeneratePagesFileBySite(tenant, website, i.Site, pagesPerSite, instanceDirectory.FullName, string.Empty, cdnServer, publishType);
                         }
 
-                        if (exportType == PublicationType.All || exportType == PublicationType.PDF)
-                        {
-                            var instanceDirectory = filesSubDirectory.CreateSubdirectory(i.Site.ToUpper());
-                            GeneratePDFPagesFileBySite(tenant, website, i.Site, pagesPerSite, instanceDirectory.FullName);
-                        }
+                        //if (exportType == PublicationType.All || exportType == PublicationType.PDF)
+                        //{
+                        //    var instanceDirectory = filesSubDirectory.CreateSubdirectory(i.Site.ToUpper());
+                        //    //GeneratePDFPagesFileBySite(tenant, website, i.Site, pagesPerSite, instanceDirectory.FullName);
+                        //}
                     }
                     else
                     {
@@ -129,7 +131,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             }
         }
 
-        public void FastDeleteEmptySubdirectories(string parentDirectory)
+        public static void FastDeleteEmptySubdirectories(string parentDirectory)
         {
             System.Threading.Tasks.Parallel.ForEach(System.IO.Directory.GetDirectories(parentDirectory), directory => {
                 FastDeleteEmptySubdirectories(directory);
@@ -137,7 +139,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             });
         }
 
-        public void DeleteEmptySubdirectories(string parentDirectory)
+        public static void DeleteEmptySubdirectories(string parentDirectory)
         {
             foreach (string directory in System.IO.Directory.GetDirectories(parentDirectory))
             {
@@ -214,7 +216,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             {
                 try
                 {
-                    DirectoryInfo folder = new DirectoryInfo(basePath);
+                    var folder = new DirectoryInfo(basePath);
                     if (folder.Exists)
                     {
                         folder.Delete(true);
@@ -230,7 +232,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
         #region private methods
 
-        private void GenerateFileTimestamp(DirectoryInfo currentDirectory, string username)
+        private static void GenerateFileTimestamp(DirectoryInfo currentDirectory, string username)
         {
             var textFile = $"{currentDirectory}\\trinity-text.txt";
             var text = $"{username}|{DateTime.Now:dd-MM-yyyy|HH-mm-ss}";
@@ -238,14 +240,14 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             System.IO.File.WriteAllText(textFile, text);
         }
 
-        private void GenerateTextsFileBySite(string website, IDictionary<string, List<TextDTO>> textsPerLanguage, string directoryPath, PublicationFormat type)
+        private void GenerateTextsFileBySite(string website, FrozenDictionary<string, ReadOnlyCollection<TextDTO>> textsPerLanguage, string directoryPath, PublicationFormat type)
         {
             if (string.IsNullOrWhiteSpace(directoryPath))
             {
                 directoryPath = _options.LocalDirectory;
             }
 
-            DirectoryInfo directory = new DirectoryInfo(directoryPath);
+            var directory = new DirectoryInfo(directoryPath);
             if (!directory.Exists)
             {
                 directory.Create();
@@ -257,57 +259,39 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                 var resources = textsPerLanguage[lang];
 
-                IDictionary<string, string> types =
+                var types =
                     resources
                     .GroupBy(r => r.TextType?.Name ?? website)
-                    .ToDictionary(r => r.Key, r => r.First().TextType?.Subfolder ?? string.Empty);
+                    .ToFrozenDictionary(r => r.Key, r => r.First().TextType?.Subfolder ?? string.Empty);
 
                 foreach (var t in types.Keys)
                 {
-                    IList<TextDTO> textsPerType = new List<TextDTO>();
-
-                    if (t.Equals(website, StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        textsPerType = resources.Where(r => r.TextType == null)
-                        .ToList();
-                    }
-                    else
-                    {
-                        textsPerType = resources.Where(r => r.TextType != null && r.TextType.Name == t)
-                        .ToList();
-                    }
-
+                    var textsPerType = t.Equals(website, StringComparison.InvariantCultureIgnoreCase) ?
+                        resources.Where(r => r.TextType == null).ToList().AsReadOnly() :
+                        resources.Where(r => r.TextType != null && r.TextType.Name == t).ToList().AsReadOnly();
 
                     var fileName = string.IsNullOrWhiteSpace(t) ? website : t;
-                    var file = new byte[0];
-                    switch (type)
+                    var file = Array.Empty<byte>();
+                    file = type switch
                     {
-                        case PublicationFormat.XML:
-                            file = CreateXmlResourcesDocument(textsPerType);
-                            break;
-
-                        case PublicationFormat.JSON:
-                            file = CreateJsonResourcesDocument(textsPerType);
-                            break;
-
-                        default:
-                            throw new NotSupportedException(type.ToString());
-                    }
-
+                        PublicationFormat.XML => CreateXmlResourcesDocument(textsPerType),
+                        PublicationFormat.JSON => CreateJsonResourcesDocument(textsPerType),
+                        _ => throw new NotSupportedException(type.ToString()),
+                    };
                     var folder = new StringBuilder(langDir.FullName);
                     var subfolder = types[t];
                     if (!string.IsNullOrWhiteSpace(subfolder))
                     {
                         folder.Append($"\\{subfolder}");
 
-                        DirectoryInfo subfolderInfo = new DirectoryInfo(folder.ToString());
+                        var subfolderInfo = new DirectoryInfo(folder.ToString());
                         if (!subfolderInfo.Exists)
                         {
                             subfolderInfo.Create();
                         }
                     }
 
-                    string filePath = string.Format("{0}\\{1}.{2}", folder, fileName, type.ToString().ToLower());
+                    var filePath = $"{folder}\\{fileName}.{type}";
                     //file.Save(filePath);
                     System.IO.File.WriteAllBytes(filePath, file);
                 }
@@ -330,7 +314,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
         private async Task CreateFolderAndFiles(string website, FolderDTO folder, string folderPath, DateTime filesGenerationDate)
         {
-            DirectoryInfo directory = new DirectoryInfo(folderPath);
+            var directory = new DirectoryInfo(folderPath);
             if (!directory.Exists)
             {
                 directory.Create();
@@ -344,11 +328,14 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 foreach (var f in files)
                 {
                     var fileName = $"{folderPath}\\{f.Filename}";
-                    var file = new FileInfo(fileName);
-                    using FileStream stream = file.OpenWrite();
-                    stream.Write(f.Content, 0, f.Content.Length);
-                    stream.Flush();
-                    stream.Close();
+
+                    await File.WriteAllBytesAsync(fileName, f.Content);
+
+                    //var file = new FileInfo(fileName);
+                    //using FileStream stream = file.OpenWrite();
+                    //stream.Write(f.Content, 0, f.Content.Length);
+                    //stream.Flush();
+                    //stream.Close();
                 }
 
                 foreach (var sub in folder.SubFolders)
@@ -359,8 +346,8 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             }
         }
 
-        private void GeneratePDFPagesFileBySite(string tenant, string website, string site, IDictionary<string, List<PageDTO>> contentsPerLanguages, string directoryPath)
-        {
+        //private static void GeneratePDFPagesFileBySite(string tenant, string website, string site, IDictionary<string, List<PageDTO>> contentsPerLanguages, string directoryPath)
+        //{
             //if (string.IsNullOrEmpty(directoryPath))
             //{
             //    directoryPath = _options.LocalDirectory;
@@ -412,16 +399,16 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             //        }
             //    }
             //}
-        }
+        //}
 
-        private async Task GeneratePagesFileBySite(string tenant, string website, string site, IDictionary<string, List<PageDTO>> contentsPerLanguages, string directoryPath, string baseUrl, CdnServerDTO cdnServer, PublicationFormat type)
+        private async Task GeneratePagesFileBySite(string tenant, string website, string site, FrozenDictionary<string, ReadOnlyCollection<PageDTO>> contentsPerLanguages, string directoryPath, string baseUrl, CdnServerDTO cdnServer, PublicationFormat type)
         {
             if (string.IsNullOrWhiteSpace(directoryPath))
             {
                 directoryPath = _options.LocalDirectory;
             }
 
-            DirectoryInfo directory = new DirectoryInfo(directoryPath);
+            var directory = new DirectoryInfo(directoryPath);
             if (!directory.Exists)
             {
                 directory.Create();
@@ -433,37 +420,27 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                 var contents = contentsPerLanguages[lang];
 
-                IDictionary<int, string> types =
+                var types =
                     contents
                     .GroupBy(r => r.PageType.Id.Value)
-                    .ToDictionary(r => r.Key, r => r.First().PageType.Subfolder);
+                    .ToFrozenDictionary(r => r.Key, r => r.First().PageType.Subfolder);
 
                 foreach (var t in types.Keys)
                 {
-                    IList<PageDTO> contentsPerType =
+                    var contentsPerType =
                         contents.Where(r => r.PageType.Id == t)
-                        .ToList();
+                        .ToList()
+                        .AsReadOnly();
 
                     var xmlSchema = contentsPerType.First().PageType.Schema;
-                    var structure = _pageSchemaService.GetContentStructure(xmlSchema);
                     var fileName = contentsPerType.First().PageType.OutputFilename;
-
-                    var file = new byte[0];
-
-                    switch (type)
+                    var structure = _pageSchemaService.GetContentStructure(xmlSchema);
+                    var file = type switch
                     {
-                        case PublicationFormat.XML:
-                            file = await _pageSchemaService.CreateXmlContentsDocument(structure, contentsPerType, tenant, website, site, lang, baseUrl, cdnServer);
-                            break;
-
-                        case PublicationFormat.JSON:
-                            file = await _pageSchemaService.CreateJsonContentsDocument(structure, contentsPerType, tenant, website, site, lang, baseUrl, cdnServer);
-                            break;
-
-                        default:
-                            throw new NotSupportedException(type.ToString());
-                    }
-
+                        PublicationFormat.XML => await _pageSchemaService.CreateXmlContentsDocument(structure, contentsPerType, tenant, website, site, lang, baseUrl, cdnServer),
+                        PublicationFormat.JSON => await _pageSchemaService.CreateJsonContentsDocument(structure, contentsPerType, tenant, website, site, lang, baseUrl, cdnServer),
+                        _ => throw new NotSupportedException(type.ToString()),
+                    };
                     var folder = new StringBuilder(langDir.FullName);
                     var subfolder = types[t];
                     if (!string.IsNullOrWhiteSpace(subfolder))
@@ -484,22 +461,22 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             }
         }
 
-        private byte[] CreateXmlResourcesDocument(IList<TextDTO> texts)
+        private static byte[] CreateXmlResourcesDocument(IReadOnlyCollection<TextDTO> texts)
         {
-            XDocument doc = new XDocument();
-            XDeclaration declaration = new XDeclaration("1.0", "utf-8", string.Empty);
+            var doc = new XDocument();
+            var declaration = new XDeclaration("1.0", "utf-8", string.Empty);
             doc.Declaration = declaration;
-            XElement root = new XElement("resources");
+            var root = new XElement("resources");
             foreach (var r in texts)
             {
                 var element = new XElement("resource");
                 element.SetAttributeValue("name", r.Name);
 
-                if (!string.IsNullOrEmpty(r.Country))
+                if (!string.IsNullOrWhiteSpace(r.Country))
                 {
                     element.SetAttributeValue("country", r.Country);
                 }
-                XCData cdata = new XCData(r.TextRevision?.Content ?? string.Empty);
+                var cdata = new XCData(r.TextRevision?.Content ?? string.Empty);
                 element.Add(cdata);
 
                 root.Add(element);
@@ -510,7 +487,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             return Encoding.UTF8.GetBytes(file);
         }
 
-        private byte[] CreateJsonResourcesDocument(IList<TextDTO> texts)
+        private static byte[] CreateJsonResourcesDocument(IReadOnlyCollection<TextDTO> texts)
         {
             var list = texts
                 .Select(rt => new

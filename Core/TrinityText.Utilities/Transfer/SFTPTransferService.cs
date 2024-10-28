@@ -22,7 +22,7 @@ namespace TrinityText.Utilities
 
         public async Task<string> Upload(string tenant, string vendor, DirectoryInfo baseDirectory, string host, string username, string password, string path)
         {
-            StringBuilder operationLog = new StringBuilder();
+            var operationLog = new StringBuilder();
 
             SftpClient ftp = null;
             try
@@ -33,8 +33,7 @@ namespace TrinityText.Utilities
 
                 ftp.Connect();
 
-                var directories = path.Split(new string[] { "/" }, StringSplitOptions.RemoveEmptyEntries).ToList();
-
+                var directories = path.Split([ "/" ], StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
 
                 var currentDirectory = ftp.WorkingDirectory;
 
@@ -90,16 +89,16 @@ namespace TrinityText.Utilities
             return await Task.FromResult(operationLog.ToString());
         }
 
-        public async Task<byte[]> GetFile(string tenant, string vendor, string file, string host, string username, string password, string path)
+        public Task<byte[]> GetFile(string tenant, string vendor, string file, string host, string username, string password, string path)
         {
-            StringBuilder operationLog = new StringBuilder();
+            var operationLog = new StringBuilder();
 
-            string baseFtpDirectoryPath = host;
+            //string baseFtpDirectoryPath = host;
 
             SftpClient ftp = null;
             try
             {
-                var directories = path.Split(new string[] { "/" }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                var directories = path.Split(["/"], StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
 
                 ftp = new SftpClient(host, username, password);
 
@@ -117,12 +116,14 @@ namespace TrinityText.Utilities
 
                 if (ftp.Exists($"{currentDirectory}/{file}"))
                 {
-                    using (Stream stream = ftp.OpenRead(file))
-                    {
-                        byte[] b = new byte[(int)stream.Length];
-                        await stream.ReadAsync(b, 0, (int)stream.Length);
-                        return b;
-                    }
+                    //using (var stream = ftp.OpenRead(file))
+                    //{
+                    //    //byte[] b = new byte[(int)stream.Length];
+                    //    //await stream.ReadAsync(b, 0, (int)stream.Length);
+                    //    //return b;
+                    //}
+                    var b = ftp.ReadAllBytes(file);
+                    return Task.FromResult(b);
                 }
             }
             catch (Exception e)
@@ -131,7 +132,7 @@ namespace TrinityText.Utilities
             }
             finally
             {
-                if (ftp != null && ftp.IsConnected)
+                if (ftp?.IsConnected ?? false)
                 {
                     ftp.Disconnect();
                 }
@@ -177,7 +178,7 @@ namespace TrinityText.Utilities
 
                 var filesToUpload = directory.GetFiles();
 
-                if (filesToUpload != null && filesToUpload.Count() > 0)
+                if (filesToUpload?.Length > 0)
                 {
                     //ftp.UploadFiles(directory.GetFiles(), currentDirectory, FtpRemoteExists.Overwrite, createRemoteDir: true, verifyOptions: FtpVerify.Retry, errorHandling: FtpError.Throw);
                     foreach (var f in directory.GetFiles())
@@ -207,7 +208,7 @@ namespace TrinityText.Utilities
         {
             try
             {
-                DirectoryInfo directory = new DirectoryInfo(localDirectoryPath);
+                var directory = new DirectoryInfo(localDirectoryPath);
 
                 var currentDirectory = NavigateTo(ftpDirectoryPath, ftp, operationLog);
 

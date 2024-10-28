@@ -23,16 +23,16 @@ namespace TrinityText.Utilities
 
         public async Task<string> Upload(string tenant, string website, DirectoryInfo baseDirectory, string ftphost, string username, string password, string path)
         {
-            StringBuilder operationLog = new StringBuilder();
+            var operationLog = new StringBuilder();
 
-            FtpClient ftp = new FtpClient();
+            var ftp = new FtpClient();
             try
             {
-                var directories = path.Split(new string[] { "/" }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                var directories = path.Split(["/"], StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
                 ftp.Host = ftphost;
                 if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
                 {
-                    NetworkCredential credentials = new NetworkCredential(username, password);
+                    var credentials = new NetworkCredential(username, password);
                     ftp.Credentials = credentials;
                 }
                 ftp.Connect();
@@ -58,8 +58,8 @@ namespace TrinityText.Utilities
                     }
                     catch (Exception e)
                     {
-                        _logger.LogError(e, $"NAVIGATE {(currentDirectory + "/" + d.Name)}");
-                        operationLog.AppendLine(string.Format("Problem with folder: {0}", (currentDirectory + "/" + d.Name)));
+                        _logger.LogError(e, "NAVIGATE {folder}", $"{currentDirectory}/{d.Name}");
+                        operationLog.AppendLine(string.Format("Problem with folder: {0}", $"{currentDirectory}/{d.Name}"));
                         operationLog.AppendLine("--ex: " + e.Message);
                         if (e.InnerException != null && !string.IsNullOrEmpty(e.InnerException.Message))
                         {
@@ -118,7 +118,7 @@ namespace TrinityText.Utilities
         {
             try
             {
-                DirectoryInfo directory = new DirectoryInfo(localDirectoryPath);
+                var directory = new DirectoryInfo(localDirectoryPath);
 
                 var currentDirectory = NavigateTo(ftpDirectoryPath, ftp, operationLog);
 
@@ -150,7 +150,7 @@ namespace TrinityText.Utilities
 
                 var filesToUpload = directory.GetFiles();
 
-                if (filesToUpload != null && filesToUpload.Count() > 0)
+                if (filesToUpload?.Length > 0)
                 {
                     ftp.UploadFiles(directory.GetFiles(), currentDirectory, FtpRemoteExists.Overwrite, createRemoteDir: true, verifyOptions: FtpVerify.Retry, errorHandling: FtpError.Throw);
                 }
@@ -189,20 +189,20 @@ namespace TrinityText.Utilities
 
         public async Task<byte[]> GetFile(string tenant, string website, string file, string host, string username, string password, string path)
         {
-            StringBuilder operationLog = new StringBuilder();
+            var operationLog = new StringBuilder();
 
-            string baseFtpDirectoryPath = host;
+            //string baseFtpDirectoryPath = host;
 
-            FtpClient ftp = new FtpClient();
+            var ftp = new FtpClient();
             try
             {
-                var directories = path.Split(new string[] { "/" }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                var directories = path.Split(["/"], StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
 
 
                 ftp.Host = host;
                 if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
                 {
-                    NetworkCredential credentials = new NetworkCredential(username, password);
+                    var credentials = new NetworkCredential(username, password);
                     ftp.Credentials = credentials;
                 }
                 ftp.Connect();

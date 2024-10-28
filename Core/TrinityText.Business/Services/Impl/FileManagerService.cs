@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using TrinityText.Domain;
@@ -30,7 +31,7 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public async Task<OperationResult<IList<FolderDTO>>> GetAllFolders(string[] websites)
+        public async Task<OperationResult<IReadOnlyCollection<FolderDTO>>> GetAllFolders(string[] websites)
         {
             try
             {
@@ -51,17 +52,17 @@ namespace TrinityText.Business.Services.Impl
                 var dtos = _mapper.Map<FolderDTO[]>(folders);
                 var result = GetFolders(dtos, null);
 
-                return await Task.FromResult(OperationResult<IList<FolderDTO>>.MakeSuccess(result));
+                return await Task.FromResult(OperationResult<IReadOnlyCollection<FolderDTO>>.MakeSuccess(result.AsReadOnly()));
 
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<IList<FolderDTO>>.MakeFailure([ErrorMessage.Create("GET_ALL", "GENERIC_ERROR")]);
+                return OperationResult<IReadOnlyCollection<FolderDTO>>.MakeFailure([ErrorMessage.Create("GET_ALL", "GENERIC_ERROR")]);
             }
         }
 
-        private FolderDTO[] GetFolders(FolderDTO[] folders, int? parentId)
+        private static FolderDTO[] GetFolders(FolderDTO[] folders, int? parentId)
         {
             var fs = folders.Where(f => f.ParentId == parentId).ToArray();
             foreach (var f in fs)
@@ -224,7 +225,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult<IList<FileDTO>>> GetFilesByFolder(string website, int id, bool withFileContent, DateTime? lastUpdate)
+        public async Task<OperationResult<IReadOnlyCollection<FileDTO>>> GetFilesByFolder(string website, int id, bool withFileContent, DateTime? lastUpdate)
         {
             try
             {
@@ -265,12 +266,12 @@ namespace TrinityText.Business.Services.Impl
                     result.Add(dto);
                 }
 
-                return await Task.FromResult(OperationResult<IList<FileDTO>>.MakeSuccess(result));
+                return await Task.FromResult(OperationResult<IReadOnlyCollection<FileDTO>>.MakeSuccess(result.AsReadOnly()));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET {message}", ex.Message);
-                return OperationResult<IList<FileDTO>>.MakeFailure([ErrorMessage.Create("GETFILES_BYFOLDER", "GENERIC_ERROR")]);
+                return OperationResult<IReadOnlyCollection<FileDTO>>.MakeFailure([ErrorMessage.Create("GETFILES_BYFOLDER", "GENERIC_ERROR")]);
             }
         }
 
@@ -448,7 +449,7 @@ namespace TrinityText.Business.Services.Impl
             var count = 0;
             do
             {
-                var filenameParts = filename.Split('.', StringSplitOptions.RemoveEmptyEntries);
+                var filenameParts = filename.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 string newFilename = $"{filenameParts[0]}({count}).{filenameParts[1]}";
 
                 sameNameFile = _fileRepository

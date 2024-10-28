@@ -2,8 +2,10 @@
 using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using TrinityText.Domain;
@@ -369,7 +371,7 @@ namespace TrinityText.Business.Services.Impl
         }
 
         //TODO: sistemare
-        public async Task<OperationResult<Dictionary<string, List<TextDTO>>>> GetPublishableTexts(string website, string site, string[] languages, TextTypeDTO[] textTypes)
+        public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>> GetPublishableTexts(string website, string site, string[] languages, TextTypeDTO[] textTypes)
         {
             try
             {
@@ -538,12 +540,14 @@ namespace TrinityText.Business.Services.Impl
                     publishableTexts.Add(l, list);
                 }
 
-                return await Task.FromResult(OperationResult<Dictionary<string, List<TextDTO>>>.MakeSuccess(publishableTexts));
+                var rd = publishableTexts.ToFrozenDictionary(p => p.Key, p => p.Value.AsReadOnly());
+
+                return await Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>.MakeSuccess(rd));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PUBLISH_TEXTS {message}", ex.Message);
-                return OperationResult<Dictionary<string, List<TextDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_TEXTS", "GENERIC_ERROR")]);
+                return OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_TEXTS", "GENERIC_ERROR")]);
             }
         }
 

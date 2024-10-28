@@ -11,12 +11,12 @@ namespace TrinityText.Business
         Task<OperationResult> CreateDefaultInstanceFolders(string website, string site, string[] languages);
         Task<OperationResult> CreateDefaultWebsiteFolders(string website);
         Task<OperationResult> DeleteFile(Guid id);
-        Task<OperationResult<IList<FolderDTO>>> GetAllFolders(string[] websites);
+        Task<OperationResult<IReadOnlyCollection<FolderDTO>>> GetAllFolders(string[] websites);
         Task<OperationResult<FolderDTO>> GetAllFoldersByWebsite(string website);
         Task<OperationResult<FileDTO>> GetFile(Guid id, bool withThumb);
         Task<OperationResult<FileDTO>> GetFileByFullname(string fullFilename);
         Task<OperationResult<string>> GetFileLink(Guid id);
-        Task<OperationResult<IList<FileDTO>>> GetFilesByFolder(string website, int id, bool withFileContent, DateTime? lastUpdate);
+        Task<OperationResult<IReadOnlyCollection<FileDTO>>> GetFilesByFolder(string website, int id, bool withFileContent, DateTime? lastUpdate);
         Task<OperationResult<FolderDTO>> GetFolder(int id);
         Task<OperationResult<FileDTO>> MoveFile(string user, int newFolder, Guid fileId);
         Task<OperationResult<FileDTO>> PasteFile(string user, int newFolder, Guid fileId, bool move);

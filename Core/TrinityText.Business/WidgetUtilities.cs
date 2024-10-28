@@ -19,16 +19,24 @@ namespace TrinityText.Business
 
         public async Task<string> Replace(string tenant, string website, string site, string language, string text)
         {
+            var replaced = await ReplaceWidget(text, site, website, tenant, language);
+
+            return replaced;
+        }
+
+        private static string ReplacePlaceholder(string text, string tenant, string website, string site, string language)
+        {
             var newText = text
+                .Replace("@[TENANT]", tenant, StringComparison.InvariantCultureIgnoreCase)
+                .Replace("@[WEBSITE]", website, StringComparison.InvariantCultureIgnoreCase)
+                .Replace("@[PRICELIST]", site, StringComparison.InvariantCultureIgnoreCase)
                 .Replace("@[PARTNER]", tenant, StringComparison.InvariantCultureIgnoreCase)
                 .Replace("@[CHANNEL]", website, StringComparison.InvariantCultureIgnoreCase)
                 .Replace("@[SITE]", site, StringComparison.InvariantCultureIgnoreCase)
                 .Replace("@[LANG]", language, StringComparison.InvariantCultureIgnoreCase)
                 .Replace("@[DATE]", DateTime.Now.ToShortDateString(), StringComparison.InvariantCultureIgnoreCase);
-            
-            var replaced = await ReplaceWidget(newText, site, website, tenant, language);
 
-            return replaced;
+            return newText;
         }
 
         public async Task<string> ReplaceWidget(string text, string site, string website, string tenant, string language)
@@ -55,16 +63,11 @@ namespace TrinityText.Business
                     if (widgetRs.Success)
                     {
                         var widget = widgetRs.Value;
-                        var wContenuto = string.Empty;
-                        if (!string.IsNullOrWhiteSpace(widget.Content))
-                        {
-                            wContenuto = widget.Content
-                                .Replace("@[PARTNER]", tenant, StringComparison.InvariantCultureIgnoreCase)
-                                .Replace("@[CHANNEL]", website, StringComparison.InvariantCultureIgnoreCase)
-                                .Replace("@[SITE]", site, StringComparison.InvariantCultureIgnoreCase)
-                                .Replace("@[LANG]", language, StringComparison.InvariantCultureIgnoreCase)
-                                .Replace("@[DATE]", DateTime.Now.ToShortDateString(), StringComparison.InvariantCultureIgnoreCase);
-                        }
+                        var wContenuto = widget?.Content ?? string.Empty;
+                        //if (!string.IsNullOrWhiteSpace(widget.Content))
+                        //{
+                        //    wContenuto = ReplacePlaceholder(tenant, website, site, language, widget.Content);
+                        //}
                         newText = newText.Replace($"@[WIDGET({key})]", wContenuto);
                     }
                     else
@@ -74,7 +77,7 @@ namespace TrinityText.Business
                 }
             }
 
-            return newText;
+            return ReplacePlaceholder(newText, tenant, website, site, language);
         }
 
         public async Task<string> ReplaceLink(string xml, string tenant, string website, string baseUrl, CdnServerDTO cdnServer)
@@ -84,7 +87,7 @@ namespace TrinityText.Business
             {
                 var pattern = @"(""?)(\@\/" + Regex.Escape(website) + @"\/)([^\""\s\t\]]+)(""?)";
 
-                Regex reg = new Regex(pattern);
+                var reg = new Regex(pattern);
                 var matches = reg.Matches(xml)
                     .OfType<Match>()
                     .Select(v => v.Value)

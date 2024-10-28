@@ -27,7 +27,7 @@ namespace TrinityText.Utilities
 
                 return await Task.FromResult(fileZipName);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "COMPRESSFOLDER");
             }
@@ -39,25 +39,28 @@ namespace TrinityText.Utilities
             try
             {
                 var f = new DirectoryInfo(basePath);
-                if(f.Exists == false)
+                if (f.Exists == false)
                 {
                     f.Create();
                 }
                 var filename = $"{basePath}\\{Guid.NewGuid().ToString().Replace("-", string.Empty)}.zip";
-                using (MemoryStream stream = new MemoryStream(zipFileByteArray))
+                using (var stream = new MemoryStream(zipFileByteArray))
                 {
-                    using (FileStream file = new FileStream(filename, FileMode.Create, System.IO.FileAccess.Write))
+                    using (var file = new FileStream(filename, FileMode.Create, System.IO.FileAccess.Write))
                     {
-                        byte[] bytes = new byte[stream.Length];
-                        await stream.ReadAsync(bytes, 0, (int)stream.Length);
-                        await file.WriteAsync(bytes, 0, bytes.Length);
-                        stream.Close();
+                        await stream.CopyToAsync(file);
+                        //byte[] bytes = new byte[stream.Length];
+                        //await stream.ReadAsync(bytes, 0, (int)stream.Length);
+                        //await file.WriteAsync(bytes, 0, bytes.Length);
+                        //stream.Close();
+                        //file.Close();
                         file.Close();
                     }
-                    ZipFile.ExtractToDirectory(filename, basePath);
-
-                    File.Delete(filename);
                 }
+                ZipFile.ExtractToDirectory(filename, basePath);
+
+                File.Delete(filename);
+
             }
             catch (Exception ex)
             {

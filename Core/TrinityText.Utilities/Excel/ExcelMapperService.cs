@@ -107,14 +107,15 @@ namespace TrinityText.Utilities.Excel
 
         public async Task<byte[]> GetExcelFileStream(IDictionary<KeyValuePair<string, string>, TextDTO[]> textsForSiteLang)
         {
-            var basePath = _options.TempDirectory;
-            var separator = basePath.EndsWith("/") ? string.Empty : "/";
-            var filePath = $@"{basePath}{separator}Translations{Guid.NewGuid()}.xlsx";
+            //var basePath = _options.TempDirectory;
+            //var separator = basePath.EndsWith('/') ? string.Empty : "/";
+            //var filePath = $@"{basePath}{separator}Translations{Guid.NewGuid()}.xlsx";
+            var filePath = GetFilePath("Translations");
             try
             {
-                var sheetNames = new List<string>();
-                var sheetHeaders = new List<Dictionary<string, int?>>();
-                var sheetCells = new List<Dictionary<KeyValuePair<int, int>, string>>();
+                //var sheetNames = new List<string>();
+                //var sheetHeaders = new List<Dictionary<string, int?>>();
+                //var sheetCells = new List<Dictionary<KeyValuePair<int, int>, string>>();
 
                 var sheetIndex = 0;
                 var em = new ExcelMapper();
@@ -180,14 +181,14 @@ namespace TrinityText.Utilities.Excel
                         var lang = r.LANGUAGE.Trim();
                         var text = r.TEXT.Trim();
 
-                        if (!string.IsNullOrEmpty(key))
+                        if (!string.IsNullOrWhiteSpace(key))
                         {
                             TextTypeDTO type = null;
 
                             var cont = true;
 
                             if (!"*".Equals(typeName, StringComparison.InvariantCultureIgnoreCase)
-                                && !string.IsNullOrEmpty(typeName))
+                                && !string.IsNullOrWhiteSpace(typeName))
                             {
                                 type = types
                                     .Where(t => t.Name.Equals(typeName, StringComparison.InvariantCultureIgnoreCase))
@@ -223,25 +224,26 @@ namespace TrinityText.Utilities.Excel
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"");
+                _logger.LogError(ex, "GetTextsFromStream");
             }
 
             return list.ToArray();
         }
 
-        private async Task<byte[]> GetStream(string filePath)
+        private static async Task<byte[]> GetStream(string filePath)
         {
-            byte[] fileBytes = null;
+            byte[] fileBytes = [];
             try
             {
-                using (System.IO.FileStream fs = System.IO.File.OpenRead(filePath))
-                {
-                    fileBytes = new byte[fs.Length];
-                    int br = await fs.ReadAsync(fileBytes, 0, fileBytes.Length);
-                    if (br != fs.Length)
-                        throw new System.IO.IOException(filePath);
-                    fs.Close();
-                }
+                //using (System.IO.FileStream fs = System.IO.File.OpenRead(filePath))
+                //{
+                //    fileBytes = new byte[fs.Length];
+                //    int br = await fs.ReadAsync(fileBytes, 0, fileBytes.Length);
+                //    if (br != fs.Length)
+                //        throw new System.IO.IOException(filePath);
+                //    fs.Close();
+                //}
+                fileBytes = await File.ReadAllBytesAsync(filePath);
             }
             finally
             {
@@ -259,7 +261,7 @@ namespace TrinityText.Utilities.Excel
         private string GetFilePath(string fileName)
         {
             var basePath = _options.TempDirectory;
-            var separator = basePath.EndsWith("/") ? string.Empty : "/";
+            var separator = basePath.EndsWith('/') ? string.Empty : "/";
             var filePath = $@"{basePath}{separator}{fileName}{Guid.NewGuid()}.xlsx";
 
             return filePath;

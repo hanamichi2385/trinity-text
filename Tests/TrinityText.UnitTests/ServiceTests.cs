@@ -229,7 +229,7 @@ namespace TrinityText.UnitTests
 
             var repo = kernel.GetService<IWebsiteConfigurationService>();
 
-            var result = await repo.AddTo("ABC", new int[0], new int[0]);
+            var result = await repo.AddTo("ABC", Array.Empty<int>(), Array.Empty<int>());
 
             Assert.IsTrue(result.Success);
         }

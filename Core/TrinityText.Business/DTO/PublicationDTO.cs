@@ -66,13 +66,13 @@ namespace TrinityText.Business
 
     public class PayloadDTO
     {
-        public IList<SiteConfiguration> Sites { get; set; }
+        public SiteConfiguration[] Sites { get; set; }
 
         public string Website { get; set; }
 
         public string Tenant { get; set; }
 
-        public IList<TextTypeDTO> TextTypes { get; set; }
+        public TextTypeDTO[] TextTypes { get; set; }
     }
 
     public class SiteConfiguration
@@ -81,8 +81,8 @@ namespace TrinityText.Business
         public string Website { get; set; }
         public string Site { get; set; }
         public string CurrencyId { get; set; }
-        public IList<string> Languages { get; set; }
-        public IList<string> Countries { get; set; }
+        public string[] Languages { get; set; }
+        public string[] Countries { get; set; }
         public string Description { get; set; }
         public bool Enabled { get; set; }
     }
