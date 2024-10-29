@@ -371,7 +371,7 @@ namespace TrinityText.Business.Services.Impl
         }
 
         //TODO: sistemare
-        public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>> GetPublishableTexts(string website, string site, string[] languages, TextTypeDTO[] textTypes)
+        public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>> GetPublishableTexts(string website, string site, string[] languages, IReadOnlyList<TextTypeDTO> textTypes)
         {
             try
             {
@@ -395,7 +395,7 @@ namespace TrinityText.Business.Services.Impl
 
                 var q = query.ToList();
 
-                var all = _mapper.Map<IList<TextDTO>>(q);
+                var all = _mapper.Map<IList<TextDTO>>(q).AsReadOnly();
 
                 foreach (var l in languages)
                 {
@@ -418,7 +418,8 @@ namespace TrinityText.Business.Services.Impl
                         var textsforType =
                             texts
                             .Where(rft => rft.TextType?.Id == t)
-                            .ToList();
+                            .ToList()
+                            .AsReadOnly();
 
                         foreach (var n in textsforType.Select(s => s.Name).Distinct())
                         {

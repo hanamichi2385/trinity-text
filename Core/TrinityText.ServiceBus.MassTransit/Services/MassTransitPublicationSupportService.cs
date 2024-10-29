@@ -50,13 +50,13 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             _options = options.Value;
         }
 
-        private async Task<OperationResult<string>> CreateExportFile(int id, PayloadDTO payload, PublicationType exportType, PublicationFormat publishType, DateTime filesGenerationDate, bool compressFileOutput, string user, CdnServerDTO cdnServer)
+        public async Task<OperationResult<string>> CreateExportFile(int id, PayloadDTO payload, PublicationType exportType, PublicationFormat publishType, DateTime filesGenerationDate, bool compressFileOutput, string user, CdnServerDTO cdnServer)
         {
             var basePath = _options.LocalDirectory;
             var website = payload.Website;
             var tenant = payload.Tenant;
-            var sites = payload.Sites;
-            var textTypes = payload.TextTypes;
+            var sites = payload.Sites.AsReadOnly();
+            var textTypes = payload.TextTypes.AsReadOnly();
 
 
             var baseDirectory = new DirectoryInfo(basePath);
@@ -68,7 +68,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             var currentDirectory = baseDirectory.CreateSubdirectory($"{website}_{id}_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}");
 
             var textSubDirectory = currentDirectory.CreateSubdirectory("Text");
-            var filesSubDirectory = currentDirectory.CreateSubdirectory("Files");
+            //var filesSubDirectory = currentDirectory.CreateSubdirectory("Files");
 
             foreach (var i in sites)
             {
@@ -121,7 +121,8 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
             GenerateFileTimestamp(currentDirectory, user);
 
-            DeleteEmptySubdirectories(currentDirectory.FullName);
+            //DeleteEmptySubdirectories(currentDirectory.FullName);
+            FastDeleteEmptySubdirectories(currentDirectory.FullName);
 
             if (compressFileOutput)
             {
@@ -300,7 +301,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                         }
                     }
 
-                    var filePath = $"{folder}\\{fileName}.{type}";
+                    var filePath = $"{folder}\\{fileName}.{type.ToString().ToLower()}";
                     //file.Save(filePath);
                     System.IO.File.WriteAllBytes(filePath, file);
                 }

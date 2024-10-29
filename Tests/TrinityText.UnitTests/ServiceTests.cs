@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -399,6 +400,32 @@ namespace TrinityText.UnitTests
 
                 var generateRs = await generationService.Generate(setting);
             }catch(Exception ex)
+            {
+
+            }
+        }
+
+        [TestMethod]
+        public async Task Export()
+        {
+            try
+            {
+
+                var kernel = InitServices();
+
+                var generationService = kernel.GetService<IPublicationSupportService>();
+                var cdnService = kernel.GetService<ICDNSettingService>();
+
+                var cdn = await cdnService.Get(10);
+
+                var pp = @"{""Sites"":[{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLAE"",""CurrencyId"":""AED"",""Languages"":[""en""],""Countries"":[""AE""],""Description"":""Kartell AE"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLAT"",""CurrencyId"":""EUR"",""Languages"":[""de"",""en""],""Countries"":[""AT""],""Description"":""Kartell AT"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLBE"",""CurrencyId"":""EUR"",""Languages"":[""en"",""fr""],""Countries"":[""BE"",""LU"",""NL""],""Description"":""Kartell BE"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLCA"",""CurrencyId"":""CAD"",""Languages"":[""en"",""fr""],""Countries"":[""CA""],""Description"":""Kartell CA"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLCH"",""CurrencyId"":""CHF"",""Languages"":[""de"",""en"",""fr"",""it""],""Countries"":[""CH""],""Description"":""Kartell CH"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLCM"",""CurrencyId"":""EUR"",""Languages"":[""en""],""Countries"":[""CY"",""MT""],""Description"":""Kartell CM"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLDE"",""CurrencyId"":""EUR"",""Languages"":[""de"",""en""],""Countries"":[""DE""],""Description"":""Kartell DE"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLDK"",""CurrencyId"":""DKK"",""Languages"":[""en""],""Countries"":[""DK""],""Description"":""Kartell DK"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLEEU"",""CurrencyId"":""EUR"",""Languages"":[""en""],""Countries"":[],""Description"":""Kartell EEU"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLES"",""CurrencyId"":""EUR"",""Languages"":[""en"",""es""],""Countries"":[""ES""],""Description"":""Kartell ES"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLEU2"",""CurrencyId"":""EUR"",""Languages"":[""en""],""Countries"":[],""Description"":""Kartell EU2"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLEU3"",""CurrencyId"":""EUR"",""Languages"":[""en""],""Countries"":[],""Description"":""Kartell EU3"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLFI"",""CurrencyId"":""EUR"",""Languages"":[""en""],""Countries"":[""FI""],""Description"":""Kartell FI"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLFR"",""CurrencyId"":""EUR"",""Languages"":[""en"",""fr""],""Countries"":[""FR""],""Description"":""Kartell FR"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLGB"",""CurrencyId"":""GBP"",""Languages"":[""en""],""Countries"":[""GB""],""Description"":""Kartell GB"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLGR"",""CurrencyId"":""EUR"",""Languages"":[""en""],""Countries"":[""GR""],""Description"":""Kartell GR"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLHU"",""CurrencyId"":""EUR"",""Languages"":[""en""],""Countries"":[""HU""],""Description"":""Kartell HU"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLIE"",""CurrencyId"":""EUR"",""Languages"":[""en""],""Countries"":[""IE""],""Description"":""Kartell IE"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLIT"",""CurrencyId"":""EUR"",""Languages"":[""en"",""it""],""Countries"":[""IT""],""Description"":""Kartell IT"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLNO"",""CurrencyId"":""NOK"",""Languages"":[""en""],""Countries"":[""NO""],""Description"":""Kartell NO"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLPL"",""CurrencyId"":""EUR"",""Languages"":[""en""],""Countries"":[""PL""],""Description"":""Kartell PL"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLPT"",""CurrencyId"":""EUR"",""Languages"":[""en"",""es""],""Countries"":[""PT""],""Description"":""Kartell PT"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLROW"",""CurrencyId"":""USD"",""Languages"":[""en"",""es"",""fr""],""Countries"":[""IN""],""Description"":""Kartell ROW"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLSE"",""CurrencyId"":""SEK"",""Languages"":[""en""],""Countries"":[""SE""],""Description"":""Kartell SE"",""Enabled"":false},{""Tenant"":""KARTELL"",""Website"":""KARTELL"",""Site"":""KARTELLUS"",""CurrencyId"":""USD"",""Languages"":[""en""],""Countries"":[""US""],""Description"":""Kartell US"",""Enabled"":false}],""Website"":""KARTELL"",""Tenant"":""KARTELL"",""TextTypes"":[{""Id"":2,""Name"":""Labels"",""Note"":""Resources form Omni Shop"",""Subfolder"":null,""HasSubfolder"":false,""TextNumbers"":0},{""Id"":3,""Name"":""Panel"",""Note"":""Resources for Omni Panel"",""Subfolder"":null,""HasSubfolder"":false,""TextNumbers"":0},{""Id"":4,""Name"":""Payments"",""Note"":""Resource for Omni Shop Payment modules"",""Subfolder"":null,""HasSubfolder"":false,""TextNumbers"":0},{""Id"":8,""Name"":""PIM"",""Note"":""Resources for Omni PIM modules"",""Subfolder"":null,""HasSubfolder"":false,""TextNumbers"":0}]}";
+                var payload = JsonSerializer.Deserialize<PayloadDTO>(pp);
+                var stop = new Stopwatch();
+                stop.Start();
+                var generateRs = await generationService.CreateExportFile(1, payload, PublicationType.All, PublicationFormat.XML, DateTime.Today.AddDays(-1), true, "davide.chiarella", cdn.Value);
+                stop.Stop();
+            }
+            catch (Exception ex)
             {
 
             }

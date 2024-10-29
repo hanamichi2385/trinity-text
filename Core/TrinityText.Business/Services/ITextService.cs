@@ -12,7 +12,7 @@ namespace TrinityText.Business
         Task<OperationResult<IList<TextRevisionDTO>>> GetAllRevisions(int textId);
         Task<OperationResult<TextDTO>> Save(TextDTO dto);
         Task<OperationResult<PagedResult<TextDTO>>> Search(SearchTextDTO search, int page, int size);
-        Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>> GetPublishableTexts(string website, string site, string[] languages, TextTypeDTO[] textTypes);
+        Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>> GetPublishableTexts(string website, string site, string[] languages, IReadOnlyList<TextTypeDTO> textTypes);
         Task<OperationResult> Remove(int id);
         Task<OperationResult> CleanRevisions(int revisionToMantain);
         Task<OperationResult<int>> ImportTexts(TextTypeDTO type, IList<TextDTO> texts, bool @override);
