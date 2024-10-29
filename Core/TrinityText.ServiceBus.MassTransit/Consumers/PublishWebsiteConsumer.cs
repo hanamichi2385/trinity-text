@@ -44,7 +44,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                 if (operationsLogRs.Success)
                 {
                     subject.Append($"[CMS] Website {website} updated with success!");
-                    body.Append("<p>The updating process (<strong>{2}</strong>) for website <strong>{0}</strong> via <strong>{1}</strong> was completed with success!</p>");
+                    body.Append($"<p>The updating process (<strong>{format}</strong>) for website <strong>{website}</strong> via <strong>{ftpServer}</strong> was completed with success!</p>");
                 }
                 else
                 {

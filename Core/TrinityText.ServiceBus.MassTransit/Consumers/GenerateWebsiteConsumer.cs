@@ -34,6 +34,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
             if (publicationSettingRs.Success)
             {
                 var setting = publicationSettingRs.Value;
+                
                 await _publicationService.Update(setting.Id.Value, PublicationStatus.Generating, "Generation started", null);
                 var generateRs = await _generationService.Generate(setting);
                 string dataType = setting.DataType.ToString();

@@ -11,6 +11,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Options;
 using System.Collections.Frozen;
 using System.Collections.ObjectModel;
+using Microsoft.Extensions.Logging;
 
 namespace TrinityText.ServiceBus.MassTransit.Services
 {
@@ -31,8 +32,11 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
         private readonly IPublicationService _publicationService;
 
+        private readonly ILogger<MassTransitPublicationSupportService> _logger;
+
         public MassTransitPublicationSupportService(IPublicationService publicationService, ITextService textService, IPageService pageService, IPageSchemaService pageSchemaService,
             IFileManagerService fileManagerService, ICompressionFileService compressionFileService, ITransferServiceCoordinator transferServiceCoordinator,
+            ILogger<MassTransitPublicationSupportService> logger,
             IOptions<PublicationSupportOptions> options)
         {
             _publicationService = publicationService;
@@ -42,6 +46,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             _fileManagerService = fileManagerService;
             _compressionFileService = compressionFileService;
             _transferServiceCoordinator = transferServiceCoordinator;
+            _logger = logger;
             _options = options.Value;
         }
 
@@ -151,14 +156,15 @@ namespace TrinityText.ServiceBus.MassTransit.Services
         public async Task<OperationResult> Generate(PublicationDTO setting)
         {
             var result = OperationResult.MakeSuccess();
+            var website = setting.Website;
+            var dataType = setting.DataType;
+            var filterDate = setting.FilterDataDate;
+            var cdnServer = setting.CdnServer;
             try
             {
-                var website = setting.Website;
-                var dataType = setting.DataType;
-                var filterDate = setting.FilterDataDate;
-                var cdnServer = setting.CdnServer;
-
                 var payload = setting.Payload;
+
+                _logger.LogInformation("GenerateWebsite {website} started", website);
 
                 var filePathRs = await CreateExportFile(setting.Id.Value, payload, dataType, setting.Format, filterDate, true, setting.CreationUser, cdnServer);
 
@@ -173,16 +179,19 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                     if (updateRs.Success == false)
                     {
                         result.AppendErrors(updateRs.Errors);
+                        _logger.LogError("GenerateWebsite {website} end with errors: {errors}", website, string.Join(",", filePathRs.Errors.Select(s => s.Description)));
                     }
                 }
                 else
                 {
                     result.AppendErrors(filePathRs.Errors);
+                    _logger.LogError("GenerateWebsite {website} end with errors: {errors}", website, string.Join(",", filePathRs.Errors.Select(s => s.Description)));
                 }
             }
             catch (Exception ex)
             {
                 result.AppendError("GENERATE", ex.Message);
+                _logger.LogError(ex, "GenerateWebsite {website} end with error", website);
             }
             return result;
         }
@@ -456,7 +465,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                         }
                     }
 
-                    string filepath = string.Format("{0}\\{1}.{2}", folder, fileName, type.ToString().ToLower());
+                    string filepath = $"{folder}\\{fileName}.{type.ToString().ToLower()}";
                     //xml.Save(xmlFilePath);
                     System.IO.File.WriteAllBytes(filepath, file);
                 }

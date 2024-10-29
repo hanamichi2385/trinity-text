@@ -59,7 +59,7 @@ namespace TrinityText.Utilities
                     catch (Exception e)
                     {
                         _logger.LogError(e, "NAVIGATE {folder}", $"{currentDirectory}/{d.Name}");
-                        operationLog.AppendLine(string.Format("Problem with folder: {0}", $"{currentDirectory}/{d.Name}"));
+                        operationLog.AppendLine($"Problem with folder: {currentDirectory}/{d.Name}");
                         operationLog.AppendLine("--ex: " + e.Message);
                         if (e.InnerException != null && !string.IsNullOrEmpty(e.InnerException.Message))
                         {
@@ -101,7 +101,7 @@ namespace TrinityText.Utilities
                 catch (Exception e)
                 {
                     _logger.LogError(e, "NAVIGATETO");
-                    operationLog.AppendLine(string.Format("Problem with folder {0}, path: {1}", directoryName, currentDirectory));
+                    operationLog.AppendLine($"Problem with folder {directoryName}, path: {currentDirectory}");
                     operationLog.AppendLine("--ex: " + e.Message);
                     if (e.InnerException != null && !string.IsNullOrEmpty(e.InnerException.Message))
                     {
@@ -133,7 +133,7 @@ namespace TrinityText.Utilities
             catch (Exception e)
             {
                 _logger.LogError(e, "UPLOADDIRECTORY");
-                operationLog.AppendLine(string.Format("Problem file in path: {0}", ftpDirectoryPath));
+                operationLog.AppendLine($"Problem file in path: {ftpDirectoryPath}");
                 operationLog.AppendLine("--ex: " + e.Message);
                 if (e.InnerException != null && !string.IsNullOrEmpty(e.InnerException.Message))
                 {
@@ -159,7 +159,7 @@ namespace TrinityText.Utilities
             catch (Exception e)
             {
                 _logger.LogError(e, "UPLOADFILESPERDIRECTORY");
-                operationLog.AppendLine(string.Format("Problem with upload file in path: {0}", currentDirectory));
+                operationLog.AppendLine($"Problem with upload file in path: {currentDirectory}");
                 operationLog.AppendLine("--ex: " + e.Message);
                 if (e.InnerException != null && !string.IsNullOrEmpty(e.InnerException.Message))
                 {

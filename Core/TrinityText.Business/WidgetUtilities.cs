@@ -108,7 +108,7 @@ namespace TrinityText.Business
                     }
                     else
                     {
-                        throw new KeyNotFoundException(string.Format("Impossibile risolvere il link \"{0}\". Inserire il file mancante sul File Manager e/o verificare che sia nel percorso indicato.", url));
+                        throw new KeyNotFoundException($"Impossibile risolvere il link \"{url}\". Inserire il file mancante sul File Manager e/o verificare che sia nel percorso indicato.");
                     }
                 }
             }
