@@ -307,7 +307,6 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             if (mainFolderRs.Success)
             {
                 var mainFolder = mainFolderRs.Value;
-
                 await CreateFolderAndFiles(website, mainFolder, directoryPath, filesGenerationDate);
             }
         }
@@ -320,28 +319,31 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 directory.Create();
             }
 
-            var filesRs = await _fileManagerService.GetFilesByFolder(website, folder.Id.Value, true, filesGenerationDate);
-            if (filesRs.Success)
+            if (folder != null && (folder?.Id.HasValue ?? false))
             {
-                var files = filesRs.Value;
-
-                foreach (var f in files)
+                var filesRs = await _fileManagerService.GetFilesByFolder(website, folder.Id.Value, true, filesGenerationDate);
+                if (filesRs.Success)
                 {
-                    var fileName = $"{folderPath}\\{f.Filename}";
+                    var files = filesRs.Value;
 
-                    await File.WriteAllBytesAsync(fileName, f.Content);
+                    foreach (var f in files)
+                    {
+                        var fileName = $"{folderPath}\\{f.Filename}";
 
-                    //var file = new FileInfo(fileName);
-                    //using FileStream stream = file.OpenWrite();
-                    //stream.Write(f.Content, 0, f.Content.Length);
-                    //stream.Flush();
-                    //stream.Close();
-                }
+                        await File.WriteAllBytesAsync(fileName, f.Content);
 
-                foreach (var sub in folder.SubFolders)
-                {
-                    string subfolderPath = $"{folderPath}\\{sub.Name}";
-                    await CreateFolderAndFiles(website, sub, subfolderPath, filesGenerationDate);
+                        //var file = new FileInfo(fileName);
+                        //using FileStream stream = file.OpenWrite();
+                        //stream.Write(f.Content, 0, f.Content.Length);
+                        //stream.Flush();
+                        //stream.Close();
+                    }
+
+                    foreach (var sub in folder.SubFolders)
+                    {
+                        string subfolderPath = $"{folderPath}\\{sub.Name}";
+                        await CreateFolderAndFiles(website, sub, subfolderPath, filesGenerationDate);
+                    }
                 }
             }
         }
@@ -482,7 +484,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 root.Add(element);
             }
             doc.Add(root);
-            var file = doc.ToString();
+            var file = doc.ToString(SaveOptions.DisableFormatting);
 
             return Encoding.UTF8.GetBytes(file);
         }

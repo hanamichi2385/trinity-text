@@ -3,9 +3,12 @@
   <PropertyGroup>
 	  <TargetFramework>net8.0</TargetFramework>
 
-    <IsPackable>false</IsPackable>
+	  <IsPackable>false</IsPackable>
+	  <IsTestProject>true</IsTestProject>
 
     <UserSecretsId>e728bf2b-1de6-471b-8ef9-53a6f15df925</UserSecretsId>
+
+    <OutputType>Library</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -44,6 +47,7 @@
     <ProjectReference Include="..\..\Core\TrinityText.Domain.EF\TrinityText.Domain.EF.csproj" />
     <ProjectReference Include="..\..\Core\TrinityText.Domain.NH\TrinityText.Domain.NH.csproj" />
     <ProjectReference Include="..\..\Core\TrinityText.Domain\TrinityText.Domain.csproj" />
+    <ProjectReference Include="..\..\Core\TrinityText.ServiceBus.MassTransit\TrinityText.ServiceBus.MassTransit.csproj" />
+    <ProjectReference Include="..\..\Core\TrinityText.Utilities\TrinityText.Utilities.csproj" />
   </ItemGroup>
-
 </Project>

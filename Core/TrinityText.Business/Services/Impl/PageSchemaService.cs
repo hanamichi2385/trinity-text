@@ -489,7 +489,7 @@ namespace TrinityText.Business.Services.Impl
                 root.Add(element);
             }
             doc.Add(root);
-            var file = doc.ToString();
+            var file = doc.ToString(SaveOptions.DisableFormatting);
 
             return Encoding.UTF8.GetBytes(file);
         }

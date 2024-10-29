@@ -4,11 +4,17 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using TrinityText.Business;
 using TrinityText.Business.Services.Impl;
 using TrinityText.Domain;
 using TrinityText.Domain.EF;
+using TrinityText.ServiceBus.MassTransit.Services;
+using TrinityText.Utilities;
+using TrinityText.Utilities.Transfer;
 
 namespace TrinityText.UnitTests
 {
@@ -29,20 +35,43 @@ namespace TrinityText.UnitTests
             var config = InitConfiguration();
 
             var connectionString = config.GetSection("ConnectionString").Value;
-
             var services = new ServiceCollection();
             services.AddDbContextPool<TrinityEFContext>(s => s.UseSqlServer(connectionString)
-                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTrackingWithIdentityResolution)
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
                 );
             services.AddTransient(typeof(IRepository<>), typeof(EFRepository<>));
             services.AddTransient<ITextService, TextService>();
             services.AddTransient<ITextTypeService, TextTypeService>();
+            services.AddTransient<IPageSchemaService, PageSchemaService>();
             services.AddTransient<IPageService, PageService>();
             services.AddTransient<IPageTypeService, PageTypeService>();
             services.AddTransient<IWebsiteConfigurationService, WebsiteConfigurationService>();
             services.AddTransient<IWidgetService, WidgetService>();
             services.AddTransient<IFTPServerService, FTPServerService>();
             services.AddTransient<ICDNSettingService, CDNSettingService>();
+            services.AddTransient<IWidgetUtilities, WidgetUtilities>();
+            services.AddTransient<IPublicationSupportService, MassTransitPublicationSupportService>();
+
+            services.AddTransient<IFileManagerService, FileManagerService>();
+            services.AddScoped<ITransferServiceCoordinator>((service) =>
+            {
+                var dictionary = new Dictionary<string, ITransferService>();
+                var sftp = service.GetServices<ITransferService>();
+
+
+                var ts = new TransferService(sftp.ToList());
+
+                return ts;
+            });
+            services.AddTransient<ICompressionFileService, ZipCompressionService>();
+            services.AddTransient<IPublicationService, PublicationService>();
+            services.AddTransient<IImageDrawingService, WebPImageDrawingService>();
+            services.AddTransient<ITransferService, SFTPTransferService>();
+
+            services.Configure<PublicationSupportOptions>(opt => opt = new PublicationSupportOptions()
+            {
+                LocalDirectory = "C://Temp"
+            });
             services.AddLogging();
 
             services.AddAutoMapper((cfg) =>
@@ -340,6 +369,39 @@ namespace TrinityText.UnitTests
             var result = await repo.Search(search, 0, 10);
 
             Assert.IsTrue(result.Success);
+        }
+
+        [TestMethod]
+        public async Task Generation()
+        {
+            try
+            {
+
+                var kernel = InitServices();
+
+                var generationService = kernel.GetService<IPublicationSupportService>();
+                var cdnService = kernel.GetService<ICDNSettingService>();
+
+                var cdn = await cdnService.Get(10);
+
+                var setting = new PublicationDTO()
+                {
+                    Id = 4217,
+                    Website = "BARNINEXYIU",
+                    CdnServer = cdn.Value,
+                    Format = PublicationFormat.XML,
+                    DataType = PublicationType.All,
+                    HasZipFile = true,
+                    CreationUser = "camilla.rizzolo"
+                };
+
+                setting.SetPayload(@"{""Sites"":[{""Tenant"":""BARNI"",""Website"":""BARNINEXYIU"",""Site"":""BARNINEXYIU"",""CurrencyId"":""EUR"",""Languages"":[""it""],""Countries"":[""IT""],""Description"":""Barni Nexyiu"",""Enabled"":false}],""Website"":""BARNINEXYIU"",""Tenant"":""BARNI"",""TextTypes"":[]}");
+
+                var generateRs = await generationService.Generate(setting);
+            }catch(Exception ex)
+            {
+
+            }
         }
     }
 }
