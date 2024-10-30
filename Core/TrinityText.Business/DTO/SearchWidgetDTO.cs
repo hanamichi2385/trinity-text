@@ -16,7 +16,7 @@
         public SortingType? SortingName { get; set; }
         public SortingType? SortingWebsite { get; set; }
         public SortingType? SortingSite { get; set; }
-        //public SortingType? SortingLastUpdate { get; set; }
+        public SortingType? SortingLastUpdate { get; set; }
         public SortingType? SortingLanguage { get; set; }
 
         public string[] UserWebsites { get; set; }

@@ -145,8 +145,8 @@ namespace TrinityText.Business.Services.Impl
                         query.Where(r => r.ACTIVE == search.ShowOnlyActive.Value);
                 }
 
-                if ((!search.SortingName.HasValue && !search.SortingWebsite.HasValue && !search.SortingSite.HasValue && !search.SortingLanguage.HasValue) ||
-                    (search.SortingName.Value == SortingType.Unordered && search.SortingWebsite.Value == SortingType.Unordered && search.SortingSite.Value == SortingType.Unordered && search.SortingLanguage.Value == SortingType.Unordered))
+                if ((!search.SortingName.HasValue && !search.SortingWebsite.HasValue && !search.SortingSite.HasValue && !search.SortingLanguage.HasValue && !search.SortingLastUpdate.HasValue) ||
+                    (search.SortingName.Value == SortingType.Unordered && search.SortingWebsite.Value == SortingType.Unordered && search.SortingSite.Value == SortingType.Unordered && search.SortingLanguage.Value == SortingType.Unordered && search.SortingLastUpdate.Value == SortingType.Unordered))
                 {
                     query = query.Sort((r) => r.TITLE, SortingType.Ascending);
                 }
@@ -156,6 +156,7 @@ namespace TrinityText.Business.Services.Impl
                     query = query.Sort((r) => r.FK_WEBSITE, search.SortingWebsite);
                     query = query.Sort((r) => r.FK_PRICELIST, search.SortingSite);
                     query = query.Sort((r) => r.FK_LANGUAGE, search.SortingLanguage);
+                    query = query.Sort((r) => r.LASTUPDATE_DATE, search.SortingLastUpdate);
                 }
             }
 

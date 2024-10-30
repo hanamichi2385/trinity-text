@@ -19,7 +19,7 @@ namespace TrinityText.Business
         public SortingType? SortingWebsite { get; set; }
         public SortingType? SortingSite { get; set; }
         //public SortingType? SortingContentType { get; set; }
-        //public SortingType? SortingLastUpdate { get; set; }
+        public SortingType? SortingLastUpdate { get; set; }
         public SortingType? SortingLanguage { get; set; }
 
         //public IList<string> SupportedRoles { get; set; }
