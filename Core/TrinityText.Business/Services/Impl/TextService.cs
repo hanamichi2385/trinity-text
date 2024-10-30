@@ -370,6 +370,199 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
+        public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>> GetPublishableTextsByWebsite(string website, Dictionary<string, string[]> sitesLanguages, IReadOnlyList<TextTypeDTO> textTypes)
+        {
+            try
+            {
+                var textTypesIds = textTypes.Select(t => t.Id).Union([null]).ToArray();
+                var allLanguages = sitesLanguages.Values.SelectMany(v => v).Distinct().ToArray();
+
+                var textsGlobalByWebsiteList = _textRepository
+                    .Repository
+                    .Where(t => allLanguages.Contains(t.FK_LANGUAGE) &&
+                        textTypesIds.Contains(t.FK_TEXTTYPE) &&
+                        t.ACTIVE == true &&
+                        (t.FK_WEBSITE == null || (t.FK_WEBSITE == website && string.IsNullOrWhiteSpace(t.FK_PRICELIST))))
+                    .ToList();
+
+                var textsGlobalByWebsite = _mapper.Map<IList<TextDTO>>(textsGlobalByWebsiteList).AsReadOnly();
+
+                var publishableTexts = new Dictionary<string, ReadOnlyCollection<TextDTO>>();
+                foreach (var sl in sitesLanguages)
+                {
+                    var site = sl.Key;
+                    var supportedLanguages = sl.Value;
+                    var textsBySiteList = _textRepository
+                        .Repository
+                        .Where(t => supportedLanguages.Contains(t.FK_LANGUAGE) &&
+                            textTypesIds.Contains(t.FK_TEXTTYPE) &&
+                            t.ACTIVE == true &&
+                            t.FK_WEBSITE == website && t.FK_PRICELIST == site)
+                        .ToList();
+
+                    var textsBySite = _mapper.Map<IList<TextDTO>>(textsBySiteList);
+
+                    var list = new List<TextDTO>();
+                    foreach (var l in supportedLanguages)
+                    {
+                        var textBySiteLang = textsGlobalByWebsite
+                            .Where(ttw => ttw.Language == l)
+                            .Union(textsBySite.Where(wbs => wbs.Language == l))
+                            .OrderBy(l => l.Name)
+                            .ToList()
+                            .AsReadOnly();
+
+                        var reducedTexts = ReduceTexts(textBySiteLang, website, site, textTypesIds);
+
+                        list.AddRange(reducedTexts);
+                    }
+                    
+                    publishableTexts.Add(site, list.AsReadOnly());
+                }
+
+                var rd = publishableTexts.ToFrozenDictionary(p => p.Key, p => p.Value);
+
+                return await Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>.MakeSuccess(rd));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "PUBLISH_TEXTS {message}", ex.Message);
+                return OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_TEXTS", "GENERIC_ERROR")]);
+            }
+        }
+
+        private static List<TextDTO> ReduceTexts(IReadOnlyList<TextDTO> texts, string website, string site, int?[] textTypesIds)
+        {
+            var list = new List<TextDTO>();
+            foreach (var t in textTypesIds)
+            {
+                var listForType = new List<TextDTO>();
+
+                var textsforType =
+                    texts
+                    .Where(rft => rft.TextType?.Id == t)
+                    .ToList()
+                    .AsReadOnly();
+
+                foreach (var n in textsforType.Select(s => s.Name).Distinct())
+                {
+                    var textByName =
+                        textsforType
+                        .Where(resx => resx.Name.Equals(n, StringComparison.InvariantCultureIgnoreCase))
+                        .ToList();
+
+                    if (textByName.Count == 1)
+                    {
+                        listForType.Add(textByName.First());
+                    }
+                    else
+                    {
+                        var textByWebsite =
+                            textByName.Where(resx => resx.Website == website)
+                            .ToList();
+
+                        if (textByWebsite.Count == 1)
+                        {
+                            listForType.Add(textByWebsite.First());
+                        }
+                        else
+                        {
+                            var textsBySite =
+                                textByWebsite.Where(resx => resx.Site == site)
+                                .ToList();
+
+                            if (textsBySite.Count == 0)
+                            {
+                                var textCustomBySite =
+                                    textByWebsite.Where(resx => !string.IsNullOrEmpty(resx.Website) && !string.IsNullOrEmpty(resx.Site))
+                                    .FirstOrDefault();
+
+                                if (textCustomBySite != null)
+                                {
+                                    listForType.Add(textCustomBySite);
+                                }
+                                else
+                                {
+                                    var globalTexts =
+                                        textByName.Where(resx => string.IsNullOrWhiteSpace(resx.Website))
+                                        .ToList();
+
+                                    if (globalTexts.Count == 1)
+                                    {
+                                        listForType.Add(globalTexts.First());
+                                    }
+                                    else
+                                    {
+                                        var countries =
+                                            globalTexts.Select(ris => ris.Country)
+                                            .Distinct()
+                                            .ToList();
+
+                                        foreach (var country in countries)
+                                        {
+                                            var textsForCountry = textByName
+                                                .Where(resx => resx.Country == country)
+                                                .ToList();
+
+                                            if (textsForCountry.Count == 1)
+                                            {
+                                                listForType.Add(textsForCountry.First());
+                                            }
+                                            else
+                                            {
+                                                var text =
+                                                    textsForCountry.Where(ris => ris.Site == site)
+                                                    .Single();
+
+                                                listForType.Add(text);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (textsBySite.Count == 1)
+                                {
+                                    listForType.Add(textsBySite.First());
+                                }
+                                else
+                                {
+
+                                    var countries =
+                                        textByName.Select(ris => ris.Country)
+                                        .Distinct()
+                                        .ToList();
+
+                                    foreach (var country in countries)
+                                    {
+                                        var textsForCountries = textByName
+                                            .Where(resx => resx.Country == country)
+                                            .ToList();
+
+                                        if (textsForCountries.Count == 1)
+                                        {
+                                            listForType.Add(textsForCountries.First());
+                                        }
+                                        else
+                                        {
+                                            var text =
+                                                textsForCountries.Where(ris => ris.Site == site)
+                                                .Single();
+
+                                            listForType.Add(text);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                list.AddRange(listForType);
+            }
+            return list;
+        }
+
         //TODO: sistemare
         public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>> GetPublishableTexts(string website, string site, string[] languages, IReadOnlyList<TextTypeDTO> textTypes)
         {

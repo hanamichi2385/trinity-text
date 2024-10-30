@@ -33,7 +33,7 @@ namespace TrinityText.Utilities
 
                 ftp.Connect();
 
-                var directories = path.Split([ "/" ], StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
+                var directories = path.Split('/', StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
 
                 var currentDirectory = ftp.WorkingDirectory;
 
@@ -98,7 +98,7 @@ namespace TrinityText.Utilities
             SftpClient ftp = null;
             try
             {
-                var directories = path.Split(["/"], StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
+                var directories = path.Split('/', StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
 
                 ftp = new SftpClient(host, username, password);
 
@@ -175,7 +175,6 @@ namespace TrinityText.Utilities
                     ftp.ChangeDirectory(currentDirectory);
                 }
 
-
                 var filesToUpload = directory.GetFiles();
 
                 if (filesToUpload?.Length > 0)
@@ -185,7 +184,7 @@ namespace TrinityText.Utilities
                     {
                         using (var stream = f.Open(FileMode.Open))
                         {
-                            ftp.UploadFile(stream, f.Name);
+                            ftp.UploadFile(stream, f.Name);                       
                             stream.Close();
                         }
                     }

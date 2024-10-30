@@ -1,5 +1,6 @@
 ﻿using Resulz;
 using System.Collections.Frozen;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
@@ -14,6 +15,7 @@ namespace TrinityText.Business
         Task<OperationResult<PageDTO>> Save(PageDTO dto);
 
         Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>> GetPublishablePages(string website, string site, string[] languages);
+        Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>> GetPublishablePagesByWebsite(string website, Dictionary<string, string[]> sitesLanguages);
 
         Task<OperationResult> Remove(int id);
     }

@@ -210,7 +210,7 @@ namespace TrinityText.Utilities.Excel
                                         CreationDate = DateTime.Now
                                     },
                                     Active = true,
-                                    TextTypeId = type != null ? type.Id : null,
+                                    TextTypeId = type?.Id,
                                     Website = "*".Equals(website, StringComparison.InvariantCultureIgnoreCase) ? null : website,
                                     Country = "*".Equals(country, StringComparison.InvariantCultureIgnoreCase) ? null : country,
                                     Site = "*".Equals(site, StringComparison.InvariantCultureIgnoreCase) ? null : site,

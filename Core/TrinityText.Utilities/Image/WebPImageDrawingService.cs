@@ -102,7 +102,7 @@ namespace TrinityText.Utilities
             }
         }
 
-        private bool CanGenerateThumb(string filename, SKManagedStream stream)
+        private static bool CanGenerateThumb(string filename, SKManagedStream stream)
         {
             var contentType = ImageExtensions.GetMimeTypeForFile(filename);
             if ("image/gif".Equals(contentType, StringComparison.InvariantCultureIgnoreCase))

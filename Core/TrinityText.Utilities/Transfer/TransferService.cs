@@ -75,9 +75,9 @@ namespace TrinityText.Utilities.Transfer
             {
                 var key = host.Scheme.ToLower();
 
-                if (Services.ContainsKey(key))
+                if (Services.TryGetValue(key, out ITransferService value))
                 {
-                    return Services[key];
+                    return value;
                 }
                 throw new NotSupportedException(host.Scheme);
             }

@@ -231,22 +231,22 @@ namespace TrinityText.Business.Services.Impl
 
                     //if (existRs.Success)
                     //{
-                        var typeId = dto.PageTypeId;
-                        var pageType = await _pageTypeRepository.Read(typeId);
+                    var typeId = dto.PageTypeId;
+                    var pageType = await _pageTypeRepository.Read(typeId);
 
-                        var entity = _mapper.Map<Page>(dto);
-                        entity.ACTIVE = true;
-                        entity.CREATION_DATE = DateTime.Now;
-                        entity.LASTUPDATE_DATE = DateTime.Now;
-                        entity.LASTUPDATE_USER = entity.CREATION_USER;
+                    var entity = _mapper.Map<Page>(dto);
+                    entity.ACTIVE = true;
+                    entity.CREATION_DATE = DateTime.Now;
+                    entity.LASTUPDATE_DATE = DateTime.Now;
+                    entity.LASTUPDATE_USER = entity.CREATION_USER;
 
-                        await _pageRepository.Create(entity);
+                    await _pageRepository.Create(entity);
 
-                        var r = _mapper.Map<PageDTO>(entity);
-                        var t = _mapper.Map<PageTypeDTO>(pageType);
-                        r.PageType = t;
+                    var r = _mapper.Map<PageDTO>(entity);
+                    var t = _mapper.Map<PageTypeDTO>(pageType);
+                    r.PageType = t;
 
-                        return OperationResult<PageDTO>.MakeSuccess(r);
+                    return OperationResult<PageDTO>.MakeSuccess(r);
                     //}
                     //else
                     //{
@@ -305,7 +305,6 @@ namespace TrinityText.Business.Services.Impl
         //        return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("EXIST", "GENERIC_ERROR") });
         //    }
         //}
-
         public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>> GetPublishablePages(string website, string site, string[] languages)
         {
             try
@@ -329,6 +328,56 @@ namespace TrinityText.Business.Services.Impl
 
                 var result = list.GroupBy(c => c.Language).ToFrozenDictionary(c => c.Key, c => c.ToList().AsReadOnly());
 
+
+                return await Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeSuccess(result));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "PUBLISH_PAGES {message}", ex.Message);
+                return OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_PAGES", "GENERIC_ERROR")]);
+            }
+        }
+
+
+        public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>> GetPublishablePagesByWebsite(string website, Dictionary<string, string[]> sitesLanguages)
+        {
+            try
+            {
+                var allLanguages = sitesLanguages.Values.SelectMany(v => v).Distinct().ToArray();
+
+                var pagessGlobalByWebsiteList = _pageRepository
+                    .Repository
+                    .Where(t => allLanguages.Contains(t.FK_LANGUAGE) &&
+                        t.ACTIVE == true &&
+                        (t.FK_WEBSITE == null || (t.FK_WEBSITE == website && string.IsNullOrWhiteSpace(t.FK_PRICELIST))))
+                    .ToList();
+
+                var pagesGlobalByWebsite = _mapper.Map<IList<PageDTO>>(pagessGlobalByWebsiteList).AsReadOnly();
+
+                var publishablePages = new Dictionary<string, ReadOnlyCollection<PageDTO>>();
+                foreach (var sl in sitesLanguages)
+                {
+                    var site = sl.Key;
+                    var supportedLanguages = sl.Value;
+                    var pagesBySiteList = _pageRepository
+                        .Repository
+                        .Where(t => supportedLanguages.Contains(t.FK_LANGUAGE) &&
+                            t.ACTIVE == true &&
+                            t.FK_WEBSITE == website && t.FK_PRICELIST == site)
+                        .ToList();
+
+                    var pagesBySite = _mapper.Map<IList<PageDTO>>(pagesBySiteList);
+
+                    var allpagesBySite = pagesGlobalByWebsite
+                            .Where(p => supportedLanguages.Contains(p.Language))
+                            .Union(pagesBySite)
+                            .ToList()
+                            .AsReadOnly();
+
+                    publishablePages.Add(site, allpagesBySite);
+                }
+
+                var result = publishablePages.ToFrozenDictionary(c => c.Key, c => c.Value);
 
                 return await Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeSuccess(result));
             }

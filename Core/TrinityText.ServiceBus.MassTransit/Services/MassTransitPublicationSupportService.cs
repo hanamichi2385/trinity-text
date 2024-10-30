@@ -70,47 +70,56 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             var textSubDirectory = currentDirectory.CreateSubdirectory("Text");
             //var filesSubDirectory = currentDirectory.CreateSubdirectory("Files");
 
-            foreach (var i in sites)
-            {
-                if (exportType == PublicationType.All || exportType == PublicationType.Texts)
-                {
-                    var siteDirectory = textSubDirectory.CreateSubdirectory(i.Site.ToUpper());
-                    var textsPerSiteRs = await _textService.GetPublishableTexts(website, i.Site, i.Languages, textTypes);
+            var allLanguages = sites.SelectMany(s => s.Languages).Distinct().ToArray();
 
-                    if (textsPerSiteRs.Success)
+            var siteLanguages = sites.ToDictionary(s => s.Site, v => v.Languages);
+
+            if (exportType == PublicationType.All || exportType == PublicationType.Texts)
+            {
+                var textsByWebsiteRs = await _textService.GetPublishableTextsByWebsite(website, siteLanguages, textTypes);
+
+                if (textsByWebsiteRs.Success)
+                {
+                    var textsByWebsite = textsByWebsiteRs.Value;
+                    foreach (var s in sites)
                     {
-                        var textsPerSite = textsPerSiteRs.Value;
-                        GenerateTextsFileBySite(website, textsPerSite, siteDirectory.FullName, publishType);
-                    }
-                    else
-                    {
-                        return OperationResult<string>.MakeFailure(textsPerSiteRs.Errors);
+                        var siteDirectory = textSubDirectory.CreateSubdirectory(s.Site.ToUpper());
+
+                        if (textsByWebsite.TryGetValue(s.Site, out var textsPerSite))
+                        {
+                            var dict = textsPerSite.GroupBy(t => t.Language).ToFrozenDictionary(k => k.Key, v => v.ToList().AsReadOnly());
+                            GenerateTextsFileBySite(website, dict, siteDirectory.FullName, publishType);
+                        }
                     }
                 }
-
-                if (exportType == PublicationType.All || exportType == PublicationType.Pages || exportType == PublicationType.PDF)
+                else
                 {
-                    var pagesPerSiteRs = await _pageService.GetPublishablePages(website, i.Site, i.Languages);
+                    return OperationResult<string>.MakeFailure(textsByWebsiteRs.Errors);
+                }
+            }
 
-                    if (pagesPerSiteRs.Success)
+            if (exportType == PublicationType.All || exportType == PublicationType.Pages)
+            {
+                var pageByWebsiteRs = await _pageService.GetPublishablePagesByWebsite(website, siteLanguages);
+
+                if (pageByWebsiteRs.Success)
+                {
+                    var pageByWebsite = pageByWebsiteRs.Value;
+                    foreach (var s in sites)
                     {
-                        var pagesPerSite = pagesPerSiteRs.Value;
-                        if (exportType == PublicationType.All || exportType == PublicationType.Pages)
+                        var siteDirectory = textSubDirectory.CreateSubdirectory(s.Site.ToUpper());
+
+                        if (pageByWebsite.TryGetValue(s.Site, out var textsPerSite))
                         {
-                            var instanceDirectory = textSubDirectory.CreateSubdirectory(i.Site.ToUpper());
-                            await GeneratePagesFileBySite(tenant, website, i.Site, pagesPerSite, instanceDirectory.FullName, string.Empty, cdnServer, publishType);
+                            var dict = textsPerSite.GroupBy(t => t.Language).ToFrozenDictionary(k => k.Key, v => v.ToList().AsReadOnly());
+                            await GeneratePagesFileBySite(tenant, website, s.Site, dict, siteDirectory.FullName, string.Empty, cdnServer, publishType);
                         }
+                    }
 
-                        //if (exportType == PublicationType.All || exportType == PublicationType.PDF)
-                        //{
-                        //    var instanceDirectory = filesSubDirectory.CreateSubdirectory(i.Site.ToUpper());
-                        //    //GeneratePDFPagesFileBySite(tenant, website, i.Site, pagesPerSite, instanceDirectory.FullName);
-                        //}
-                    }
-                    else
-                    {
-                        return OperationResult<string>.MakeFailure(pagesPerSiteRs.Errors);
-                    }
+                }
+                else
+                {
+                    return OperationResult<string>.MakeFailure(pageByWebsiteRs.Errors);
                 }
             }
 
@@ -139,7 +148,8 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
         public static void FastDeleteEmptySubdirectories(string parentDirectory)
         {
-            System.Threading.Tasks.Parallel.ForEach(System.IO.Directory.GetDirectories(parentDirectory), directory => {
+            System.Threading.Tasks.Parallel.ForEach(System.IO.Directory.GetDirectories(parentDirectory), directory =>
+            {
                 FastDeleteEmptySubdirectories(directory);
                 if (!System.IO.Directory.EnumerateFileSystemEntries(directory).Any()) System.IO.Directory.Delete(directory, false);
             });
@@ -360,57 +370,57 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
         //private static void GeneratePDFPagesFileBySite(string tenant, string website, string site, IDictionary<string, List<PageDTO>> contentsPerLanguages, string directoryPath)
         //{
-            //if (string.IsNullOrEmpty(directoryPath))
-            //{
-            //    directoryPath = _options.LocalDirectory;
-            //}
+        //if (string.IsNullOrEmpty(directoryPath))
+        //{
+        //    directoryPath = _options.LocalDirectory;
+        //}
 
-            //DirectoryInfo directory = new DirectoryInfo(directoryPath);
-            //if (!directory.Exists)
-            //{
-            //    directory.Create();
-            //}
-            //foreach (var lang in contentsPerLanguages.Keys)
-            //{
-            //    var langDir = directory.CreateSubdirectory(lang);
-            //    var folder = langDir.FullName;
-            //    var contents = contentsPerLanguages[lang];
+        //DirectoryInfo directory = new DirectoryInfo(directoryPath);
+        //if (!directory.Exists)
+        //{
+        //    directory.Create();
+        //}
+        //foreach (var lang in contentsPerLanguages.Keys)
+        //{
+        //    var langDir = directory.CreateSubdirectory(lang);
+        //    var folder = langDir.FullName;
+        //    var contents = contentsPerLanguages[lang];
 
-            //    IDictionary<int, string> types =
-            //        contents
-            //        .GroupBy(r => r.PageType.Id.Value)
-            //        .ToDictionary(r => r.Key, r => r.First().Tipologia.Subfolder);
+        //    IDictionary<int, string> types =
+        //        contents
+        //        .GroupBy(r => r.PageType.Id.Value)
+        //        .ToDictionary(r => r.Key, r => r.First().Tipologia.Subfolder);
 
-            //    foreach (var t in types.Keys)
-            //    {
-            //        IList<PageDTO> contentsPerTypePDF =
-            //            contents
-            //            .Where(c => c.PageType.Id == t && c.GeneratePdf == true && !string.IsNullOrEmpty(c.Tipologia.PrintElementName))
-            //            .ToList();
+        //    foreach (var t in types.Keys)
+        //    {
+        //        IList<PageDTO> contentsPerTypePDF =
+        //            contents
+        //            .Where(c => c.PageType.Id == t && c.GeneratePdf == true && !string.IsNullOrEmpty(c.Tipologia.PrintElementName))
+        //            .ToList();
 
-            //        if (contentsPerTypePDF.Count > 0)
-            //        {
-            //            //var subfolder = types[t];
-            //            //if (!string.IsNullOrEmpty(subfolder))
-            //            //{
-            //            //    folder += "\\" + subfolder;
+        //        if (contentsPerTypePDF.Count > 0)
+        //        {
+        //            //var subfolder = types[t];
+        //            //if (!string.IsNullOrEmpty(subfolder))
+        //            //{
+        //            //    folder += "\\" + subfolder;
 
-            //            //    DirectoryInfo subfolderInfo = new DirectoryInfo(folder);
-            //            //    if (!subfolderInfo.Exists)
-            //            //    {
-            //            //        subfolderInfo.Create();
-            //            //    }
-            //            //}
+        //            //    DirectoryInfo subfolderInfo = new DirectoryInfo(folder);
+        //            //    if (!subfolderInfo.Exists)
+        //            //    {
+        //            //        subfolderInfo.Create();
+        //            //    }
+        //            //}
 
-            //            PDFUtility pdfUtility = new PDFUtility();
-            //            foreach (var c in contentsPerTypePDF)
-            //            {
-            //                string pdfFilePath = string.Format("{0}\\{1}.pdf", folder, c.Titolo.Replace(' ', '_'));
-            //                pdfUtility.PrintFromXML(c.Xml, c.Tipologia.PrintElementName, pdfFilePath, tenant, vendor, instance.InstanceId, lang);
-            //            }
-            //        }
-            //    }
-            //}
+        //            PDFUtility pdfUtility = new PDFUtility();
+        //            foreach (var c in contentsPerTypePDF)
+        //            {
+        //                string pdfFilePath = string.Format("{0}\\{1}.pdf", folder, c.Titolo.Replace(' ', '_'));
+        //                pdfUtility.PrintFromXML(c.Xml, c.Tipologia.PrintElementName, pdfFilePath, tenant, vendor, instance.InstanceId, lang);
+        //            }
+        //        }
+        //    }
+        //}
         //}
 
         private async Task GeneratePagesFileBySite(string tenant, string website, string site, FrozenDictionary<string, ReadOnlyCollection<PageDTO>> contentsPerLanguages, string directoryPath, string baseUrl, CdnServerDTO cdnServer, PublicationFormat type)

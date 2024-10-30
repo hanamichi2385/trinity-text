@@ -1,3 +1,6 @@
+#2024-10-30
+- Improve export algorithm
+
 #2024-10-29
 - Remove formatting problems
 

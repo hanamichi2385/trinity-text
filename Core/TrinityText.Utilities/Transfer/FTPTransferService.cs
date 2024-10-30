@@ -28,7 +28,7 @@ namespace TrinityText.Utilities
             var ftp = new FtpClient();
             try
             {
-                var directories = path.Split(["/"], StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
+                var directories = path.Split('/', StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
                 ftp.Host = ftphost;
                 if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
                 {
@@ -196,7 +196,7 @@ namespace TrinityText.Utilities
             var ftp = new FtpClient();
             try
             {
-                var directories = path.Split(["/"], StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
+                var directories = path.Split('/', StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
 
 
                 ftp.Host = host;

@@ -315,7 +315,7 @@ namespace TrinityText.UnitTests
                 BaseUrl = "https://cdn.it",
             };
 
-            var result = await repo.Save(ftp, new[] { 1 });
+            var result = await repo.Save(ftp, [ 1]);
 
             Assert.IsTrue(result.Success);
         }
@@ -399,7 +399,7 @@ namespace TrinityText.UnitTests
                 setting.SetPayload(@"{""Sites"":[{""Tenant"":""BARNI"",""Website"":""BARNINEXYIU"",""Site"":""BARNINEXYIU"",""CurrencyId"":""EUR"",""Languages"":[""it""],""Countries"":[""IT""],""Description"":""Barni Nexyiu"",""Enabled"":false}],""Website"":""BARNINEXYIU"",""Tenant"":""BARNI"",""TextTypes"":[]}");
 
                 var generateRs = await generationService.Generate(setting);
-            }catch(Exception ex)
+            }catch
             {
 
             }
@@ -425,7 +425,7 @@ namespace TrinityText.UnitTests
                 var generateRs = await generationService.CreateExportFile(1, payload, PublicationType.All, PublicationFormat.XML, DateTime.Today.AddDays(-1), true, "davide.chiarella", cdn.Value);
                 stop.Stop();
             }
-            catch (Exception ex)
+            catch
             {
 
             }
