@@ -28,10 +28,9 @@ namespace TrinityText.Utilities
                 var bytes = default(byte[]);
                 if (ImageExtensions.IsConvertible(dto))
                 {
-
                     using var inputFile = new MemoryStream(dto.Content);
                     using var inputStream = new SKManagedStream(inputFile);
-                    if (CanGenerateThumb(dto.Filename, inputStream))
+                    if (CanProcess(dto.Filename, inputStream))
                     {
                         using var outputFile = new MemoryStream();
                         using (var original = SKBitmap.Decode(inputStream))
@@ -71,21 +70,25 @@ namespace TrinityText.Utilities
             try
             {
                 var bytes = default(byte[]);
-
                 if (ImageExtensions.IsConvertible(dto))
                 {
-                    using var outputFile = new MemoryStream();
-                    using (var inputFile = new MemoryStream(dto.Content))
-                    using (var inputStream = new SKManagedStream(inputFile))
+                    using var inputFile = new MemoryStream(dto.Content);
+                    using var inputStream = new SKManagedStream(inputFile);
+                    if (CanProcess(dto.Filename, inputStream))
                     {
-                        using var original = SKBitmap.Decode(inputStream);
-                        original.Encode(SKEncodedImageFormat.Webp, _options.Quality)
-                                .SaveTo(outputFile);
-                    }
-                    bytes = outputFile.GetBuffer();
+                        using var outputFile = new MemoryStream();
+                        using (var original = SKBitmap.Decode(inputStream))
+                        {
+                            original.Encode(SKEncodedImageFormat.Webp, _options.Quality)
+                                    .SaveTo(outputFile);
 
-                    outputFile.Close();
+                            bytes = outputFile.GetBuffer();
+
+                            outputFile.Close();
+                        }
+                    }
                 }
+
                 if (bytes != null && (bytes.Length < dto.Content.Length))
                 {
                     return await Task.FromResult(OperationResult<byte[]>.MakeSuccess(bytes));
@@ -102,7 +105,7 @@ namespace TrinityText.Utilities
             }
         }
 
-        private static bool CanGenerateThumb(string filename, SKManagedStream stream)
+        private static bool CanProcess(string filename, SKManagedStream stream)
         {
             var contentType = ImageExtensions.GetMimeTypeForFile(filename);
             if ("image/gif".Equals(contentType, StringComparison.InvariantCultureIgnoreCase))

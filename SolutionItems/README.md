@@ -1,3 +1,6 @@
+#2024-11-04
+- Fix gif animate compression bug
+
 #2024-10-30
 - Improve export algorithm
 
