@@ -48,10 +48,10 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                 }
                 else
                 {
-                    subject.Append("[CMS] Attention! There was an error during updating {website} site");
+                    subject.Append($"[CMS] Attention! There was an error during publishing {website} site");
 
-                    body.Append($"<p>There was an error during updating (<strong>{format}</strong>) for website <strong>{website}</strong> via <strong>{ftpServer}</strong>!</p>");
-                    body.Append("<p>All processes are terminated, please start a new update if the error is solve</p>");
+                    body.Append($"<p>There was an error during publish process (<strong>{format}</strong>) for website <strong>{website}</strong> via <strong>{ftpServer}</strong>!</p>");
+                    body.Append("<p>All processes are terminated, please start a new update if the error is solved</p>");
                     foreach (var e in operationsLogRs.Errors)
                     {
                         body.Append($"<p>{e.Context}:{e.Description}</p>");

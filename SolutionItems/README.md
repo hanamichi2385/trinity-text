@@ -1,3 +1,7 @@
+#2025-01-27
+- Fix publish error email
+- Update nuget packages
+
 #2024-11-04
 - Fix gif animate compression bug
 

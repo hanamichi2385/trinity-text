@@ -39,7 +39,8 @@ namespace TrinityText.Utilities
 
 
                             var info = new SKImageInfo() { Width = w, Height = h, ColorType = original.ColorType, AlphaType = original.AlphaType, ColorSpace = original.ColorSpace };
-                            var thumb = original.Resize(info, SKFilterQuality.Medium);
+
+                            var thumb = original.Resize(info,  SKFilterQuality.Medium);
 
                             thumb.Encode(SKEncodedImageFormat.Webp, _options.Quality)
                                     .SaveTo(outputFile);
