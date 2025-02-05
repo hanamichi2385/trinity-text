@@ -56,12 +56,14 @@ namespace TrinityText.Business.Services.Impl
                         bool isHtml = part.Attribute("ishtml") != null && bool.Parse(part.Attribute("ishtml").Value);
                         int? maxLenght = part.Attribute("maxlenght") != null ? int.Parse(part.Attribute("maxlenght").Value) : int.MaxValue;
                         int? minLenght = part.Attribute("minlenght") != null ? int.Parse(part.Attribute("minlenght").Value) : int.MinValue;
+                        bool extend = part.Attribute("extend") != null && bool.Parse(part.Attribute("extend").Value);
                         textAtom.Id = partId;
                         textAtom.IsHtml = isHtml;
                         textAtom.IsRequired = isRequired;
                         textAtom.MaxValue = maxLenght;
                         textAtom.MinValue = minLenght;
                         textAtom.Description = description;
+                        textAtom.Extend = extend;
 
                         pageSchema.Body.Add(textAtom);
                         break;
@@ -91,23 +93,22 @@ namespace TrinityText.Business.Services.Impl
                         {
                             var name = item.Attribute("name");
                             galleryAtom.ItemName = name.Value;
+                            var captionName = part.Attribute("captionName") != null ? part.Attribute("captionName").Value : string.Empty;
+                            galleryAtom.CaptionName = captionName;
+                            var captionDescription = part.Attribute("captionDescription") != null ? part.Attribute("captionDescription").Value : string.Empty;
+                            galleryAtom.CaptionDescription = captionDescription;
+                            var linkName = part.Attribute("linkName") != null ? part.Attribute("linkName").Value : string.Empty;
+                            galleryAtom.LinkName = linkName;
+                            var linkDescription = part.Attribute("linkDescription") != null ? part.Attribute("linkDescription").Value : string.Empty;
+                            galleryAtom.LinkDescription = linkDescription;
+                            var pathName = part.Attribute("pathName") != null ? part.Attribute("pathName").Value : string.Empty;
+                            galleryAtom.PathName = pathName;
+                            var pathDescription = part.Attribute("pathDescription") != null ? part.Attribute("pathDescription").Value : string.Empty;
+                            galleryAtom.PathDescription = pathDescription;
+                            var target = part.Attribute("pathDescription") != null ? part.Attribute("pathDescription").Value : string.Empty;
                         }
                         pageSchema.Body.Add(galleryAtom);
                         break;
-
-                    //case "blogpart":
-                    //    textAtom.Type = TrinityText.Business.Schema.AtomType.Blog;
-                    //    textAtom.IsRequired = isRequired;
-
-                    //    var news = part.Elements().FirstOrDefault();
-
-                    //    if (news != null)
-                    //    {
-                    //        var name = news.Attribute("name");
-                    //        textAtom.ItemName = name.Value;
-                    //    }
-
-                    //    break;
 
                     case "numberatom":
                     case "numberpart":
@@ -139,6 +140,17 @@ namespace TrinityText.Business.Services.Impl
                             Description = description
                         };
                         pageSchema.Body.Add(checkboxAtom);
+                        break;
+
+                    case "separatoratom":
+                    case "separatorpart":
+                        var separatorAtom = new SeparatorAtom
+                        {
+                            IsRequired = isRequired,
+                            Id = partId,
+                            Description = description
+                        };
+                        pageSchema.Body.Add(separatorAtom);
                         break;
 
                     case "datetimeatom":
@@ -188,6 +200,11 @@ namespace TrinityText.Business.Services.Impl
                         imageUrl.Add(imageUrlData);
                         elementPart.Add(imageUrl);
 
+                        var imageMobile = new XElement("pathMobile");
+                        var imageMobileData = new XCData(string.IsNullOrEmpty(image.Mobile) ? string.Empty : image.Mobile);
+                        imageMobile.Add(imageMobileData);
+                        elementPart.Add(imageMobile);
+
                         var imageCaption = new XElement("caption");
                         var imageCaptionData = new XCData(string.IsNullOrEmpty(image.Caption) ? string.Empty : image.Caption);
                         imageCaption.Add(imageCaptionData);
@@ -197,6 +214,11 @@ namespace TrinityText.Business.Services.Impl
                         var imageLinkData = new XCData(string.IsNullOrEmpty(image.Link) ? string.Empty : image.Link);
                         imageLink.Add(imageLinkData);
                         elementPart.Add(imageLink);
+
+                        var imageTarget = new XElement("target");
+                        var imageTargetData = new XCData(string.IsNullOrEmpty(image.Target) ? string.Empty : image.Target);
+                        imageTarget.Add(imageTargetData);
+                        elementPart.Add(imageTarget);
 
                         break;
                     case TrinityText.Business.Schema.AtomType.Gallery:
@@ -211,6 +233,10 @@ namespace TrinityText.Business.Services.Impl
                                 var pathData = new XCData(string.IsNullOrWhiteSpace(i.Path) ? string.Empty : i.Path);
                                 path.Add(pathData);
 
+                                var pathmobile = new XElement("pathMobile");
+                                var pathmobileData = new XCData(string.IsNullOrWhiteSpace(i.PathMobile) ? string.Empty : i.PathMobile);
+                                pathmobile.Add(pathmobileData);
+
                                 var caption = new XElement("caption");
                                 var captionData = new XCData(string.IsNullOrWhiteSpace(i.Caption) ? string.Empty : i.Caption);
                                 caption.Add(captionData);
@@ -218,6 +244,10 @@ namespace TrinityText.Business.Services.Impl
                                 var link = new XElement("link");
                                 var linkData = new XCData(string.IsNullOrWhiteSpace(i.Link) ? string.Empty : i.Link);
                                 link.Add(linkData);
+
+                                var target = new XElement("target");
+                                var targetData = new XCData(string.IsNullOrWhiteSpace(i.Target) ? string.Empty : i.Target);
+                                target.Add(targetData);
 
                                 var order = new XElement("order")
                                 {
@@ -227,9 +257,11 @@ namespace TrinityText.Business.Services.Impl
                                 //order.Add(orderData);
 
                                 item.Add(path);
+                                item.Add(pathmobile);
                                 item.Add(caption);
                                 item.Add(link);
                                 item.Add(order);
+                                item.Add(target);
 
                                 elementPart.Add(item);
                             }
@@ -271,6 +303,10 @@ namespace TrinityText.Business.Services.Impl
                     case TrinityText.Business.Schema.AtomType.Checkbox:
                         var checkbox = part as CheckBoxAtom;
                         elementPart.Add(string.IsNullOrWhiteSpace(checkbox.Value) ? "false" : checkbox.Value.ToLower());
+                        break;
+
+                    case TrinityText.Business.Schema.AtomType.Separator:
+                        var separator = part as SeparatorAtom;
                         break;
 
                     case TrinityText.Business.Schema.AtomType.DateTime:
@@ -331,6 +367,10 @@ namespace TrinityText.Business.Services.Impl
 
                             rootPart.Body.Add(checkbox);
                             break;
+                        case TrinityText.Business.Schema.AtomType.Separator:
+                            var separator = clonePart as SeparatorAtom;
+                            rootPart.Body.Add(separator);
+                            break;
                         case TrinityText.Business.Schema.AtomType.DateTime:
                             var dateTime = clonePart as DateTimeAtom;
 
@@ -347,6 +387,8 @@ namespace TrinityText.Business.Services.Impl
                             imageAtom.Value = element.Element("url") != null ? element.Element("url").Value : string.Empty;
                             imageAtom.Caption = element.Element("caption") != null ? element.Element("caption").Value : string.Empty;
                             imageAtom.Link = element.Element("link") != null ? element.Element("link").Value : string.Empty;
+                            imageAtom.Target = element.Element("target") != null ? element.Element("target").Value : string.Empty;
+                            imageAtom.Mobile = element.Element("pathMobile") != null ? element.Element("pathMobile").Value : string.Empty;
                             rootPart.Body.Add(imageAtom);
                             break;
                         case TrinityText.Business.Schema.AtomType.Gallery:
@@ -354,6 +396,8 @@ namespace TrinityText.Business.Services.Impl
                             foreach (var item in element.Elements(gallery.ItemName))
                             {
                                 var path = item.Element("path") != null ? item.Element("path").Value : string.Empty;
+                                var pathMobile = item.Element("pathMobile") != null ? item.Element("pathMobile").Value : string.Empty;
+                                var target = item.Element("target") != null ? item.Element("target").Value : string.Empty;
                                 var caption = item.Element("caption") != null ? item.Element("caption").Value : string.Empty;
                                 var link = item.Element("link") != null ? item.Element("link").Value : string.Empty;
                                 var order = 0;
@@ -373,6 +417,8 @@ namespace TrinityText.Business.Services.Impl
                                     Caption = caption,
                                     Link = link,
                                     Order = order,
+                                    PathMobile = pathMobile,    
+                                    Target = target,
                                 };
                                 gallery.Items.Add(itemPart);
                             }
@@ -427,6 +473,11 @@ namespace TrinityText.Business.Services.Impl
                         case TrinityText.Business.Schema.AtomType.DateTime:
                             var dateTime = clonePart as DateTimeAtom;
                             rootPart.Body.Add(dateTime);
+                            break;
+
+                        case TrinityText.Business.Schema.AtomType.Separator:
+                            var separator = clonePart as SeparatorAtom;
+                            rootPart.Body.Add(separator);
                             break;
 
                             //case TrinityText.Business.Schema.AtomType.Blog:

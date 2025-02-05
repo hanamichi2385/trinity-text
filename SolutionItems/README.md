@@ -1,3 +1,9 @@
+#2025-02-05
+- Add SeparatorAtom support
+- Add "Extend" property in TextAtom
+- Fix "Mobile", "Target" support in ImageAtom
+- Add extra name, description support in ImageParticol 
+
 #2025-01-27
 - Fix publish error email
 - Update nuget packages

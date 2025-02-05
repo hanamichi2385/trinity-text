@@ -14,6 +14,7 @@ namespace TrinityText.Business.Schema
         public int? MaxValue { get; set; }
         public bool IsHtml { get; set; }
         public string Value { get; set; }
+        public bool Extend { get; set; }
 
         public override OperationResult Validate(string propertyName, string propertyBinding)
         {
@@ -63,7 +64,8 @@ namespace TrinityText.Business.Schema
                 IsRequired = IsRequired,
                 MinValue = MinValue,
                 MaxValue = MaxValue,
-                Description = Description
+                Description = Description,
+                Extend = Extend,
             };
         }
     }

@@ -13,6 +13,18 @@ namespace TrinityText.Business.Schema
         public List<ImageParticol> Items { get; set; }
         public string ItemName { get; set; }
 
+        public string PathName { get; set; }
+
+        public string LinkName { get; set; }
+
+        public string CaptionName { get; set; }
+
+        public string PathDescription { get; set; }
+
+        public string LinkDescription { get; set; }
+
+        public string CaptionDescription { get; set; }
+
         public override OperationResult Validate(string propertyName, string propertyBinding)
         {
             var errors = new List<ErrorMessage>();
@@ -56,7 +68,13 @@ namespace TrinityText.Business.Schema
                 Id = Id,
                 IsRequired = IsRequired,
                 ItemName = ItemName,
-                Description = Description
+                Description = Description,
+                CaptionDescription = CaptionDescription,
+                CaptionName = CaptionName,
+                LinkDescription = LinkDescription,
+                LinkName = LinkName,   
+                PathDescription = PathDescription,
+                PathName = PathName,
             };
         }
     }
