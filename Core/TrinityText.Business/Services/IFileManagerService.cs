@@ -7,7 +7,7 @@ namespace TrinityText.Business
 {
     public interface IFileManagerService
     {
-        Task<OperationResult> AddFile(string user, string website, int folderId, FileDTO dto, bool @override);
+        Task<OperationResult> AddFile(string user, string website, int folderId, FileDTO dto, bool @override, bool useOriginal);
         Task<OperationResult> CreateDefaultInstanceFolders(string website, string site, string[] languages);
         Task<OperationResult> CreateDefaultWebsiteFolders(string website);
         Task<OperationResult> DeleteFile(Guid id);

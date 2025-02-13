@@ -19,6 +19,8 @@ namespace TrinityText.Business.Schema
 
         public string Target { get; set; }
 
+        public bool UseMobile { get; set; }
+
         public override OperationResult Validate(string propertyName, string propertyBinding)
         {
             var errors = new List<ErrorMessage>();
@@ -47,7 +49,8 @@ namespace TrinityText.Business.Schema
             {
                 Id = Id,
                 IsRequired = IsRequired,
-                Description = Description
+                Description = Description,
+                UseMobile = UseMobile,
             };
         }
     }

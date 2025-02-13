@@ -105,7 +105,9 @@ namespace TrinityText.Business.Services.Impl
                             galleryAtom.PathName = pathName;
                             var pathDescription = part.Attribute("pathDescription") != null ? part.Attribute("pathDescription").Value : string.Empty;
                             galleryAtom.PathDescription = pathDescription;
-                            var target = part.Attribute("pathDescription") != null ? part.Attribute("pathDescription").Value : string.Empty;
+                            var useMobileV = false;
+                            var useMobile = part.Attribute("useMobile") != null ? bool.TryParse(part.Attribute("useMobile").Value, out useMobileV) : false;
+                            galleryAtom.UseMobile = useMobileV || useMobile;
                         }
                         pageSchema.Body.Add(galleryAtom);
                         break;
@@ -219,6 +221,12 @@ namespace TrinityText.Business.Services.Impl
                         var imageTargetData = new XCData(string.IsNullOrEmpty(image.Target) ? string.Empty : image.Target);
                         imageTarget.Add(imageTargetData);
                         elementPart.Add(imageTarget);
+
+                        var useMobile = new XElement("useMobile")
+                        {
+                            Value = image.UseMobile.ToString()
+                        };
+                        elementPart.Add(useMobile);
 
                         break;
                     case TrinityText.Business.Schema.AtomType.Gallery:
@@ -389,6 +397,12 @@ namespace TrinityText.Business.Services.Impl
                             imageAtom.Link = element.Element("link") != null ? element.Element("link").Value : string.Empty;
                             imageAtom.Target = element.Element("target") != null ? element.Element("target").Value : string.Empty;
                             imageAtom.Mobile = element.Element("pathMobile") != null ? element.Element("pathMobile").Value : string.Empty;
+                            var useMobile = false;
+                            if(element.Element("useMobile") != null)
+                            {
+                                _ = bool.TryParse(element.Element("useMobile").Value, out useMobile);
+                            }
+                            imageAtom.UseMobile =  useMobile;
                             rootPart.Body.Add(imageAtom);
                             break;
                         case TrinityText.Business.Schema.AtomType.Gallery:

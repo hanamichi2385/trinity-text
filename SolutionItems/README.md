@@ -1,3 +1,7 @@
+#2025-02-13
+- Add useOriginalFormat to AddFile interface
+- Introduce useMobile attribute in atom
+
 #2025-02-05
 - Add SeparatorAtom support
 - Add "Extend" property in TextAtom

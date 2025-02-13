@@ -25,6 +25,8 @@ namespace TrinityText.Business.Schema
 
         public string CaptionDescription { get; set; }
 
+        public bool UseMobile { get; set; }
+
         public override OperationResult Validate(string propertyName, string propertyBinding)
         {
             var errors = new List<ErrorMessage>();
@@ -75,6 +77,7 @@ namespace TrinityText.Business.Schema
                 LinkName = LinkName,   
                 PathDescription = PathDescription,
                 PathName = PathName,
+                UseMobile = UseMobile,
             };
         }
     }

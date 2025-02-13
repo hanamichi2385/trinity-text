@@ -349,7 +349,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult> AddFile(string user, string website, int folderId, FileDTO dto, bool @override)
+        public async Task<OperationResult> AddFile(string user, string website, int folderId, FileDTO dto, bool @override, bool useOriginal)
         {
             try
             {
@@ -360,10 +360,13 @@ namespace TrinityText.Business.Services.Impl
                 {
                     var content = dto.Content;
 
-                    var compressionRs = await _imageDrawingService.Compression(dto);
-                    if (compressionRs.Success)
+                    if (useOriginal == false)
                     {
-                        content = compressionRs.Value;
+                        var compressionRs = await _imageDrawingService.Compression(dto);
+                        if (compressionRs.Success)
+                        {
+                            content = compressionRs.Value;
+                        }
                     }
 
                     var thumb = default(byte[]);
