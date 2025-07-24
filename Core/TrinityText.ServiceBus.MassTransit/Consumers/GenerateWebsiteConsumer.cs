@@ -67,10 +67,10 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                             {
                                 var mail = new SendMailMessage()
                                 {
-                                    Body = $"<p>The {website} website update file (type {dataType}) is ready to download",
+                                    Body = $"<p>The {website} website update file (type {dataType}) is ready to download</p>",
                                     Id = Guid.NewGuid(),
                                     IsHtmlBody = true,
-                                    Subject = $"[CMS] Website {website} updated completed with success",
+                                    Subject = $"[CMS] Website {website} update file creation complete with success",
                                     To = [setting.Email]
                                 };
 
@@ -101,7 +101,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                     if (rs.Success)
                     {
                         var body = new StringBuilder(
-                            $"<p>Website {website} update (type {dataType}) is failed!</p><p>These are the errors recorded during the update process. The updated was interrupted so run a new website update</p>"
+                            $"<p>Website {website} update (type {dataType}) is failed!</p><p>The updated was interrupted so run a new website update.These are the errors recorded during the update process:</p>"
                           );
                         foreach (var e in generateRs.Errors)
                         {

@@ -21,8 +21,8 @@ namespace TrinityText.ServiceBus.Messages
 
         public SendMailMessage()
         {
-            To = new List<string>();
-            AttachmentFiles = new List<SerializedFile>();
+            To = [];
+            AttachmentFiles = [];
         }
 
         public string From { get; set; }

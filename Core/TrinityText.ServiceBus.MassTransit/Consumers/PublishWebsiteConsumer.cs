@@ -43,7 +43,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                 var subject = new StringBuilder();
                 if (operationsLogRs.Success)
                 {
-                    subject.Append($"[CMS] Website {website} updated with success!");
+                    subject.Append($"[CMS] Website {website} update complete with success!");
                     body.Append($"<p>The updating process (<strong>{format}</strong>) for website <strong>{website}</strong> via <strong>{ftpServer}</strong> was completed with success!</p>");
                 }
                 else
