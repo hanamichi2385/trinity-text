@@ -168,18 +168,18 @@ namespace TrinityText.Utilities.Excel
                     var types = typesRs.Value;
 
                     var em = new ExcelMapper(fileStream);
-
                     var rows = em.Fetch();
 
                     foreach (var r in rows)
                     {
-                        var key = r.KEY.Trim();
-                        var typeName = r.TYPE.ToUpper().Trim();
-                        var website = r.WEBSITE.Trim();
-                        var site = r.SITE.Trim();
-                        var country = r.COUNTRY.Trim();
-                        var lang = r.LANGUAGE.Trim();
-                        var text = r.TEXT.Trim();
+                        var rw = (IDictionary<string, object>)r;
+                        var key = GetExcelValue(r, "KEY");
+                        var typeName = GetExcelValue(r, "TYPE")?.ToUpper();
+                        var website = GetExcelValue(r, "WEBSITE");
+                        var site = GetExcelValue(r, "SITE");
+                        var country = GetExcelValue(r, "COUNTRY");
+                        var lang = GetExcelValue(r, "LANGUAGE");
+                        var text = GetExcelValue(r, "TEXT");
 
                         if (!string.IsNullOrWhiteSpace(key))
                         {
@@ -227,7 +227,12 @@ namespace TrinityText.Utilities.Excel
                 _logger.LogError(ex, "GetTextsFromStream");
             }
 
-            return list.ToArray();
+            return [.. list];
+        }
+
+        private static string GetExcelValue(IDictionary<string, object> r, string key)
+        {
+            return r.TryGetValue(key, out object v) ? v?.ToString()?.Trim() : string.Empty;
         }
 
         private static async Task<byte[]> GetStream(string filePath)
