@@ -20,7 +20,7 @@ namespace TrinityText.Utilities
             _logger = logger;
         }
 
-        public async Task<string> Upload(string tenant, string vendor, DirectoryInfo baseDirectory, string host, string username, string password, string path)
+        public Task<string> Upload(string tenant, string vendor, DirectoryInfo baseDirectory, string host, string username, string password, string path)
         {
             var operationLog = new StringBuilder();
 
@@ -75,18 +75,28 @@ namespace TrinityText.Utilities
                 {
                     operationLog.AppendLine("--innerex: " + e.InnerException.Message);
                 }
-                return operationLog.ToString();
             }
             finally
             {
                 //baseDirectory.Delete(true);
-
-                if (ftp != null && ftp.IsConnected)
+                try
                 {
-                    ftp.Disconnect();
+                    if (ftp != null && ftp.IsConnected)
+                    {
+                        ftp.Disconnect();
+                    }
+                }
+                catch(Exception ex)
+                {
+                    operationLog.AppendLine("Error during SFTP Disconnect");
+                    operationLog.AppendLine("--ex: " + ex.Message);
+                    if (ex.InnerException != null && !string.IsNullOrEmpty(ex.InnerException.Message))
+                    {
+                        operationLog.AppendLine("--innerex: " + ex.InnerException.Message);
+                    }
                 }
             }
-            return await Task.FromResult(operationLog.ToString());
+            return Task.FromResult(operationLog.ToString());
         }
 
         public Task<byte[]> GetFile(string tenant, string vendor, string file, string host, string username, string password, string path)

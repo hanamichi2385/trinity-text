@@ -75,7 +75,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"PUBLISH_WEBSITE_MESSAGE");
+                    _logger.LogError(ex, "PUBLISH_WEBSITE_MESSAGE");
                 }
             }
             else

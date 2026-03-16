@@ -2,7 +2,6 @@
 using System;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Threading.Tasks;
 using TrinityText.Business;
 
@@ -21,51 +20,85 @@ namespace TrinityText.Utilities
         {
             try
             {
-                string fileZipName = $"{destinationFilePath}\\{folder.Split('\\').Last()}.zip";
+                string folderName = Path.GetFileName(folder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
 
-                ZipFile.CreateFromDirectory(folder, fileZipName);
+                string fileZipName = Path.Combine(destinationFilePath, $"{folderName}.zip");
 
-                return await Task.FromResult(fileZipName);
+                await Task.Run(() => ZipFile.CreateFromDirectory(folder, fileZipName));
+
+                return fileZipName;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "COMPRESSFOLDER");
+                _logger.LogError(ex, "Errore durante la compressione della cartella: {Folder}", folder);
+                return string.Empty;
             }
-            return await Task.FromResult(string.Empty);
+
+            //try
+            //{
+            //    string fileZipName = $"{destinationFilePath}\\{folder.Split('\\').Last()}.zip";
+
+            //    ZipFile.CreateFromDirectory(folder, fileZipName);
+
+            //    return await Task.FromResult(fileZipName);
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logger.LogError(ex, "COMPRESSFOLDER");
+            //}
+            //return await Task.FromResult(string.Empty);
         }
 
-        public async Task DecompressFolder(string basePath, byte[] zipFileByteArray)
+        public Task DecompressFolder(string basePath, byte[] zipFileByteArray)
         {
             try
             {
-                var f = new DirectoryInfo(basePath);
-                if (f.Exists == false)
-                {
-                    f.Create();
-                }
-                var filename = $"{basePath}\\{Guid.NewGuid().ToString().Replace("-", string.Empty)}.zip";
+                Directory.CreateDirectory(basePath);
+
                 using (var stream = new MemoryStream(zipFileByteArray))
                 {
-                    using (var file = new FileStream(filename, FileMode.Create, System.IO.FileAccess.Write))
+                    using (var archive = new ZipArchive(stream))
                     {
-                        await stream.CopyToAsync(file);
-                        //byte[] bytes = new byte[stream.Length];
-                        //await stream.ReadAsync(bytes, 0, (int)stream.Length);
-                        //await file.WriteAsync(bytes, 0, bytes.Length);
-                        //stream.Close();
-                        //file.Close();
-                        file.Close();
+                        archive.ExtractToDirectory(basePath, overwriteFiles: true);
                     }
                 }
-                ZipFile.ExtractToDirectory(filename, basePath);
-
-                File.Delete(filename);
-
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "DECOMPRESSFOLDER");
+                _logger.LogError(ex, "Exception during Decompress folder: {BasePath}", basePath);
             }
+            return Task.CompletedTask;
+
+            //try
+            //{
+            //    var f = new DirectoryInfo(basePath);
+            //    if (f.Exists == false)
+            //    {
+            //        f.Create();
+            //    }
+            //    var filename = $"{basePath}\\{Guid.NewGuid().ToString().Replace("-", string.Empty)}.zip";
+            //    using (var stream = new MemoryStream(zipFileByteArray))
+            //    {
+            //        using (var file = new FileStream(filename, FileMode.Create, System.IO.FileAccess.Write))
+            //        {
+            //            await stream.CopyToAsync(file);
+            //            //byte[] bytes = new byte[stream.Length];
+            //            //await stream.ReadAsync(bytes, 0, (int)stream.Length);
+            //            //await file.WriteAsync(bytes, 0, bytes.Length);
+            //            //stream.Close();
+            //            //file.Close();
+            //            file.Close();
+            //        }
+            //    }
+            //    ZipFile.ExtractToDirectory(filename, basePath);
+
+            //    File.Delete(filename);
+
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logger.LogError(ex, "DECOMPRESSFOLDER");
+            //}
         }
     }
 }

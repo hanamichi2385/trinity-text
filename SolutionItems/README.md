@@ -1,3 +1,7 @@
+#2026-03-16
+- Fix SFTPTransferService
+- Optimize ZipCompressionService
+
 #2025-02-13
 - Add useOriginalFormat to AddFile interface
 - Introduce useMobile attribute in atom
