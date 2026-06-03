@@ -9,9 +9,9 @@ jobs:
     outputs:
      solution-name: ${{ steps.setup-solution.outputs.solution }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
         
@@ -21,7 +21,6 @@ jobs:
         SOLUTION_NAME: "Trinity.sln"
       run: |      
         echo "solution=$SOLUTION_NAME" >> $GITHUB_OUTPUT
-        echo "suffix=$suffix" >> $GITHUB_OUTPUT
     - name: Install dependencies
       env: 
         SOLUTION_NAME: ${{ steps.setup-solution.outputs.solution }}

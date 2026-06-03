@@ -1,5 +1,4 @@
 name: Release packages
-
 on:
   release:
     types: [published,edited]
@@ -15,9 +14,9 @@ jobs:
      solution-name: ${{ steps.setup-solution.outputs.solution }}
      suffix: ${{ steps.setup-solution.outputs.suffix }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
         
@@ -27,7 +26,6 @@ jobs:
         SOLUTION_NAME: "Trinity.sln"
         TYPE: ${{ github.event.release.prerelease }}
       run: |
-        #https://www.tutorialspoint.com/execute_bash_online.php
         event=$TYPE
         suffix=""
         eventmatch="true"
@@ -64,7 +62,6 @@ jobs:
        echo "version=$buildversion" >> $GITHUB_OUTPUT
        echo "publishversion=$publishversion" >> $GITHUB_OUTPUT
               
-       
     - name: Install dependencies
       env: 
         SOLUTION_NAME: ${{ steps.setup-solution.outputs.solution }}
