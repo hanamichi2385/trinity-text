@@ -327,48 +327,37 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var entity = await _fileRepository
-                    .Read(id);
-
+                var entity = await _fileRepository.Read(id);
                 if (entity != null)
                 {
-                    var allFolders = _folderRepository
+                    var folderMap = _folderRepository
                         .Repository
                         .Where(f => f.FK_WEBSITE == entity.FK_WEBSITE)
                         .Select(f => new { f.ID, f.NAME, f.FK_PARENT })
-                        .ToList();
+                        .ToDictionary(f => f.ID);
 
-                    string filePath = $"/{entity.FILENAME}";
+                    var segments = new Stack<string>();
+                    segments.Push(Uri.EscapeDataString(entity.FILENAME));
+
                     var currentFolderId = (int?)entity.FK_FOLDER;
-
-                    while (currentFolderId != null)
+                    while (currentFolderId != null && folderMap.TryGetValue(currentFolderId.Value, out var folder))
                     {
-                        var folder = allFolders.FirstOrDefault(f => f.ID == currentFolderId.Value);
-
-                        if (folder != null)
-                        {
-                            filePath = $"/{folder.NAME}{filePath}";
-                            currentFolderId = folder.FK_PARENT;
-                        }
-                        else
-                        {
-                            currentFolderId = null;
-                        }
+                        segments.Push(Uri.EscapeDataString(folder.NAME));
+                        currentFolderId = folder.FK_PARENT;
                     }
 
-                    var result = $"@{filePath}";
-
+                    var result = $"@/{string.Join("/", segments)}";
                     return OperationResult<string>.MakeSuccess(result);
                 }
                 else
                 {
-                    return OperationResult<string>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
+                    return OperationResult<string>.MakeFailure([ErrorMessage.Create("GET FILE LINK", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "GET {message}", ex.Message);
-                return OperationResult<string>.MakeFailure([ErrorMessage.Create("GET", "GENERIC_ERROR")]);
+                _logger.LogError(ex, "GET FILE LINK {message}", ex.Message);
+                return OperationResult<string>.MakeFailure([ErrorMessage.Create("GET FILE LINK", "GENERIC_ERROR")]);
             }
         }
 
