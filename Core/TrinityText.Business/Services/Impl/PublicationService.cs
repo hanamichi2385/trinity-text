@@ -120,7 +120,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult<IList<PublicationDTO>>> GetAll()
+        public Task<OperationResult<IList<PublicationDTO>>> GetAll()
         {
             try
             {
@@ -164,12 +164,12 @@ namespace TrinityText.Business.Services.Impl
                     })
                     .ToList();
 
-                return await Task.FromResult(OperationResult<IList<PublicationDTO>>.MakeSuccess(result));
+                return Task.FromResult(OperationResult<IList<PublicationDTO>>.MakeSuccess(result));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<IList<PublicationDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<IList<PublicationDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
             }
         }
 

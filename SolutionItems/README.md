@@ -1,3 +1,13 @@
+#2026-06-03
+- Security: add filename and folder name validation in FileManagerService (trim, invalid chars check)
+- Security: fix duplicate assignment of NAME in SaveFolder
+- Performance: fix N+1 query in GetFileLink (single query + in-memory traversal)
+- Performance: fix N+1 query in CheckFileToFolder (load filenames once into HashSet)
+- Performance: fix loop DELETE on text revisions in TextService.Remove
+- Performance: remove unused recursive method GetAllSubfoldersByFolder
+- Performance: remove async/await Task.FromResult overhead across all service methods (26 occurrences)
+- Refactor: fix multi-dot filename handling in CheckFileToFolder (use LastIndexOf)
+
 #2026-03-16
 - Fix SFTPTransferService
 - Optimize ZipCompressionService

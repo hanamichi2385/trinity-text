@@ -24,7 +24,7 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public async Task<OperationResult<IList<TextTypeDTO>>> GetAll()
+        public Task<OperationResult<IList<TextTypeDTO>>> GetAll()
         {
             try
             {
@@ -36,12 +36,12 @@ namespace TrinityText.Business.Services.Impl
 
                 var result = _mapper.Map<IList<TextTypeDTO>>(list);
 
-                return await Task.FromResult(OperationResult<IList<TextTypeDTO>>.MakeSuccess(result));
+                return Task.FromResult(OperationResult<IList<TextTypeDTO>>.MakeSuccess(result));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<IList<TextTypeDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<IList<TextTypeDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
             }
         }
 
@@ -70,7 +70,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult<IList<TextTypeDTO>>> GetAllByWebsite(string website)
+        public Task<OperationResult<IList<TextTypeDTO>>> GetAllByWebsite(string website)
         {
             try
             {
@@ -83,12 +83,12 @@ namespace TrinityText.Business.Services.Impl
 
                 var result = _mapper.Map<IList<TextTypeDTO>>(list);
 
-                return await Task.FromResult(OperationResult<IList<TextTypeDTO>>.MakeSuccess(result));
+                return Task.FromResult(OperationResult<IList<TextTypeDTO>>.MakeSuccess(result));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<IList<TextTypeDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<IList<TextTypeDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
             }
         }
 

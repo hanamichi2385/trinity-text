@@ -31,7 +31,7 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public async Task<OperationResult<IList<WebsiteConfigurationDTO>>> GetAll(string website)
+        public Task<OperationResult<IList<WebsiteConfigurationDTO>>> GetAll(string website)
         {
             try
             {
@@ -43,12 +43,12 @@ namespace TrinityText.Business.Services.Impl
 
                 var result = _mapper.Map<IList<WebsiteConfigurationDTO>>(list);
 
-                return await Task.FromResult(OperationResult<IList<WebsiteConfigurationDTO>>.MakeSuccess(result));
+                return Task.FromResult(OperationResult<IList<WebsiteConfigurationDTO>>.MakeSuccess(result));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<IList<WebsiteConfigurationDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<IList<WebsiteConfigurationDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
             }
         }
 

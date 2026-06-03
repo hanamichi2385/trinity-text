@@ -29,7 +29,7 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public async Task<OperationResult<PagedResult<PageDTO>>> Search(SearchPageDTO search, int page, int size)
+        public Task<OperationResult<PagedResult<PageDTO>>> Search(SearchPageDTO search, int page, int size)
         {
             try
             {
@@ -73,12 +73,12 @@ namespace TrinityText.Business.Services.Impl
                     TotalCount = totalCount,
                 };
 
-                return await Task.FromResult(OperationResult<PagedResult<PageDTO>>.MakeSuccess(result));
+                return Task.FromResult(OperationResult<PagedResult<PageDTO>>.MakeSuccess(result));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SEARCH {message}", ex.Message);
-                return OperationResult<PagedResult<PageDTO>>.MakeFailure([ErrorMessage.Create("SEARCH", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<PagedResult<PageDTO>>.MakeFailure([ErrorMessage.Create("SEARCH", "GENERIC_ERROR")]));
             }
         }
 
@@ -306,7 +306,7 @@ namespace TrinityText.Business.Services.Impl
         //        return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("EXIST", "GENERIC_ERROR") });
         //    }
         //}
-        public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>> GetPublishablePages(string website, string site, string[] languages)
+        public Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>> GetPublishablePages(string website, string site, string[] languages)
         {
             try
             {
@@ -329,18 +329,17 @@ namespace TrinityText.Business.Services.Impl
 
                 var result = list.GroupBy(c => c.Language).ToFrozenDictionary(c => c.Key, c => c.ToList().AsReadOnly());
 
-
-                return await Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeSuccess(result));
+                return Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeSuccess(result));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PUBLISH_PAGES {message}", ex.Message);
-                return OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_PAGES", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_PAGES", "GENERIC_ERROR")]));
             }
         }
 
 
-        public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>> GetPublishablePagesByWebsite(string website, Dictionary<string, string[]> sitesLanguages)
+        public Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>> GetPublishablePagesByWebsite(string website, Dictionary<string, string[]> sitesLanguages)
         {
             try
             {
@@ -380,12 +379,12 @@ namespace TrinityText.Business.Services.Impl
 
                 var result = publishablePages.ToFrozenDictionary(c => c.Key, c => c.Value);
 
-                return await Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeSuccess(result));
+                return Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeSuccess(result));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PUBLISH_PAGES {message}", ex.Message);
-                return OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_PAGES", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_PAGES", "GENERIC_ERROR")]));
             }
         }
 

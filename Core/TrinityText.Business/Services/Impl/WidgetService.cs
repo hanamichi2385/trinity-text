@@ -24,7 +24,7 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public async Task<OperationResult<PagedResult<WidgetDTO>>> Search(SearchWidgetDTO search, int page, int size)
+        public Task<OperationResult<PagedResult<WidgetDTO>>> Search(SearchWidgetDTO search, int page, int size)
         {
             try
             {
@@ -45,12 +45,12 @@ namespace TrinityText.Business.Services.Impl
                     TotalCount = totalCount,
                 };
 
-                return await Task.FromResult(OperationResult<PagedResult<WidgetDTO>>.MakeSuccess(result));
+                return Task.FromResult(OperationResult<PagedResult<WidgetDTO>>.MakeSuccess(result));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SEARCH {message}", ex.Message);
-                return OperationResult<PagedResult<WidgetDTO>>.MakeFailure([ErrorMessage.Create("SEARCH", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<PagedResult<WidgetDTO>>.MakeFailure([ErrorMessage.Create("SEARCH", "GENERIC_ERROR")]));
             }
         }
 
@@ -79,7 +79,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult<WidgetDTO>> GetByKeys(string key, string website, string site, string language)
+        public Task<OperationResult<WidgetDTO>> GetByKeys(string key, string website, string site, string language)
         {
             try
             {
@@ -101,17 +101,17 @@ namespace TrinityText.Business.Services.Impl
                 {
                     var result = _mapper.Map<WidgetDTO>(entity);
 
-                    return await Task.FromResult(OperationResult<WidgetDTO>.MakeSuccess(result));
+                    return Task.FromResult(OperationResult<WidgetDTO>.MakeSuccess(result));
                 }
                 else
                 {
-                    return OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("GET_BYKEYS", "NOT_FOUND")]);
+                    return Task.FromResult(OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("GET_BYKEYS", "NOT_FOUND")]));
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET_BYKEYS {message}", ex.Message);
-                return OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("GET_BYKEYS", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("GET_BYKEYS", "GENERIC_ERROR")]));
             }
         }
 
@@ -198,7 +198,7 @@ namespace TrinityText.Business.Services.Impl
 
         #region Private methods
 
-        private async Task<OperationResult> NotDuplicated(WidgetDTO dto)
+        private Task<OperationResult> NotDuplicated(WidgetDTO dto)
         {
             try
             {
@@ -233,12 +233,12 @@ namespace TrinityText.Business.Services.Impl
 
                 var resx = query.Count();
 
-                return await Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure([ErrorMessage.Create("DUPLICATED", "DUPLICATED")]));
+                return Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure([ErrorMessage.Create("DUPLICATED", "DUPLICATED")]));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "EXIST {message}", ex.Message);
-                return OperationResult<TextDTO>.MakeFailure([ErrorMessage.Create("EXIST", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult.MakeFailure([ErrorMessage.Create("EXIST", "GENERIC_ERROR")]));
             }
         }
 

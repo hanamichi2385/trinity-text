@@ -31,7 +31,7 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public async Task<OperationResult<IReadOnlyCollection<FolderDTO>>> GetAllFolders(string[] websites)
+        public Task<OperationResult<IReadOnlyCollection<FolderDTO>>> GetAllFolders(string[] websites)
         {
             try
             {
@@ -52,13 +52,12 @@ namespace TrinityText.Business.Services.Impl
                 var dtos = _mapper.Map<FolderDTO[]>(folders);
                 var result = GetFolders(dtos, null);
 
-                return await Task.FromResult(OperationResult<IReadOnlyCollection<FolderDTO>>.MakeSuccess(result.AsReadOnly()));
-
+                return Task.FromResult(OperationResult<IReadOnlyCollection<FolderDTO>>.MakeSuccess(result.AsReadOnly()));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<IReadOnlyCollection<FolderDTO>>.MakeFailure([ErrorMessage.Create("GET_ALL", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<IReadOnlyCollection<FolderDTO>>.MakeFailure([ErrorMessage.Create("GET_ALL", "GENERIC_ERROR")]));
             }
         }
 
@@ -97,6 +96,28 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
+        private static readonly char[] InvalidNameChars = System.IO.Path.GetInvalidFileNameChars();
+
+        private static string NormalizeFilename(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Filename cannot be empty");
+
+            name = name.Trim();
+
+            if (name.IndexOfAny(InvalidNameChars) >= 0)
+                throw new ArgumentException($"Invalid char in name: {name}");
+
+            return name;
+        }
+
+        private static string NormalizeFolderName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentException("Folder name cannot be empty");
+            return name.Trim();
+        }
+
         public async Task<OperationResult<FolderDTO>> SaveFolder(int? parentFolderId, FolderDTO dto)
         {
             try
@@ -108,9 +129,8 @@ namespace TrinityText.Business.Services.Impl
 
                     if (entity != null)
                     {
-                        entity.NAME = dto.Name;
+                        entity.NAME = NormalizeFolderName(dto.Name);
                         entity.FK_PARENT = parentFolderId;
-                        entity.NAME = dto.Name;
                         entity.NOTE = dto.Note;
                         entity.FK_WEBSITE = dto.Website;
 
@@ -127,6 +147,7 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
+                    dto.Name = NormalizeFolderName(dto.Name);
                     var entity = _mapper.Map<Folder>(dto);
                     entity.DELETABLE = true;
                     entity.FK_PARENT = parentFolderId;
@@ -225,7 +246,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult<IReadOnlyCollection<FileDTO>>> GetFilesByFolder(string website, int id, bool withFileContent, DateTime? lastUpdate)
+        public Task<OperationResult<IReadOnlyCollection<FileDTO>>> GetFilesByFolder(string website, int id, bool withFileContent, DateTime? lastUpdate)
         {
             try
             {
@@ -266,12 +287,12 @@ namespace TrinityText.Business.Services.Impl
                     result.Add(dto);
                 }
 
-                return await Task.FromResult(OperationResult<IReadOnlyCollection<FileDTO>>.MakeSuccess(result.AsReadOnly()));
+                return Task.FromResult(OperationResult<IReadOnlyCollection<FileDTO>>.MakeSuccess(result.AsReadOnly()));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET {message}", ex.Message);
-                return OperationResult<IReadOnlyCollection<FileDTO>>.MakeFailure([ErrorMessage.Create("GETFILES_BYFOLDER", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<IReadOnlyCollection<FileDTO>>.MakeFailure([ErrorMessage.Create("GETFILES_BYFOLDER", "GENERIC_ERROR")]));
             }
         }
 
@@ -311,21 +332,23 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
+                    var allFolders = _folderRepository
+                        .Repository
+                        .Where(f => f.FK_WEBSITE == entity.FK_WEBSITE)
+                        .Select(f => new { f.ID, f.NAME, f.FK_PARENT })
+                        .ToList();
+
                     string filePath = $"/{entity.FILENAME}";
-                    var currentFolderId =(int?)entity.FK_FOLDER;
+                    var currentFolderId = (int?)entity.FK_FOLDER;
 
-                    while(currentFolderId != null)
+                    while (currentFolderId != null)
                     {
-                        var folder = _folderRepository
-                            .Repository
-                            .Where(f => f.ID == currentFolderId.Value)
-                            .Select(f => new { Name = f.NAME, ParentId = f.FK_PARENT })
-                            .FirstOrDefault();
+                        var folder = allFolders.FirstOrDefault(f => f.ID == currentFolderId.Value);
 
-                        if(folder != null)
+                        if (folder != null)
                         {
-                            filePath = $"/{folder.Name}{filePath}";
-                            currentFolderId = folder.ParentId;
+                            filePath = $"/{folder.NAME}{filePath}";
+                            currentFolderId = folder.FK_PARENT;
                         }
                         else
                         {
@@ -358,6 +381,8 @@ namespace TrinityText.Business.Services.Impl
 
                 if (folder != null)
                 {
+                    dto.Filename = NormalizeFilename(dto.Filename);
+
                     var content = dto.Content;
 
                     if (useOriginal == false)
@@ -448,29 +473,27 @@ namespace TrinityText.Business.Services.Impl
 
         private string CheckFileToFolder(string filename, Folder folder)
         {
-            File sameNameFile = null;
-            var count = 0;
+            var existingNames = _fileRepository
+                .Repository
+                .Where(f => f.FK_FOLDER == folder.ID)
+                .Select(f => f.FILENAME)
+                .ToList()
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (!existingNames.Contains(filename))
+                return filename;
+
+            var lastDot = filename.LastIndexOf('.');
+            var baseName = lastDot >= 0 ? filename[..lastDot] : filename;
+            var ext = lastDot >= 0 ? filename[lastDot..] : string.Empty;
+            var count = 1;
+            string candidate;
             do
             {
-                var filenameParts = filename.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                string newFilename = $"{filenameParts[0]}({count}).{filenameParts[1]}";
+                candidate = $"{baseName}({count++}){ext}";
+            } while (existingNames.Contains(candidate));
 
-                sameNameFile = _fileRepository
-                    .Repository
-                    .Where(f => f.FK_FOLDER == folder.ID && (count == 0 ? f.FILENAME.Equals(filename) : f.FILENAME.Equals(newFilename)))
-                    .SingleOrDefault();
-
-                if (sameNameFile == null)
-                {
-                    filename = count == 0 ? filename : newFilename;
-                }
-                else
-                {
-                    count++;
-                }
-            } while (sameNameFile != null);
-
-            return filename;
+            return candidate;
         }
 
         public async Task<OperationResult<FileDTO>> PasteFile(string user, int newFolder, Guid fileId, bool move)
@@ -595,35 +618,6 @@ namespace TrinityText.Business.Services.Impl
                 return OperationResult<FolderDTO>.MakeFailure([ErrorMessage.Create("GETALLFOLDERSBYWEBSITE", "GENERIC_ERROR")]);
             }
         }
-
-        private async Task<IList<FolderDTO>> GetAllSubfoldersByFolder(int parentFolder)
-        {
-            var folders =
-                    _folderRepository
-                    .Repository
-                    .Where(f => f.FK_PARENT == parentFolder)
-                    .Select(s => new Folder()
-                    {
-                        FK_PARENT = s.FK_PARENT,
-                        FK_WEBSITE = s.FK_WEBSITE,
-                        ID = s.ID,
-                        NAME = s.NAME,
-                        NOTE = s.NOTE,
-                    })
-                    .OrderBy(s => s.NAME)
-                    .ToList();
-
-            var list = new List<FolderDTO>();
-            foreach (var f in folders)
-            {
-                var dto = _mapper.Map<FolderDTO>(f);
-                dto.SubFolders = await GetAllSubfoldersByFolder(f.ID);
-
-                list.Add(dto);
-            }
-            return list;
-        }
-
 
         public async Task<OperationResult> CreateDefaultWebsiteFolders(string website)
         {
@@ -767,7 +761,7 @@ namespace TrinityText.Business.Services.Impl
                     NAME = name,
                     NOTE = $"System folder {name}",
                     FK_WEBSITE = website,
-                    FK_PARENT = parent.ID,
+                    FK_PARENT = parentId,
                 };
 
                 var newFolder = await _folderRepository.Create(folder);
@@ -780,7 +774,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult<FileDTO>> GetFileByFullname(string fullFilename)
+        public Task<OperationResult<FileDTO>> GetFileByFullname(string fullFilename)
         {
             try
             {
@@ -808,7 +802,7 @@ namespace TrinityText.Business.Services.Impl
                             Content = file.CONTENT,
                         };
 
-                        return await Task.FromResult(OperationResult<FileDTO>.MakeSuccess(dto));
+                        return Task.FromResult(OperationResult<FileDTO>.MakeSuccess(dto));
                     }
                     else
                     {
@@ -889,13 +883,13 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GETFILEBYFULLNAME", "GENERIC_ERROR")]);
+                    return Task.FromResult(OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GETFILEBYFULLNAME", "GENERIC_ERROR")]));
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETFILEBYFULLNAME {message}", ex.Message);
-                return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GETFILEBYFULLNAME", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GETFILEBYFULLNAME", "GENERIC_ERROR")]));
             }
         }
 
@@ -928,7 +922,7 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    entity.FILENAME = newName;
+                    entity.FILENAME = NormalizeFilename(newName);
                     entity.LASTUPDATE_DATE = DateTime.Now;
                     entity.LASTUPDATE_USER = user;
 

@@ -3,10 +3,10 @@
 		<Authors>hanamichi2385</Authors>
 		<Owners>hanamichi2385</Owners>
 		<Copyright>Copyright © hanamichi2385 2022-2026</Copyright>
-		<ProductVersion>1.2.10</ProductVersion>
-		<AssemblyVersion>1.2.10</AssemblyVersion>
-		<FileVersion>1.2.10</FileVersion>
-		<Version>1.2.10</Version>
+		<ProductVersion>1.3.0</ProductVersion>
+		<AssemblyVersion>1.3.0</AssemblyVersion>
+		<FileVersion>1.3.0</FileVersion>
+		<Version>1.3.0</Version>
 		<RepositoryUrl>https://github.com/hanamichi2385/trinity-text</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>

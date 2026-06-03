@@ -49,7 +49,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult<IList<FTPServerDTO>>> GetAll()
+        public Task<OperationResult<IList<FTPServerDTO>>> GetAll()
         {
             try
             {
@@ -60,18 +60,17 @@ namespace TrinityText.Business.Services.Impl
 
                 var result = _mapper.Map<IList<FTPServerDTO>>(list);
 
-                return await Task.FromResult(OperationResult<IList<FTPServerDTO>>.MakeSuccess(result));
+                return Task.FromResult(OperationResult<IList<FTPServerDTO>>.MakeSuccess(result));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<IList<FTPServerDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<IList<FTPServerDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
             }
         }
 
-        public async Task<OperationResult<IList<FTPServerDTO>>> GetAllByCDN(int cdn)
+        public Task<OperationResult<IList<FTPServerDTO>>> GetAllByCDN(int cdn)
         {
-
             try
             {
                 var list = _ftpServerRepository
@@ -82,12 +81,12 @@ namespace TrinityText.Business.Services.Impl
 
                 var result = _mapper.Map<IList<FTPServerDTO>>(list);
 
-                return await Task.FromResult(OperationResult<IList<FTPServerDTO>>.MakeSuccess(result));
+                return Task.FromResult(OperationResult<IList<FTPServerDTO>>.MakeSuccess(result));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<IList<FTPServerDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<IList<FTPServerDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
             }
         }
 

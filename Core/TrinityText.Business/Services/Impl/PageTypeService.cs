@@ -24,7 +24,7 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public async Task<OperationResult<PageTypeDTO[]>> GetAll()
+        public Task<OperationResult<PageTypeDTO[]>> GetAll()
         {
             try
             {
@@ -35,12 +35,12 @@ namespace TrinityText.Business.Services.Impl
 
                 var result = _mapper.Map<PageTypeDTO[]>(list);
 
-                return await Task.FromResult(OperationResult<PageTypeDTO[]>.MakeSuccess(result));
+                return Task.FromResult(OperationResult<PageTypeDTO[]>.MakeSuccess(result));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<PageTypeDTO[]>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<PageTypeDTO[]>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
             }
         }
 
@@ -69,7 +69,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult<IList<PageTypeDTO>>> GetAllByUser(string[] websites, string[] visibilities)
+        public Task<OperationResult<IList<PageTypeDTO>>> GetAllByUser(string[] websites, string[] visibilities)
         {
             try
             {
@@ -81,25 +81,25 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entities != null)
                 {
-                    var filtered = entities.Where(e => 
-                        (string.IsNullOrWhiteSpace(e.VISIBILITY) || 
-                            (!string.IsNullOrWhiteSpace(e.VISIBILITY) 
+                    var filtered = entities.Where(e =>
+                        (string.IsNullOrWhiteSpace(e.VISIBILITY) ||
+                            (!string.IsNullOrWhiteSpace(e.VISIBILITY)
                                 && visibilities.Intersect(e.VISIBILITY.Split('|', StringSplitOptions.RemoveEmptyEntries),StringComparer.InvariantCultureIgnoreCase).Any())))
                         .ToList();
 
                     var result = _mapper.Map<IList<PageTypeDTO>>(filtered);
 
-                    return await Task.FromResult(OperationResult<IList<PageTypeDTO>>.MakeSuccess(result));
+                    return Task.FromResult(OperationResult<IList<PageTypeDTO>>.MakeSuccess(result));
                 }
                 else
                 {
-                    return OperationResult<IList<PageTypeDTO>>.MakeFailure([ErrorMessage.Create("GET_BYUSER", "NOT_FOUND")]);
+                    return Task.FromResult(OperationResult<IList<PageTypeDTO>>.MakeFailure([ErrorMessage.Create("GET_BYUSER", "NOT_FOUND")]));
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET {message}", ex.Message);
-                return OperationResult<IList<PageTypeDTO>>.MakeFailure([ErrorMessage.Create("GET_BYUSER", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<IList<PageTypeDTO>>.MakeFailure([ErrorMessage.Create("GET_BYUSER", "GENERIC_ERROR")]));
             }
         }
 

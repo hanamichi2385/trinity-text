@@ -454,9 +454,9 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                         .ToList()
                         .AsReadOnly();
 
-                    var xmlSchema = contentsPerType.First().PageType.Schema;
+                    var documentSchema = contentsPerType.First().PageType.Schema;
                     var fileName = contentsPerType.First().PageType.OutputFilename;
-                    var structure = _pageSchemaService.GetContentStructure(xmlSchema);
+                    var structure = _pageSchemaService.GetContentStructure(documentSchema);
                     var file = type switch
                     {
                         PublicationFormat.XML => await _pageSchemaService.CreateXmlContentsDocument(structure, contentsPerType, tenant, website, site, lang, baseUrl, cdnServer),

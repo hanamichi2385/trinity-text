@@ -24,7 +24,7 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public async Task<OperationResult<IList<CacheSettingsDTO>>> GetAll()
+        public Task<OperationResult<IList<CacheSettingsDTO>>> GetAll()
         {
             try
             {
@@ -35,12 +35,12 @@ namespace TrinityText.Business.Services.Impl
 
                 var result = _mapper.Map<IList<CacheSettingsDTO>>(list);
 
-                return await Task.FromResult(OperationResult<IList<CacheSettingsDTO>>.MakeSuccess(result));
+                return Task.FromResult(OperationResult<IList<CacheSettingsDTO>>.MakeSuccess(result));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<IList<CacheSettingsDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<IList<CacheSettingsDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
             }
         }
 
@@ -69,7 +69,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult<CacheSettingsDTO>> GetByCdnServer(int cdnServerId)
+        public Task<OperationResult<CacheSettingsDTO>> GetByCdnServer(int cdnServerId)
         {
             try
             {
@@ -82,17 +82,17 @@ namespace TrinityText.Business.Services.Impl
                 {
                     var result = _mapper.Map<CacheSettingsDTO>(entity);
 
-                    return await Task.FromResult(OperationResult<CacheSettingsDTO>.MakeSuccess(result));
+                    return Task.FromResult(OperationResult<CacheSettingsDTO>.MakeSuccess(result));
                 }
                 else
                 {
-                    return OperationResult<CacheSettingsDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
+                    return Task.FromResult(OperationResult<CacheSettingsDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]));
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return OperationResult<CacheSettingsDTO>.MakeFailure([ErrorMessage.Create("GET", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<CacheSettingsDTO>.MakeFailure([ErrorMessage.Create("GET", "GENERIC_ERROR")]));
             }
         }
 

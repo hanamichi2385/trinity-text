@@ -33,7 +33,7 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public async Task<OperationResult<PagedResult<TextDTO>>> Search(SearchTextDTO search, int page, int size)
+        public Task<OperationResult<PagedResult<TextDTO>>> Search(SearchTextDTO search, int page, int size)
         {
             try
             {
@@ -54,12 +54,12 @@ namespace TrinityText.Business.Services.Impl
                     TotalCount = totalCount,
                 };
 
-                return await Task.FromResult(OperationResult<PagedResult<TextDTO>>.MakeSuccess(result));
+                return Task.FromResult(OperationResult<PagedResult<TextDTO>>.MakeSuccess(result));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SEARCH {message}", ex.Message);
-                return OperationResult<PagedResult<TextDTO>>.MakeFailure([ErrorMessage.Create("SEARCH", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<PagedResult<TextDTO>>.MakeFailure([ErrorMessage.Create("SEARCH", "GENERIC_ERROR")]));
             }
         }
 
@@ -301,7 +301,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        private async Task<OperationResult> NotDuplicated(TextDTO dto)
+        private Task<OperationResult> NotDuplicated(TextDTO dto)
         {
             try
             {
@@ -361,16 +361,16 @@ namespace TrinityText.Business.Services.Impl
 
                 var resx = query.Count();
 
-                return await Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure([ErrorMessage.Create("DUPLICATED", "DUPLICATED")]));
+                return Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure([ErrorMessage.Create("DUPLICATED", "DUPLICATED")]));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "EXIST {message}", ex.Message);
-                return OperationResult<TextDTO>.MakeFailure([ErrorMessage.Create("EXIST", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult.MakeFailure([ErrorMessage.Create("EXIST", "GENERIC_ERROR")]));
             }
         }
 
-        public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>> GetPublishableTextsByWebsite(string website, Dictionary<string, string[]> sitesLanguages, IReadOnlyList<TextTypeDTO> textTypes)
+        public Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>> GetPublishableTextsByWebsite(string website, Dictionary<string, string[]> sitesLanguages, IReadOnlyList<TextTypeDTO> textTypes)
         {
             try
             {
@@ -422,12 +422,12 @@ namespace TrinityText.Business.Services.Impl
 
                 var rd = publishableTexts.ToFrozenDictionary(p => p.Key, p => p.Value);
 
-                return await Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>.MakeSuccess(rd));
+                return Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>.MakeSuccess(rd));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PUBLISH_TEXTS {message}", ex.Message);
-                return OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_TEXTS", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_TEXTS", "GENERIC_ERROR")]));
             }
         }
 
@@ -564,7 +564,7 @@ namespace TrinityText.Business.Services.Impl
         }
 
         //TODO: sistemare
-        public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>> GetPublishableTexts(string website, string site, string[] languages, IReadOnlyList<TextTypeDTO> textTypes)
+        public Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>> GetPublishableTexts(string website, string site, string[] languages, IReadOnlyList<TextTypeDTO> textTypes)
         {
             try
             {
@@ -736,12 +736,12 @@ namespace TrinityText.Business.Services.Impl
 
                 var rd = publishableTexts.ToFrozenDictionary(p => p.Key, p => p.Value.AsReadOnly());
 
-                return await Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>.MakeSuccess(rd));
+                return Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>.MakeSuccess(rd));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PUBLISH_TEXTS {message}", ex.Message);
-                return OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_TEXTS", "GENERIC_ERROR")]);
+                return Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_TEXTS", "GENERIC_ERROR")]));
             }
         }
 
@@ -754,15 +754,10 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var i = entity.REVISIONS.Count;
-                    while (i > 0)
+                    foreach (var revision in entity.REVISIONS.ToList())
                     {
-                        var t = entity.REVISIONS.ElementAt(i - 1);
-                        await _textRevisionRepository.Delete(t);
-
-                        i--;
+                        await _textRevisionRepository.Delete(revision);
                     }
-
 
                     await _textRepository.Delete(entity);
 
