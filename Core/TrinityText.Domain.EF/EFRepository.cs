@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace TrinityText.Domain.EF
@@ -23,6 +25,21 @@ namespace TrinityText.Domain.EF
 
             return entity.Entity;
         }
+
+        public async Task AddRangeAsync(IEnumerable<T> entities)
+        {
+            await _trinityDbContext.AddRangeAsync(entities);
+            await _trinityDbContext.SaveChangesAsync();
+        }
+
+        public Task<List<TResult>> ToListAsync<TResult>(IQueryable<TResult> source)
+            => source.ToListAsync();
+
+        public Task<TResult> FirstOrDefaultAsync<TResult>(IQueryable<TResult> source)
+            => source.FirstOrDefaultAsync();
+
+        public Task<int> ExecuteDeleteAsync<TEntity>(IQueryable<TEntity> source) where TEntity : class
+            => source.ExecuteDeleteAsync();
 
         public async Task Delete(T entityToDelete)
         {

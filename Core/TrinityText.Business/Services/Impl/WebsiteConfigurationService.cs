@@ -147,87 +147,75 @@ namespace TrinityText.Business.Services.Impl
 
         public async Task<OperationResult> AddTo(string website, IList<int> cdnIds, IList<int> textTypeIds)
         {
-            
-
             try
             {
                 await _websiteConfigurationRepository.BeginTransaction();
 
-                var cpv =
+                var cdnSet = cdnIds.ToHashSet();
+                var textTypeSet = textTypeIds.ToHashSet();
+
+                var existingCdn = await _websiteConfigurationRepository.ToListAsync(
                     _cdnServersPerWebsite
-                    .Repository
-                    .Where(f => f.FK_WEBSITE == website)
-                    .ToList();
+                        .Repository
+                        .Where(f => f.FK_WEBSITE == website));
+                var existingCdnSet = existingCdn.Select(c => c.FK_CDNSERVER).ToHashSet();
 
-                foreach (var c in cdnIds)
+                var toRemoveCdn = existingCdn
+                    .Where(c => !cdnSet.Contains(c.FK_CDNSERVER))
+                    .Select(c => c.FK_CDNSERVER)
+                    .ToArray();
+                if (toRemoveCdn.Length > 0)
                 {
-                    var cdnAdd = cpv.Where(k => k.FK_CDNSERVER == c).SingleOrDefault();
-
-                    if (cdnAdd == null)
-                    {
-                        var n = new CdnServersPerWebsite()
-                        {
-                            FK_CDNSERVER = c,
-                            FK_WEBSITE = website,
-                        };
-                        await _cdnServersPerWebsite.Create(n);
-                    }
+                    await _websiteConfigurationRepository.ExecuteDeleteAsync(
+                        _cdnServersPerWebsite.Repository
+                            .Where(c => c.FK_WEBSITE == website && toRemoveCdn.Contains(c.FK_CDNSERVER)));
                 }
 
-                var rtpv =
+                var toAddCdn = cdnSet
+                    .Except(existingCdnSet)
+                    .Select(c => new CdnServersPerWebsite { FK_CDNSERVER = c, FK_WEBSITE = website })
+                    .ToList();
+                if (toAddCdn.Count > 0)
+                {
+                    await _cdnServersPerWebsite.AddRangeAsync(toAddCdn);
+                }
+
+                var existingTT = await _websiteConfigurationRepository.ToListAsync(
                     _textTypePerWebsiteRepository
-                    .Repository
-                    .Where(f => f.FK_WEBSITE == website)
+                        .Repository
+                        .Where(f => f.FK_WEBSITE == website));
+                var existingTTSet = existingTT.Select(t => t.FK_TEXTTYPE).ToHashSet();
+
+                var toRemoveTT = existingTT
+                    .Where(t => !textTypeSet.Contains(t.FK_TEXTTYPE))
+                    .Select(t => t.FK_TEXTTYPE)
+                    .ToArray();
+                if (toRemoveTT.Length > 0)
+                {
+                    await _websiteConfigurationRepository.ExecuteDeleteAsync(
+                        _textTypePerWebsiteRepository.Repository
+                            .Where(t => t.FK_WEBSITE == website && toRemoveTT.Contains(t.FK_TEXTTYPE)));
+                }
+
+                var toAddTT = textTypeSet
+                    .Except(existingTTSet)
+                    .Select(c => new TextTypePerWebsite { FK_TEXTTYPE = c, FK_WEBSITE = website })
                     .ToList();
-
-                foreach (var c in textTypeIds)
+                if (toAddTT.Count > 0)
                 {
-                    var rtAdd = rtpv.Where(k => k.FK_TEXTTYPE == c).SingleOrDefault();
-
-                    if (rtAdd == null)
-                    {
-                        var n = new TextTypePerWebsite()
-                        {
-                            FK_TEXTTYPE =c,
-                            FK_WEBSITE = website,
-                        };
-
-                        await _textTypePerWebsiteRepository.Create(n);
-                    }
-                }
-
-                foreach (var c in cpv)
-                {
-                    var cdnRemove = cdnIds.Where(k => k == c.FK_CDNSERVER).Any();
-
-                    if (!cdnRemove)
-                    {
-                        await _cdnServersPerWebsite.Delete(c);
-                    }
-                }
-
-                foreach (var c in rtpv)
-                {
-                    var rtRemove = textTypeIds.Where(k => k == c.FK_TEXTTYPE).Any();
-
-                    if (!rtRemove)
-                    {
-                        await _textTypePerWebsiteRepository.Delete(c);
-                    }
+                    await _textTypePerWebsiteRepository.AddRangeAsync(toAddTT);
                 }
 
                 await _websiteConfigurationRepository.CommitTransaction();
 
                 return OperationResult.MakeSuccess();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 await _websiteConfigurationRepository.RollbackTransaction();
                 _logger.LogError(ex, "ADDTO {message}", ex.Message);
                 return OperationResult.MakeFailure([ErrorMessage.Create("ADDTO", "GENERIC_ERROR")]);
             }
-
-            
         }
     }
 }

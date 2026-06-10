@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace TrinityText.Domain
@@ -9,6 +10,11 @@ namespace TrinityText.Domain
         Task<T> Read(params object[] id);
         Task<T> Update(T modifiedEntity);
         Task Delete(T entityToDelete);
+        Task AddRangeAsync(IEnumerable<T> entities);
+
+        Task<List<TResult>> ToListAsync<TResult>(IQueryable<TResult> source);
+        Task<TResult> FirstOrDefaultAsync<TResult>(IQueryable<TResult> source);
+        Task<int> ExecuteDeleteAsync<TEntity>(IQueryable<TEntity> source) where TEntity : class;
 
         string ConnectionString { get; }
 

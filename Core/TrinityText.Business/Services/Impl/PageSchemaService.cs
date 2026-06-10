@@ -21,17 +21,18 @@ namespace TrinityText.Business.Services.Impl
 
         public PageSchema GetContentStructure(string xml)
         {
-            byte[] byteArray = Encoding.UTF8.GetBytes(xml);
-            using var stream = new MemoryStream(byteArray);
-            var structure = GetContentStructure(stream);
-            stream.Close();
-
-            return structure;
+            var doc = XDocument.Parse(xml);
+            return GetContentStructure(doc);
         }
 
         public PageSchema GetContentStructure(Stream stream)
         {
             var doc = XDocument.Load(stream);
+            return GetContentStructure(doc);
+        }
+
+        private PageSchema GetContentStructure(XDocument doc)
+        {
             var root = doc.Root;
 
             var id = root.Attribute("id");
@@ -336,15 +337,20 @@ namespace TrinityText.Business.Services.Impl
         public PageSchema ParseContent(Stream stream, PageSchema structure)
         {
             var doc = XDocument.Load(stream);
+            return ParseContent(doc, structure);
+        }
+
+        private PageSchema ParseContent(XDocument doc, PageSchema structure)
+        {
             var root = doc.Root;
 
             var rootPart = new PageSchema() { RootName = structure.RootName, ChildName = root.Name.LocalName };
 
+            var elementsByName = root.Elements().ToLookup(p => p.Name.LocalName);
+
             foreach (var part in structure.Body)
             {
-                var element = root.Elements().
-                    Where(p => p.Name.LocalName.Equals(part.Id))
-                    .SingleOrDefault();
+                var element = elementsByName[part.Id].SingleOrDefault();
 
                 var clonePart = part.Clone();
                 if (element != null)
@@ -526,15 +532,9 @@ namespace TrinityText.Business.Services.Impl
             {
                 return structure;
             }
-            else
-            {
-                byte[] byteArray = Encoding.UTF8.GetBytes(xml);
-                using var stream = new MemoryStream(byteArray);
-                var pageSchema = ParseContent(stream, structure);
-                stream.Close();
 
-                return pageSchema;
-            }
+            var doc = XDocument.Parse(xml);
+            return ParseContent(doc, structure);
         }
 
         public async Task<byte[]> CreateXmlContentsDocument(PageSchema structure, IList<PageDTO> contentsPerType, string tenant, string vendor, string instance, string language, string baseUrl, CdnServerDTO cdnServer)

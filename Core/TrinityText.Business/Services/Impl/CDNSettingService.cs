@@ -13,13 +13,16 @@ namespace TrinityText.Business.Services.Impl
     {
         private readonly IRepository<CdnServer> _cdnSettingsRepository;
 
+        private readonly IRepository<FtpServerPerCdnServer> _ftpServerPerCdnRepository;
+
         private readonly ILogger<CDNSettingService> _logger;
 
         private readonly IMapper _mapper;
 
-        public CDNSettingService(IRepository<CdnServer> cdnSettingsRepository, IMapper mapper, ILogger<CDNSettingService> logger)
+        public CDNSettingService(IRepository<CdnServer> cdnSettingsRepository, IRepository<FtpServerPerCdnServer> ftpServerPerCdnRepository, IMapper mapper, ILogger<CDNSettingService> logger)
         {
             _cdnSettingsRepository = cdnSettingsRepository;
+            _ftpServerPerCdnRepository = ftpServerPerCdnRepository;
             _mapper = mapper;
             _logger = logger;
         }
@@ -118,6 +121,8 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
+                var desiredSet = ftpList.ToHashSet();
+
                 if (dto.Id.HasValue)
                 {
                     var entity = await _cdnSettingsRepository
@@ -129,28 +134,27 @@ namespace TrinityText.Business.Services.Impl
                         entity.NAME = dto.Name;
                         entity.TYPE = (int)dto.Type;
 
-                        var cpv =
-                            entity.FTPSERVERS
+                        var cdnId = entity.ID;
+
+                        var existingSet = await _cdnSettingsRepository.ToListAsync(
+                            _ftpServerPerCdnRepository
+                                .Repository
+                                .Where(x => x.FK_CDNSERVER == cdnId)
+                                .Select(x => x.FK_FTPSERVER));
+                        var existingHash = existingSet.ToHashSet();
+
+                        await _cdnSettingsRepository.ExecuteDeleteAsync(
+                            _ftpServerPerCdnRepository
+                                .Repository
+                                .Where(x => x.FK_CDNSERVER == cdnId && !desiredSet.Contains(x.FK_FTPSERVER)));
+
+                        var toAdd = desiredSet
+                            .Except(existingHash)
+                            .Select(id => new FtpServerPerCdnServer { FK_CDNSERVER = cdnId, FK_FTPSERVER = id })
                             .ToList();
-
-                        foreach (var c in cpv)
+                        if (toAdd.Count > 0)
                         {
-                            var cdnRemove = ftpList.Where(k => k == c.FK_FTPSERVER).Any();
-
-                            if (!cdnRemove)
-                            {
-                                entity.FTPSERVERS.Remove(c);
-                            }
-                        }
-
-                        foreach (var c in ftpList)
-                        {
-                            var fc = new FtpServerPerCdnServer()
-                            {
-                                FK_FTPSERVER = c,
-                                FK_CDNSERVER = entity.ID,
-                            };
-                            entity.FTPSERVERS.Add(fc);
+                            await _ftpServerPerCdnRepository.AddRangeAsync(toAdd);
                         }
 
                         var result = await _cdnSettingsRepository.Update(entity);
@@ -167,7 +171,7 @@ namespace TrinityText.Business.Services.Impl
                 else
                 {
                     var entity = _mapper.Map<CdnServer>(dto);
-                    foreach (var c in ftpList)
+                    foreach (var c in desiredSet)
                     {
                         var fc = new FtpServerPerCdnServer()
                         {

@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using NHibernate.Linq;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace TrinityText.Domain.NH
@@ -42,6 +44,24 @@ namespace TrinityText.Domain.NH
         {
             await _dataContext.CurrentSession.DeleteAsync(entityToDelete);
         }
+
+        public async Task AddRangeAsync(IEnumerable<T> entities)
+        {
+            foreach (var entity in entities)
+            {
+                await _dataContext.CurrentSession.SaveAsync(entity);
+            }
+            await _dataContext.CurrentSession.FlushAsync();
+        }
+
+        public Task<List<TResult>> ToListAsync<TResult>(IQueryable<TResult> source)
+            => LinqExtensionMethods.ToListAsync(source);
+
+        public Task<TResult> FirstOrDefaultAsync<TResult>(IQueryable<TResult> source)
+            => LinqExtensionMethods.FirstOrDefaultAsync(source);
+
+        public Task<int> ExecuteDeleteAsync<TEntity>(IQueryable<TEntity> source) where TEntity : class
+            => DmlExtensionMethods.DeleteAsync(source);
 
         public async Task<T> Read(params object[] id)
         {

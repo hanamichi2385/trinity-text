@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -10,6 +9,8 @@ namespace TrinityText.Business
     {
         private readonly IFileManagerService _fileManagerService;
         private readonly IWidgetService _widgetService;
+
+        private static readonly Regex WidgetRegex = new(@"@\[WIDGET\((.+?)\)\]", RegexOptions.Compiled);
 
         public WidgetUtilities(IFileManagerService fileManagerService, IWidgetService widgetService)
         {
@@ -26,7 +27,10 @@ namespace TrinityText.Business
 
         private static string ReplacePlaceholder(string text, string tenant, string website, string site, string language)
         {
-            var newText = text
+            if (string.IsNullOrEmpty(text) || text.IndexOf("@[", StringComparison.Ordinal) < 0)
+                return text;
+
+            return text
                 .Replace("@[TENANT]", tenant, StringComparison.InvariantCultureIgnoreCase)
                 .Replace("@[WEBSITE]", website, StringComparison.InvariantCultureIgnoreCase)
                 .Replace("@[PRICELIST]", site, StringComparison.InvariantCultureIgnoreCase)
@@ -35,45 +39,48 @@ namespace TrinityText.Business
                 .Replace("@[SITE]", site, StringComparison.InvariantCultureIgnoreCase)
                 .Replace("@[LANG]", language, StringComparison.InvariantCultureIgnoreCase)
                 .Replace("@[DATE]", DateTime.Now.ToShortDateString(), StringComparison.InvariantCultureIgnoreCase);
-
-            return newText;
         }
 
         public async Task<string> ReplaceWidget(string text, string site, string website, string tenant, string language)
         {
             var newText = text;
+            var resolved = new Dictionary<string, string>(StringComparer.Ordinal);
+            const int maxNestedPasses = 10;
+            var pass = 0;
 
-            var pattern = @$"(\@\[" + Regex.Escape("WIDGET") + @"\()(.+?)(\)\])";
-            var reg = new Regex(pattern);
-
-            while (newText.Contains("@[WIDGET("))
+            while (pass++ < maxNestedPasses && newText.IndexOf("@[WIDGET(", StringComparison.Ordinal) >= 0)
             {
-                var matches = reg.Matches(newText)
-                    .OfType<Match>()
-                    .Select(m => m.Value)
-                    .Distinct()
-                    .ToArray();
-
-                foreach (var m in matches)
+                var matches = WidgetRegex.Matches(newText);
+                if (matches.Count == 0)
                 {
-                    var key = m.Substring(9).Replace(")]", string.Empty);
+                    break;
+                }
 
+                var newKeys = new List<string>();
+                foreach (Match m in matches)
+                {
+                    var key = m.Groups[1].Value;
+                    if (!resolved.ContainsKey(key))
+                    {
+                        resolved[key] = null;
+                        newKeys.Add(key);
+                    }
+                }
+
+                foreach (var key in newKeys)
+                {
                     var widgetRs = await _widgetService.GetByKeys(key, website, site, language);
+                    resolved[key] = widgetRs.Success
+                        ? (widgetRs.Value?.Content ?? string.Empty)
+                        : key;
+                }
 
-                    if (widgetRs.Success)
-                    {
-                        var widget = widgetRs.Value;
-                        var wContenuto = widget?.Content ?? string.Empty;
-                        //if (!string.IsNullOrWhiteSpace(widget.Content))
-                        //{
-                        //    wContenuto = ReplacePlaceholder(tenant, website, site, language, widget.Content);
-                        //}
-                        newText = newText.Replace($"@[WIDGET({key})]", wContenuto);
-                    }
-                    else
-                    {
-                        newText = newText.Replace($"@[WIDGET({key})]", key);
-                    }
+                var previous = newText;
+                newText = WidgetRegex.Replace(newText, m => resolved[m.Groups[1].Value] ?? string.Empty);
+
+                if (string.Equals(previous, newText, StringComparison.Ordinal))
+                {
+                    break;
                 }
             }
 
@@ -85,42 +92,38 @@ namespace TrinityText.Business
             var newXml = xml;
             if (!string.IsNullOrWhiteSpace(baseUrl))
             {
-                var pattern = @"(""?)(\@\/" + Regex.Escape(website) + @"\/)([^\""\s\t\]]+)(""?)";
+                var linkRegex = new Regex(@"""?(@/" + Regex.Escape(website) + @"/)([^""\s\t\]]+)""?", RegexOptions.Compiled);
 
-                var reg = new Regex(pattern);
-                var matches = reg.Matches(xml)
-                    .OfType<Match>()
-                    .Select(v => v.Value)
-                    .Distinct()
-                    .ToArray();
-
-                foreach (var m in matches)
+                var urlSet = new HashSet<string>(StringComparer.Ordinal);
+                foreach (Match m in linkRegex.Matches(xml))
                 {
-                    var url = m.ToString().Replace("\"", string.Empty);
+                    urlSet.Add(m.Value.Replace("\"", string.Empty));
+                }
 
-                    var fileRs = await _fileManagerService.GetFileByFullname(url);
-
-                    if (fileRs.Success)
+                if (urlSet.Count > 0)
+                {
+                    var resolved = new Dictionary<string, string>(urlSet.Count, StringComparer.Ordinal);
+                    foreach (var url in urlSet)
                     {
-                        var file = fileRs.Value;
-                        var proxy = $"{baseUrl}/Renderize.ashx?id={file.Id}";
-                        newXml = newXml.Replace(url, proxy);
+                        var fileRs = await _fileManagerService.GetFileByFullname(url);
+                        if (!fileRs.Success)
+                        {
+                            throw new KeyNotFoundException($"Impossibile risolvere il link \"{url}\". Inserire il file mancante sul File Manager e/o verificare che sia nel percorso indicato.");
+                        }
+                        resolved[url] = $"{baseUrl}/Renderize.ashx?id={fileRs.Value.Id}";
                     }
-                    else
+
+                    foreach (var kv in resolved)
                     {
-                        throw new KeyNotFoundException($"Impossibile risolvere il link \"{url}\". Inserire il file mancante sul File Manager e/o verificare che sia nel percorso indicato.");
+                        newXml = newXml.Replace(kv.Key, kv.Value);
                     }
                 }
             }
 
-            var vendorName = website;
             var oldPath = $"@/{website}";
-
-            var newPath = $"/Media/{tenant}/{website}";
-            if (cdnServer != null && !string.IsNullOrWhiteSpace(cdnServer.BaseUrl))
-            {
-                newPath = $"{cdnServer.BaseUrl}/Media/{tenant}/{website}";
-            }
+            var newPath = cdnServer != null && !string.IsNullOrWhiteSpace(cdnServer.BaseUrl)
+                ? $"{cdnServer.BaseUrl}/Media/{tenant}/{website}"
+                : $"/Media/{tenant}/{website}";
 
             newXml = newXml.Replace(oldPath, newPath);
             return newXml;

@@ -339,38 +339,42 @@ namespace TrinityText.Business.Services.Impl
         }
 
 
-        public Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>> GetPublishablePagesByWebsite(string website, Dictionary<string, string[]> sitesLanguages)
+        public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>> GetPublishablePagesByWebsite(string website, Dictionary<string, string[]> sitesLanguages)
         {
             try
             {
                 var allLanguages = sitesLanguages.Values.SelectMany(v => v).Distinct().ToArray();
+                var allSites = sitesLanguages.Keys.ToArray();
 
-                var pagessGlobalByWebsiteList = _pageRepository
-                    .Repository
-                    .Where(t => allLanguages.Contains(t.FK_LANGUAGE) &&
-                        t.ACTIVE == true &&
-                        (t.FK_WEBSITE == null || (t.FK_WEBSITE == website && string.IsNullOrWhiteSpace(t.FK_PRICELIST))))
-                    .ToList();
+                var pagesGlobalList = await _pageRepository.ToListAsync(
+                    _pageRepository
+                        .Repository
+                        .Where(t => allLanguages.Contains(t.FK_LANGUAGE) &&
+                            t.ACTIVE == true &&
+                            (t.FK_WEBSITE == null || (t.FK_WEBSITE == website && string.IsNullOrWhiteSpace(t.FK_PRICELIST)))));
 
-                var pagesGlobalByWebsite = _mapper.Map<IList<PageDTO>>(pagessGlobalByWebsiteList).AsReadOnly();
+                var pagesBySiteList = await _pageRepository.ToListAsync(
+                    _pageRepository
+                        .Repository
+                        .Where(t => allLanguages.Contains(t.FK_LANGUAGE) &&
+                            t.ACTIVE == true &&
+                            t.FK_WEBSITE == website &&
+                            allSites.Contains(t.FK_PRICELIST)));
 
-                var publishablePages = new Dictionary<string, ReadOnlyCollection<PageDTO>>();
+                var pagesGlobalDto = _mapper.Map<IList<PageDTO>>(pagesGlobalList).AsReadOnly();
+                var pagesBySiteDto = _mapper.Map<IList<PageDTO>>(pagesBySiteList);
+                var pagesBySiteLookup = pagesBySiteDto.ToLookup(p => p.Site, StringComparer.OrdinalIgnoreCase);
+
+                var publishablePages = new Dictionary<string, ReadOnlyCollection<PageDTO>>(sitesLanguages.Count);
                 foreach (var sl in sitesLanguages)
                 {
                     var site = sl.Key;
                     var supportedLanguages = sl.Value;
-                    var pagesBySiteList = _pageRepository
-                        .Repository
-                        .Where(t => supportedLanguages.Contains(t.FK_LANGUAGE) &&
-                            t.ACTIVE == true &&
-                            t.FK_WEBSITE == website && t.FK_PRICELIST == site)
-                        .ToList();
+                    var langSet = supportedLanguages.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                    var pagesBySite = _mapper.Map<IList<PageDTO>>(pagesBySiteList);
-
-                    var allpagesBySite = pagesGlobalByWebsite
-                            .Where(p => supportedLanguages.Contains(p.Language))
-                            .Union(pagesBySite)
+                    var allpagesBySite = pagesGlobalDto
+                            .Where(p => langSet.Contains(p.Language))
+                            .Union(pagesBySiteLookup[site])
                             .ToList()
                             .AsReadOnly();
 
@@ -379,12 +383,12 @@ namespace TrinityText.Business.Services.Impl
 
                 var result = publishablePages.ToFrozenDictionary(c => c.Key, c => c.Value);
 
-                return Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeSuccess(result));
+                return OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PUBLISH_PAGES {message}", ex.Message);
-                return Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_PAGES", "GENERIC_ERROR")]));
+                return OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_PAGES", "GENERIC_ERROR")]);
             }
         }
 

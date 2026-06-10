@@ -150,9 +150,9 @@ namespace TrinityText.Utilities
 
                 var filesToUpload = directory.GetFiles();
 
-                if (filesToUpload?.Length > 0)
+                if (filesToUpload.Length > 0)
                 {
-                    ftp.UploadFiles(directory.GetFiles(), currentDirectory, FtpRemoteExists.Overwrite, createRemoteDir: true, verifyOptions: FtpVerify.Retry, errorHandling: FtpError.Throw);
+                    ftp.UploadFiles(filesToUpload, currentDirectory, FtpRemoteExists.Overwrite, createRemoteDir: true, verifyOptions: FtpVerify.Retry, errorHandling: FtpError.Throw);
                 }
 
             }
@@ -219,12 +219,10 @@ namespace TrinityText.Utilities
 
                 if (ftp.FileExists(file))
                 {
-                    using (Stream stream = ftp.OpenRead(file))
-                    {
-                        byte[] b = new byte[(int)stream.Length];
-                        await stream.ReadAsync(b, 0, (int)stream.Length);
-                        return b;
-                    }
+                    using var stream = ftp.OpenRead(file);
+                    using var ms = new MemoryStream();
+                    await stream.CopyToAsync(ms);
+                    return ms.ToArray();
                 }
             }
             catch (Exception e)

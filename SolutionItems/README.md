@@ -1,3 +1,16 @@
+﻿#2026-06-10
+- New: provider-agnostic `IRepository<T>` (EF Core + NHibernate) with async query and bulk operations
+- Performance: eliminate N+1 queries in publishing, import, and website configuration flows
+- Performance: bulk `ExecuteDeleteAsync` for revisions and join tables
+- Performance: O(n²) → O(n) in text reduction via `ToLookup` indexing
+- Performance: direct DTO projection in file listing (optional blob columns)
+- Performance: widget resolution with compiled regex and per-call batched lookups
+- Performance: XML parsing via `XDocument.Parse`, element lookup via `ToLookup`
+- Performance: async blob streaming in publications (`GetFieldValueAsync`, sequential access)
+- Performance: stream-based FTP/SFTP transfers, deduplicated file enumeration
+- Fix: duplicate FTP entries on CDN update
+- Fix: SkiaSharp native resources properly disposed; correct output buffer
+
 #2026-06-03
 - Security: add filename and folder name validation in FileManagerService (trim, invalid chars check)
 - Security: fix duplicate assignment of NAME in SaveFolder

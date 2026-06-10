@@ -78,23 +78,16 @@ namespace TrinityText.Business.Services.Impl
 
         private async Task<byte[]> GetZipContent(int id)
         {
-            var bytes = default(byte[]);
-            using (var sqlConnection = new SqlConnection(_publicationRepository.ConnectionString))
+            byte[] bytes = null;
+            using var sqlConnection = new SqlConnection(_publicationRepository.ConnectionString);
+            await sqlConnection.OpenAsync();
+            using var sqlCommand = new SqlCommand(@"SELECT [ZIP_FILE] FROM [TRINITY].[dbo].[Generazioni] WHERE ID = @id", sqlConnection);
+            sqlCommand.Parameters.Add(new SqlParameter("id", id));
+
+            using var reader = await sqlCommand.ExecuteReaderAsync(System.Data.CommandBehavior.SequentialAccess);
+            if (await reader.ReadAsync() && !await reader.IsDBNullAsync(0))
             {
-                await sqlConnection.OpenAsync();
-                using (var sqlCommand = new SqlCommand(@"SELECT [ZIP_FILE] FROM [TRINITY].[dbo].[Generazioni] WHERE ID = @id", sqlConnection))
-                {
-                    sqlCommand.Parameters.Add(new SqlParameter("id", id));
-                    
-
-                    var reader = await sqlCommand.ExecuteReaderAsync();
-
-                    if(reader.Read())
-                    {
-                        bytes = (byte[])reader["ZIP_FILE"];
-                    }
-                }
-                await sqlConnection.CloseAsync();
+                bytes = await reader.GetFieldValueAsync<byte[]>(0);
             }
             return bytes;
         }
@@ -105,16 +98,13 @@ namespace TrinityText.Business.Services.Impl
             {
                 using var sqlConnection = new SqlConnection(_publicationRepository.ConnectionString);
                 await sqlConnection.OpenAsync();
-                using (var sqlCommand = new SqlCommand(@"UPDATE [TRINITY].[dbo].[Generazioni] SET [ZIP_FILE] = @zip  WHERE ID = @id", sqlConnection))
-                {
-                    sqlCommand.Parameters.Add(new SqlParameter("id", id));
-                    sqlCommand.Parameters.Add(new SqlParameter("zip", zipFile));
+                using var sqlCommand = new SqlCommand(@"UPDATE [TRINITY].[dbo].[Generazioni] SET [ZIP_FILE] = @zip  WHERE ID = @id", sqlConnection);
+                sqlCommand.Parameters.Add(new SqlParameter("id", id));
+                sqlCommand.Parameters.Add(new SqlParameter("zip", zipFile));
 
-                    var result = await sqlCommand.ExecuteNonQueryAsync();
-                }
-                await sqlConnection.CloseAsync();
+                await sqlCommand.ExecuteNonQueryAsync();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "UPDATE_ZIP_CONTENT {id} : {message}", id, ex.Message);
             }

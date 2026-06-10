@@ -246,7 +246,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public Task<OperationResult<IReadOnlyCollection<FileDTO>>> GetFilesByFolder(string website, int id, bool withFileContent, DateTime? lastUpdate)
+        public async Task<OperationResult<IReadOnlyCollection<FileDTO>>> GetFilesByFolder(string website, int id, bool withFileContent, DateTime? lastUpdate)
         {
             try
             {
@@ -256,43 +256,31 @@ namespace TrinityText.Business.Services.Impl
 
                 if (lastUpdate.HasValue)
                 {
-                    query = query
-                        .Where(f => f.LASTUPDATE_DATE.Date >= lastUpdate.Value.Date);
+                    var fromDate = lastUpdate.Value.Date;
+                    query = query.Where(f => f.LASTUPDATE_DATE >= fromDate);
                 }
 
-                var list =
+                var list = await _fileRepository.ToListAsync(
                     query
-                    .Select(f => new File()
-                    {
-                        CONTENT = withFileContent ? f.CONTENT : null,
-                        CREATION_DATE = f.CREATION_DATE,
-                        CREATION_USER = f.CREATION_USER,
-                        FILENAME = f.FILENAME,
-                        FK_FOLDER = f.FK_FOLDER,
-                        FK_WEBSITE = f.FK_WEBSITE,
-                        THUMBNAIL = f.THUMBNAIL,
-                        ID = f.ID,
-                        LASTUPDATE_DATE = f.LASTUPDATE_DATE,
-                        LASTUPDATE_USER = f.LASTUPDATE_USER,
-                        //FOLDER = f.FOLDER,
-                    })
-                    .OrderBy(s => s.FILENAME)
-                    .ToList();
+                        .OrderBy(f => f.FILENAME)
+                        .Select(f => new FileDTO
+                        {
+                            Id = f.ID,
+                            Filename = f.FILENAME,
+                            CreationDate = f.CREATION_DATE,
+                            CreationUser = f.CREATION_USER,
+                            LastUpdate = f.LASTUPDATE_DATE,
+                            LastUpdateUser = f.LASTUPDATE_USER,
+                            Content = withFileContent ? f.CONTENT : null,
+                            HasThumbnail = f.THUMBNAIL != null,
+                        }));
 
-                var result = new List<FileDTO>();
-                foreach (var f in list)
-                {
-                    var dto = _mapper.Map<FileDTO>(f);
-                    dto.Content = f.CONTENT;
-                    result.Add(dto);
-                }
-
-                return Task.FromResult(OperationResult<IReadOnlyCollection<FileDTO>>.MakeSuccess(result.AsReadOnly()));
+                return OperationResult<IReadOnlyCollection<FileDTO>>.MakeSuccess(list.AsReadOnly());
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET {message}", ex.Message);
-                return Task.FromResult(OperationResult<IReadOnlyCollection<FileDTO>>.MakeFailure([ErrorMessage.Create("GETFILES_BYFOLDER", "GENERIC_ERROR")]));
+                return OperationResult<IReadOnlyCollection<FileDTO>>.MakeFailure([ErrorMessage.Create("GETFILES_BYFOLDER", "GENERIC_ERROR")]);
             }
         }
 
@@ -648,10 +636,10 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var primaryFolder = _folderRepository
-                    .Repository
-                    .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == null && f.NAME == website)
-                    .FirstOrDefault();
+                var primaryFolder = await _fileRepository.FirstOrDefaultAsync(
+                    _folderRepository
+                        .Repository
+                        .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == null && f.NAME == website));
 
                 if (primaryFolder == null)
                 {
@@ -662,47 +650,40 @@ namespace TrinityText.Business.Services.Impl
                         return defaultRs;
                     }
 
-                    primaryFolder = _folderRepository
-                        .Repository
-                        .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == null && f.NAME == website)
-                        .FirstOrDefault();
+                    primaryFolder = await _fileRepository.FirstOrDefaultAsync(
+                        _folderRepository
+                            .Repository
+                            .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == null && f.NAME == website));
                 }
-
 
                 await _folderRepository.BeginTransaction();
 
-                var files =
+                var primaryId = primaryFolder.ID;
+                var directChildren = await _fileRepository.ToListAsync(
                     _folderRepository
                         .Repository
-                        .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == primaryFolder.ID && f.NAME.Equals("Files", StringComparison.InvariantCultureIgnoreCase))
-                        .SingleOrDefault();
-                files ??= await CreateFolderByName(website, "Files", primaryFolder);
+                        .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == primaryId));
 
+                var files = directChildren.FirstOrDefault(f => string.Equals(f.NAME, "Files", StringComparison.OrdinalIgnoreCase))
+                            ?? await CreateFolderByName(website, "Files", primaryFolder);
 
+                var images = directChildren.FirstOrDefault(f => string.Equals(f.NAME, "Images", StringComparison.OrdinalIgnoreCase))
+                             ?? await CreateFolderByName(website, "Images", primaryFolder);
 
-                var images =
+                var subIds = new[] { files.ID, images.ID };
+                var instanceFolders = await _fileRepository.ToListAsync(
                     _folderRepository
                         .Repository
-                        .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == primaryFolder.ID && f.NAME.Equals("Images", StringComparison.InvariantCultureIgnoreCase))
-                        .SingleOrDefault();
-                images ??= await CreateFolderByName(website, "Images", primaryFolder);
+                        .Where(c => c.FK_WEBSITE == website
+                            && c.FK_PARENT != null
+                            && subIds.Contains(c.FK_PARENT.Value)
+                            && c.NAME == site));
 
-                var instanceFileFolder = 
-                    _folderRepository
-                        .Repository
-                        .Where(c => c.FK_WEBSITE == website && c.FK_PARENT != null && c.FK_PARENT == files.ID && c.NAME.Equals(site, StringComparison.InvariantCultureIgnoreCase))
-                        .SingleOrDefault();
+                var instanceFileFolder = instanceFolders.FirstOrDefault(f => f.FK_PARENT == files.ID);
+                var instanceImageFolder = instanceFolders.FirstOrDefault(f => f.FK_PARENT == images.ID);
 
                 await CreateLanguagesFolder(website, site, instanceFileFolder, files, languages);
-
-                var instanceImageFolder = 
-                    _folderRepository
-                        .Repository
-                   .Where(c => c.FK_WEBSITE == website && c.FK_PARENT != null && c.FK_PARENT == images.ID && c.NAME.Equals(site, StringComparison.InvariantCultureIgnoreCase))
-                   .SingleOrDefault();
-
                 await CreateLanguagesFolder(website, site, instanceImageFolder, images, languages);
-
 
                 await _folderRepository.CommitTransaction();
 
