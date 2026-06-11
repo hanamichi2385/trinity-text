@@ -8,7 +8,7 @@
 - Performance: `JRaw` in `CreateJsonContentsDocument` (no double-encoding, no dynamic dispatch)
 - Performance: `ExcelMapperService` single-sheet exports via `MemoryStream` (no temp file)
 - Performance: retry with exponential backoff in `GenerateWebsiteConsumer` (was busy retry, no delay)
-- Fix: `Sort` extension null branch on first ordering (NullReferenceException latent)
+- Refactor: `Sort` extension — explicit `Unordered` handling, safer casts; preserves `IQueryable.Expression.Type` check (EF Core concrete queryable implements `IOrderedQueryable<T>` even before sorting, so runtime-type checks are unsafe)
 - Fix: `SerializedFile` async factory (`Path.GetFileName`, `ReadAllBytesAsync`)
 
 #2026-06-10

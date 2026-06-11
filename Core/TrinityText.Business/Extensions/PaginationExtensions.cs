@@ -19,8 +19,15 @@ namespace TrinityText.Business
                 return list;
             }
 
-            if (list is IOrderedQueryable<X> ordered)
+            // Check the LINQ expression's declared type, not the runtime type:
+            // EF Core's queryable concrete class implements IOrderedQueryable<T> even before an OrderBy is applied,
+            // so `list is IOrderedQueryable<X>` would always be true. The expression type instead correctly
+            // becomes IOrderedQueryable<X> only after OrderBy/OrderByDescending.
+            bool alreadyOrdered = typeof(IOrderedQueryable<X>).IsAssignableFrom(list.Expression.Type);
+
+            if (alreadyOrdered)
             {
+                var ordered = (IOrderedQueryable<X>)list;
                 return sorting.Value == SortingType.Ascending
                     ? ordered.ThenBy(field)
                     : ordered.ThenByDescending(field);
