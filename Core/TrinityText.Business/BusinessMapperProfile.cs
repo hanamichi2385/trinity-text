@@ -157,14 +157,13 @@ namespace TrinityText.Business
                 ;
         }
 
-        private TextRevision GetTextRevision(ICollection<TextRevision> revisions)
+        private static TextRevision GetTextRevision(ICollection<TextRevision> revisions)
         {
-            var revision =
-               revisions
-               .OrderByDescending(rev => rev.CREATION_DATE)
-               .FirstOrDefault();
-
-            return revision;
+            if (revisions == null || revisions.Count == 0)
+            {
+                return null;
+            }
+            return revisions.MaxBy(rev => rev.CREATION_DATE);
         }
     }
 }

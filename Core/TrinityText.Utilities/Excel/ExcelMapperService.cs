@@ -37,18 +37,7 @@ namespace TrinityText.Utilities.Excel
                     CONTENT = l.Content
                 }).ToArray();
 
-            var fileName = "pages";
-            var filePath = GetFilePath(fileName);
-
-            var em = new ExcelMapper()
-            {
-                HeaderRow = true,
-                CreateMissingHeaders = true,
-            };
-            await em.SaveAsync(filePath, pages, fileName, xlsx: true);
-
-
-            return await GetStream(filePath);
+            return await SaveToBytes(pages, "pages");
         }
 
         public async Task<byte[]> GetExcelFileStream(WidgetDTO[] list)
@@ -63,18 +52,7 @@ namespace TrinityText.Utilities.Excel
                     CONTENT = l.Content
                 }).ToArray();
 
-            var fileName = "widgets";
-            var filePath = GetFilePath(fileName);
-
-            var em = new ExcelMapper()
-            {
-                HeaderRow = true,
-                CreateMissingHeaders = true,
-            };
-            await em.SaveAsync(filePath, widgets, fileName, xlsx: true);
-
-
-            return await GetStream(filePath);
+            return await SaveToBytes(widgets, "widgets");
         }
 
         public async Task<byte[]> GetExcelFileStream(TextDTO[] list)
@@ -91,18 +69,19 @@ namespace TrinityText.Utilities.Excel
                     TEXT = l.TextRevision?.Content ?? "[NULL]"
                 }).ToArray();
 
-            var fileName = "texts";
-            var filePath = GetFilePath(fileName);
+            return await SaveToBytes(texts, "texts");
+        }
 
+        private static async Task<byte[]> SaveToBytes<T>(T[] rows, string sheetName) where T : class
+        {
             var em = new ExcelMapper()
             {
                 HeaderRow = true,
                 CreateMissingHeaders = true,
             };
-            await em.SaveAsync(filePath, texts, fileName, xlsx: true);
-
-
-            return await GetStream(filePath);
+            using var ms = new MemoryStream();
+            await em.SaveAsync(ms, rows, sheetName, xlsx: true);
+            return ms.ToArray();
         }
 
         public async Task<byte[]> GetExcelFileStream(IDictionary<KeyValuePair<string, string>, TextDTO[]> textsForSiteLang)

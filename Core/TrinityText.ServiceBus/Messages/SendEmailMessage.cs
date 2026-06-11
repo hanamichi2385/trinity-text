@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Threading.Tasks;
 using TrinityText.ServiceBus.Messages.V1_0;
 
 namespace TrinityText.ServiceBus.Messages
@@ -44,19 +44,17 @@ namespace TrinityText.ServiceBus.Messages
         {
         }
 
-        public SerializedFile(string fullFilenamePath)
-        {
-            string name = fullFilenamePath.Split('\\').Last();
-            byte[] bytes = File.ReadAllBytes(fullFilenamePath);
-
-            this.FileName = name;
-            this.FileContent = bytes;
-        }
-
         public SerializedFile(string filename, byte[] content)
         {
             this.FileName = filename;
             this.FileContent = content;
+        }
+
+        public static async Task<SerializedFile> FromFileAsync(string fullFilenamePath)
+        {
+            var name = Path.GetFileName(fullFilenamePath);
+            var bytes = await File.ReadAllBytesAsync(fullFilenamePath);
+            return new SerializedFile(name, bytes);
         }
 
         public string FileName { get; set; }

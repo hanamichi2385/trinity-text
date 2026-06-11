@@ -14,33 +14,21 @@ namespace TrinityText.Business
         }
         public static IQueryable<X> Sort<X, Y>(this IQueryable<X> list, System.Linq.Expressions.Expression<Func<X, Y>> field, SortingType? sorting)
         {
-            if (sorting.HasValue)
+            if (!sorting.HasValue || sorting.Value == SortingType.Unordered)
             {
-                if (list.Expression.Type == typeof(IOrderedQueryable<X>))
-                {
-
-                    if (sorting.Value == SortingType.Ascending)
-                    {
-                        list = (list as IOrderedQueryable<X>).ThenBy(field);
-                    }
-                    if (sorting.Value == SortingType.Descending)
-                    {
-                        list = (list as IOrderedQueryable<X>).ThenByDescending(field);
-                    }
-                }
-                else
-                {
-                    if (sorting.Value == SortingType.Ascending)
-                    {
-                        list = (list as IOrderedQueryable<X>).OrderBy(field);
-                    }
-                    if (sorting.Value == SortingType.Descending)
-                    {
-                        list = (list as IOrderedQueryable<X>).OrderByDescending(field);
-                    }
-                }
+                return list;
             }
-            return list;
+
+            if (list is IOrderedQueryable<X> ordered)
+            {
+                return sorting.Value == SortingType.Ascending
+                    ? ordered.ThenBy(field)
+                    : ordered.ThenByDescending(field);
+            }
+
+            return sorting.Value == SortingType.Ascending
+                ? list.OrderBy(field)
+                : list.OrderByDescending(field);
         }
     }
 

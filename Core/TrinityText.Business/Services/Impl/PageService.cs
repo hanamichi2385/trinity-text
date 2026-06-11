@@ -29,12 +29,11 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public Task<OperationResult<PagedResult<PageDTO>>> Search(SearchPageDTO search, int page, int size)
+        public async Task<OperationResult<PagedResult<PageDTO>>> Search(SearchPageDTO search, int page, int size)
         {
             try
             {
-                var query =
-                    GetPagesByFilter(search);
+                var query = GetPagesByFilter(search);
 
                 if (search?.ExcludeContent ?? false)
                 {
@@ -59,11 +58,8 @@ namespace TrinityText.Business.Services.Impl
                             });
                 }
 
-                var totalCount = query.Count();
-
-                var list = query
-                    .GetPage(page, size)
-                    .ToList();
+                var totalCount = await _pageRepository.CountAsync(query);
+                var list = await _pageRepository.ToListAsync(query.GetPage(page, size));
 
                 var result = new PagedResult<PageDTO>()
                 {
@@ -73,12 +69,12 @@ namespace TrinityText.Business.Services.Impl
                     TotalCount = totalCount,
                 };
 
-                return Task.FromResult(OperationResult<PagedResult<PageDTO>>.MakeSuccess(result));
+                return OperationResult<PagedResult<PageDTO>>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SEARCH {message}", ex.Message);
-                return Task.FromResult(OperationResult<PagedResult<PageDTO>>.MakeFailure([ErrorMessage.Create("SEARCH", "GENERIC_ERROR")]));
+                return OperationResult<PagedResult<PageDTO>>.MakeFailure([ErrorMessage.Create("SEARCH", "GENERIC_ERROR")]);
             }
         }
 

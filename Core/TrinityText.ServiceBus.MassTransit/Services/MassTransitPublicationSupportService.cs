@@ -88,7 +88,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                         if (textsByWebsite.TryGetValue(s.Site, out var textsPerSite))
                         {
                             var dict = textsPerSite.GroupBy(t => t.Language).ToFrozenDictionary(k => k.Key, v => v.ToList().AsReadOnly());
-                            GenerateTextsFileBySite(website, dict, siteDirectory.FullName, publishType);
+                            await GenerateTextsFileBySite(website, dict, siteDirectory.FullName, publishType);
                         }
                     }
                 }
@@ -182,7 +182,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 if (filePathRs.Success)
                 {
                     var filePath = filePathRs.Value;
-                    byte[] byteArray = System.IO.File.ReadAllBytes(filePath);
+                    byte[] byteArray = await System.IO.File.ReadAllBytesAsync(filePath);
                     System.IO.File.Delete(filePath);
 
                     var updateRs = await _publicationService.Update(setting.Id.Value, PublicationStatus.Generating, "Zip file completed", byteArray);
@@ -260,7 +260,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             System.IO.File.WriteAllText(textFile, text);
         }
 
-        private void GenerateTextsFileBySite(string website, FrozenDictionary<string, ReadOnlyCollection<TextDTO>> textsPerLanguage, string directoryPath, PublicationFormat type)
+        private async Task GenerateTextsFileBySite(string website, FrozenDictionary<string, ReadOnlyCollection<TextDTO>> textsPerLanguage, string directoryPath, PublicationFormat type)
         {
             if (string.IsNullOrWhiteSpace(directoryPath))
             {
@@ -313,7 +313,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                     var filePath = $"{folder}\\{fileName}.{type.ToString().ToLower()}";
                     //file.Save(filePath);
-                    System.IO.File.WriteAllBytes(filePath, file);
+                    await System.IO.File.WriteAllBytesAsync(filePath, file);
                 }
             }
         }
@@ -478,7 +478,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                     string filepath = $"{folder}\\{fileName}.{type.ToString().ToLower()}";
                     //xml.Save(xmlFilePath);
-                    System.IO.File.WriteAllBytes(filepath, file);
+                    await System.IO.File.WriteAllBytesAsync(filepath, file);
                 }
             }
         }

@@ -24,18 +24,14 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public Task<OperationResult<PagedResult<WidgetDTO>>> Search(SearchWidgetDTO search, int page, int size)
+        public async Task<OperationResult<PagedResult<WidgetDTO>>> Search(SearchWidgetDTO search, int page, int size)
         {
             try
             {
-                var query =
-                    GetWidgetsByFilter(search);
+                var query = GetWidgetsByFilter(search);
 
-                var totalCount = query.Count();
-
-                var list = query
-                    .GetPage(page, size)
-                    .ToList();
+                var totalCount = await _widgetRepository.CountAsync(query);
+                var list = await _widgetRepository.ToListAsync(query.GetPage(page, size));
 
                 var result = new PagedResult<WidgetDTO>()
                 {
@@ -45,12 +41,12 @@ namespace TrinityText.Business.Services.Impl
                     TotalCount = totalCount,
                 };
 
-                return Task.FromResult(OperationResult<PagedResult<WidgetDTO>>.MakeSuccess(result));
+                return OperationResult<PagedResult<WidgetDTO>>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SEARCH {message}", ex.Message);
-                return Task.FromResult(OperationResult<PagedResult<WidgetDTO>>.MakeFailure([ErrorMessage.Create("SEARCH", "GENERIC_ERROR")]));
+                return OperationResult<PagedResult<WidgetDTO>>.MakeFailure([ErrorMessage.Create("SEARCH", "GENERIC_ERROR")]);
             }
         }
 

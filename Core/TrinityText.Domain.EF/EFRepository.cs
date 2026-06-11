@@ -38,6 +38,9 @@ namespace TrinityText.Domain.EF
         public Task<TResult> FirstOrDefaultAsync<TResult>(IQueryable<TResult> source)
             => source.FirstOrDefaultAsync();
 
+        public Task<int> CountAsync<TResult>(IQueryable<TResult> source)
+            => source.CountAsync();
+
         public Task<int> ExecuteDeleteAsync<TEntity>(IQueryable<TEntity> source) where TEntity : class
             => source.ExecuteDeleteAsync();
 

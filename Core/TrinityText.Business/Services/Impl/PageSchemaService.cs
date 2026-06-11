@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -561,7 +562,7 @@ namespace TrinityText.Business.Services.Impl
 
         public async Task<byte[]> CreateJsonContentsDocument(PageSchema structure, IList<PageDTO> contentsPerType, string tenant, string vendor, string instance, string language, string baseUrl, CdnServerDTO cdnServer)
         {
-            var list = new List<dynamic>();
+            var list = new List<JRaw>(contentsPerType.Count);
 
             foreach (var c in contentsPerType)
             {
@@ -579,7 +580,7 @@ namespace TrinityText.Business.Services.Impl
                 }
 
                 var jsontext = JsonConvert.SerializeXNode(element, Newtonsoft.Json.Formatting.None, false);
-                list.Add(jsontext);
+                list.Add(new JRaw(jsontext));
             }
             var file = JsonConvert.SerializeObject(list);
             return Encoding.UTF8.GetBytes(file);

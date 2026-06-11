@@ -60,6 +60,9 @@ namespace TrinityText.Domain.NH
         public Task<TResult> FirstOrDefaultAsync<TResult>(IQueryable<TResult> source)
             => LinqExtensionMethods.FirstOrDefaultAsync(source);
 
+        public Task<int> CountAsync<TResult>(IQueryable<TResult> source)
+            => LinqExtensionMethods.CountAsync(source);
+
         public Task<int> ExecuteDeleteAsync<TEntity>(IQueryable<TEntity> source) where TEntity : class
             => DmlExtensionMethods.DeleteAsync(source);
 

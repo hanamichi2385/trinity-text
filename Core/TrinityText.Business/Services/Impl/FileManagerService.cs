@@ -31,44 +31,44 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public Task<OperationResult<IReadOnlyCollection<FolderDTO>>> GetAllFolders(string[] websites)
+        public async Task<OperationResult<IReadOnlyCollection<FolderDTO>>> GetAllFolders(string[] websites)
         {
             try
             {
-                var folders =
+                var dtos = await _folderRepository.ToListAsync(
                     _folderRepository
-                    .Repository
-                    .Where(f => websites.Contains(f.FK_WEBSITE))
-                    .Select(s => new Folder()
-                    {
-                        FK_PARENT = s.FK_PARENT,
-                        FK_WEBSITE = s.FK_WEBSITE,
-                        ID = s.ID,
-                        NAME = s.NAME,
-                        NOTE = s.NOTE,
-                    })
-                    .ToList();
+                        .Repository
+                        .Where(f => websites.Contains(f.FK_WEBSITE))
+                        .Select(s => new FolderDTO
+                        {
+                            Id = s.ID,
+                            ParentId = s.FK_PARENT,
+                            Website = s.FK_WEBSITE,
+                            Name = s.NAME,
+                            Note = s.NOTE,
+                        }));
 
-                var dtos = _mapper.Map<FolderDTO[]>(folders);
-                var result = GetFolders(dtos, null);
+                var result = BuildFolderTree(dtos);
 
-                return Task.FromResult(OperationResult<IReadOnlyCollection<FolderDTO>>.MakeSuccess(result.AsReadOnly()));
+                return OperationResult<IReadOnlyCollection<FolderDTO>>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return Task.FromResult(OperationResult<IReadOnlyCollection<FolderDTO>>.MakeFailure([ErrorMessage.Create("GET_ALL", "GENERIC_ERROR")]));
+                return OperationResult<IReadOnlyCollection<FolderDTO>>.MakeFailure([ErrorMessage.Create("GET_ALL", "GENERIC_ERROR")]);
             }
         }
 
-        private static FolderDTO[] GetFolders(FolderDTO[] folders, int? parentId)
+        private static IReadOnlyCollection<FolderDTO> BuildFolderTree(List<FolderDTO> folders)
         {
-            var fs = folders.Where(f => f.ParentId == parentId).ToArray();
-            foreach (var f in fs)
+            var byParent = folders.ToLookup(f => f.ParentId);
+
+            foreach (var f in folders)
             {
-                f.SubFolders = GetFolders(folders, f.Id);
+                f.SubFolders = byParent[f.Id].ToList();
             }
-            return fs;
+
+            return byParent[null].ToList();
         }
 
         public async Task<OperationResult<FolderDTO>> GetFolder(int id)

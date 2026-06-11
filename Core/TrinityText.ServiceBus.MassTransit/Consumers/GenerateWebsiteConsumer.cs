@@ -74,19 +74,29 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                                     To = [setting.Email]
                                 };
 
-                                int retry = 5;
-                                while (retry > 0)
+                                const int maxRetries = 5;
+                                Exception lastError = null;
+                                for (int attempt = 1; attempt <= maxRetries; attempt++)
                                 {
                                     try
                                     {
                                         await context.Publish(mail);
-                                        retry = 0;
+                                        lastError = null;
+                                        break;
                                     }
-                                    catch
+                                    catch (Exception ex)
                                     {
-                                        retry -= 1;
+                                        lastError = ex;
+                                        if (attempt < maxRetries)
+                                        {
+                                            await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt - 1)));
+                                        }
                                     }
-                                };
+                                }
+                                if (lastError != null)
+                                {
+                                    _logger.LogError(lastError, "Failed to publish SendMailMessage after {Retries} retries", maxRetries);
+                                }
                             }
                         }
                         else

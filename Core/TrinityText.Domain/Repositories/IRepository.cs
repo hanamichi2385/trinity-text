@@ -14,6 +14,7 @@ namespace TrinityText.Domain
 
         Task<List<TResult>> ToListAsync<TResult>(IQueryable<TResult> source);
         Task<TResult> FirstOrDefaultAsync<TResult>(IQueryable<TResult> source);
+        Task<int> CountAsync<TResult>(IQueryable<TResult> source);
         Task<int> ExecuteDeleteAsync<TEntity>(IQueryable<TEntity> source) where TEntity : class;
 
         string ConnectionString { get; }

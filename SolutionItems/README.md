@@ -1,4 +1,17 @@
-﻿#2026-06-10
+﻿#2026-06-11
+- New: `CountAsync` on `IRepository<T>` (EF + NHibernate implementations)
+- Performance: async `Search` in TextService / PageService / WidgetService (`CountAsync` + `ToListAsync`)
+- Performance: async `WriteAllBytesAsync` / `ReadAllBytesAsync` in publication generation pipeline
+- Performance: O(n²) → O(n) folder tree build via `ToLookup(ParentId)`
+- Performance: direct DTO projection in `GetAllFolders` (no entity intermediate, async)
+- Performance: `MaxBy` instead of `OrderByDescending().FirstOrDefault()` in TextRevision mapping
+- Performance: `JRaw` in `CreateJsonContentsDocument` (no double-encoding, no dynamic dispatch)
+- Performance: `ExcelMapperService` single-sheet exports via `MemoryStream` (no temp file)
+- Performance: retry with exponential backoff in `GenerateWebsiteConsumer` (was busy retry, no delay)
+- Fix: `Sort` extension null branch on first ordering (NullReferenceException latent)
+- Fix: `SerializedFile` async factory (`Path.GetFileName`, `ReadAllBytesAsync`)
+
+#2026-06-10
 - New: provider-agnostic `IRepository<T>` (EF Core + NHibernate) with async query and bulk operations
 - Performance: eliminate N+1 queries in publishing, import, and website configuration flows
 - Performance: bulk `ExecuteDeleteAsync` for revisions and join tables
