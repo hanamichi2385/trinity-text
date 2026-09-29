@@ -19,9 +19,12 @@ namespace TrinityText.Utilities.Transfer
 
         public async Task<OperationResult<byte[]>> GetFile(string tenant, string website, string file, string host, string username, string password)
         {
-            var result = OperationResult.MakeSuccess();
             try
             {
+                PathSafety.EnsureValidSegment(tenant, nameof(tenant));
+                PathSafety.EnsureValidSegment(website, nameof(website));
+                PathSafety.EnsureValidSegment(file, nameof(file));
+
                 var uri = new Uri(host);
 
                 var directories = host
@@ -30,12 +33,15 @@ namespace TrinityText.Utilities.Transfer
 
                 var service = GetService(uri);
                 var ftpfile = await service.GetFile(tenant, website, file, uri.Host, username, password, directories);
+
+                return ftpfile != null
+                    ? OperationResult<byte[]>.MakeSuccess(ftpfile)
+                    : OperationResult<byte[]>.MakeFailure([ErrorMessage.Create("GET_FILE", "NOT_FOUND")]);
             }
             catch (Exception ex)
             {
-                result.AppendError("GET_FILE", ex.Message);
+                return OperationResult<byte[]>.MakeFailure([ErrorMessage.Create("GET_FILE", ex.Message)]);
             }
-            return result;
         }
 
         public async Task<OperationResult> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password)
@@ -43,6 +49,9 @@ namespace TrinityText.Utilities.Transfer
             var result = OperationResult.MakeSuccess();
             try
             {
+                PathSafety.EnsureValidSegment(tenant, nameof(tenant));
+                PathSafety.EnsureValidSegment(website, nameof(website));
+
                 var uri = new Uri(host);
 
                 var directories = host

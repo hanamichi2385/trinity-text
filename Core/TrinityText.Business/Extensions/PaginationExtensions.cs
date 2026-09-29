@@ -20,10 +20,11 @@ namespace TrinityText.Business
             }
 
             // Check the LINQ expression's declared type, not the runtime type:
-            // EF Core's queryable concrete class implements IOrderedQueryable<T> even before an OrderBy is applied,
-            // so `list is IOrderedQueryable<X>` would always be true. The expression type instead correctly
-            // becomes IOrderedQueryable<X> only after OrderBy/OrderByDescending.
-            bool alreadyOrdered = typeof(IOrderedQueryable<X>).IsAssignableFrom(list.Expression.Type);
+            // both EF Core's and NHibernate's concrete queryables implement IOrderedQueryable<T> even before
+            // an OrderBy is applied, so `list is IOrderedQueryable<X>` would always be true. The expression
+            // type is exactly IOrderedQueryable<X> only after OrderBy/ThenBy (their static return type);
+            // exact equality also keeps NH root queryables (ConstantExpression of the concrete class) safe.
+            bool alreadyOrdered = list.Expression.Type == typeof(IOrderedQueryable<X>);
 
             if (alreadyOrdered)
             {

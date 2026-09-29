@@ -292,18 +292,23 @@ namespace TrinityText.Business.Services.Impl
                         query.Where(r => !string.IsNullOrWhiteSpace(r.FK_WEBSITE));
                 }
 
-                if ((!search.SortingName.HasValue && !search.SortingWebsite.HasValue && !search.SortingSite.HasValue && !search.SortingLanguage.HasValue && !search.SortingLastUpdate.HasValue) ||
-                    (search.SortingName.Value == SortingType.Unordered && search.SortingWebsite.Value == SortingType.Unordered && search.SortingSite.Value == SortingType.Unordered && search.SortingLanguage.Value == SortingType.Unordered && search.SortingLastUpdate.Value == SortingType.Unordered))
+                var sortName = search.SortingName ?? SortingType.Unordered;
+                var sortWebsite = search.SortingWebsite ?? SortingType.Unordered;
+                var sortSite = search.SortingSite ?? SortingType.Unordered;
+                var sortLanguage = search.SortingLanguage ?? SortingType.Unordered;
+                var sortLastUpdate = search.SortingLastUpdate ?? SortingType.Unordered;
+
+                if (sortName == SortingType.Unordered && sortWebsite == SortingType.Unordered && sortSite == SortingType.Unordered && sortLanguage == SortingType.Unordered && sortLastUpdate == SortingType.Unordered)
                 {
                     query = query.Sort((r) => r.KEY, SortingType.Ascending);
                 }
                 else
                 {
-                    query = query.Sort((r) => r.KEY, search.SortingName);
-                    query = query.Sort((r) => r.FK_WEBSITE, search.SortingWebsite);
-                    query = query.Sort((r) => r.FK_PRICELIST, search.SortingSite);
-                    query = query.Sort((r) => r.FK_LANGUAGE, search.SortingLanguage);
-                    query = query.Sort((r) => r.LASTUPDATE_DATE, search.SortingLastUpdate);
+                    query = query.Sort((r) => r.KEY, sortName);
+                    query = query.Sort((r) => r.FK_WEBSITE, sortWebsite);
+                    query = query.Sort((r) => r.FK_PRICELIST, sortSite);
+                    query = query.Sort((r) => r.FK_LANGUAGE, sortLanguage);
+                    query = query.Sort((r) => r.LASTUPDATE_DATE, sortLastUpdate);
                 }
             }
 

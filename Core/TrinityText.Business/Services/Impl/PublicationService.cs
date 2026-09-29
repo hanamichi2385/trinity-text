@@ -81,7 +81,7 @@ namespace TrinityText.Business.Services.Impl
             byte[] bytes = null;
             using var sqlConnection = new SqlConnection(_publicationRepository.ConnectionString);
             await sqlConnection.OpenAsync();
-            using var sqlCommand = new SqlCommand(@"SELECT [ZIP_FILE] FROM [TRINITY].[dbo].[Generazioni] WHERE ID = @id", sqlConnection);
+            using var sqlCommand = new SqlCommand(@"SELECT [ZIP_FILE] FROM [dbo].[Generazioni] WHERE ID = @id", sqlConnection);
             sqlCommand.Parameters.Add(new SqlParameter("id", id));
 
             using var reader = await sqlCommand.ExecuteReaderAsync(System.Data.CommandBehavior.SequentialAccess);
@@ -98,7 +98,7 @@ namespace TrinityText.Business.Services.Impl
             {
                 using var sqlConnection = new SqlConnection(_publicationRepository.ConnectionString);
                 await sqlConnection.OpenAsync();
-                using var sqlCommand = new SqlCommand(@"UPDATE [TRINITY].[dbo].[Generazioni] SET [ZIP_FILE] = @zip  WHERE ID = @id", sqlConnection);
+                using var sqlCommand = new SqlCommand(@"UPDATE [dbo].[Generazioni] SET [ZIP_FILE] = @zip  WHERE ID = @id", sqlConnection);
                 sqlCommand.Parameters.Add(new SqlParameter("id", id));
                 sqlCommand.Parameters.Add(new SqlParameter("zip", zipFile));
 
@@ -107,15 +107,23 @@ namespace TrinityText.Business.Services.Impl
             catch (Exception ex)
             {
                 _logger.LogError(ex, "UPDATE_ZIP_CONTENT {id} : {message}", id, ex.Message);
+                // propagate: Update() reports a failure instead of a publication that looks successful without ZIP
+                throw;
             }
         }
 
-        public Task<OperationResult<IList<PublicationDTO>>> GetAll()
+        public Task<OperationResult<IList<PublicationDTO>>> GetAll(string[] websites = null)
         {
             try
             {
-                var list = _publicationRepository
-                    .Repository
+                // null = no tenant restriction (backward compatible); pass the caller's websites to scope the result
+                var query = _publicationRepository.Repository;
+                if (websites != null)
+                {
+                    query = query.Where(f => websites.Contains(f.FK_WEBSITE));
+                }
+
+                var list = query
                     .OrderByDescending(f => f.LASTUPDATE_DATE)
                     .Select(f => new
                     {

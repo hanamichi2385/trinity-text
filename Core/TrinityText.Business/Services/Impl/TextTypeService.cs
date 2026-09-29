@@ -76,7 +76,7 @@ namespace TrinityText.Business.Services.Impl
             {
                 var list = _textTypeRepository
                     .Repository
-                    .Where(tt => tt.TEXTTYPEPERWEBSITES.Where(tx => tx.FK_WEBSITE == website).Any())
+                    .Where(tt => tt.TEXTTYPEPERWEBSITES.Any(tx => tx.FK_WEBSITE == website))
                     .OrderBy(t => t.SUBFOLDER)
                     .ThenBy(t => t.CONTENTTYPE)
                     .ToList();
@@ -96,6 +96,17 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
+                if (!PathSafety.IsValidSegmentOrEmpty(dto.Subfolder))
+                {
+                    return OperationResult<TextTypeDTO>.MakeFailure([ErrorMessage.Create("SAVE", "INVALID_SUBFOLDER")]);
+                }
+
+                // the name is used as export file name
+                if (!PathSafety.IsValidSegment(dto.Name))
+                {
+                    return OperationResult<TextTypeDTO>.MakeFailure([ErrorMessage.Create("SAVE", "INVALID_NAME")]);
+                }
+
                 if (dto.Id.HasValue)
                 {
                     var entity = await _textTypeRepository

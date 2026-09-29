@@ -81,10 +81,10 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entities != null)
                 {
+                    var visibilitySet = new HashSet<string>(visibilities ?? [], StringComparer.InvariantCultureIgnoreCase);
                     var filtered = entities.Where(e =>
-                        (string.IsNullOrWhiteSpace(e.VISIBILITY) ||
-                            (!string.IsNullOrWhiteSpace(e.VISIBILITY)
-                                && visibilities.Intersect(e.VISIBILITY.Split('|', StringSplitOptions.RemoveEmptyEntries),StringComparer.InvariantCultureIgnoreCase).Any())))
+                        string.IsNullOrWhiteSpace(e.VISIBILITY) ||
+                            e.VISIBILITY.Split('|', StringSplitOptions.RemoveEmptyEntries).Any(visibilitySet.Contains))
                         .ToList();
 
                     var result = _mapper.Map<IList<PageTypeDTO>>(filtered);
@@ -107,6 +107,16 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
+                if (!PathSafety.IsValidSegmentOrEmpty(dto.Subfolder))
+                {
+                    return OperationResult<PageTypeDTO>.MakeFailure([ErrorMessage.Create("SAVE", "INVALID_SUBFOLDER")]);
+                }
+
+                if (!PathSafety.IsValidSegmentOrEmpty(dto.OutputFilename))
+                {
+                    return OperationResult<PageTypeDTO>.MakeFailure([ErrorMessage.Create("SAVE", "INVALID_OUTPUT_FILENAME")]);
+                }
+
                 if (dto.Id.HasValue)
                 {
                     var entity = await _pageTypeRepository

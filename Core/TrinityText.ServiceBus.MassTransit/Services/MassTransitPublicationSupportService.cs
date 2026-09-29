@@ -128,10 +128,11 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 await GenerateFilesByWebsite(website, filesGenerationDate, currentDirectory.FullName);
             }
 
-            GenerateFileTimestamp(currentDirectory, user);
+            await GenerateFileTimestamp(currentDirectory, user);
 
-            //DeleteEmptySubdirectories(currentDirectory.FullName);
-            FastDeleteEmptySubdirectories(currentDirectory.FullName);
+            // I/O-bound recursive deletion: the sequential version avoids unbounded Parallel.ForEach
+            // thread-pool pressure; these trees are small (site/language folders).
+            DeleteEmptySubdirectories(currentDirectory.FullName);
 
             if (compressFileOutput)
             {
@@ -146,15 +147,6 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             }
         }
 
-        public static void FastDeleteEmptySubdirectories(string parentDirectory)
-        {
-            System.Threading.Tasks.Parallel.ForEach(System.IO.Directory.GetDirectories(parentDirectory), directory =>
-            {
-                FastDeleteEmptySubdirectories(directory);
-                if (!System.IO.Directory.EnumerateFileSystemEntries(directory).Any()) System.IO.Directory.Delete(directory, false);
-            });
-        }
-
         public static void DeleteEmptySubdirectories(string parentDirectory)
         {
             foreach (string directory in System.IO.Directory.GetDirectories(parentDirectory))
@@ -162,6 +154,21 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 DeleteEmptySubdirectories(directory);
                 if (!System.IO.Directory.EnumerateFileSystemEntries(directory).Any()) System.IO.Directory.Delete(directory, false);
             }
+        }
+
+        /// <summary>
+        /// The payload is stored as free JSON: make sure it targets the same website as the publication
+        /// and that tenant/website are safe path segments before they are used to build paths.
+        /// </summary>
+        private static void EnsurePayloadMatchesPublication(PayloadDTO payload, PublicationDTO setting)
+        {
+            if (payload == null || !string.Equals(payload.Website, setting.Website, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Payload website does not match the publication website");
+            }
+
+            PathSafety.EnsureValidSegment(payload.Website, nameof(payload.Website));
+            PathSafety.EnsureValidSegment(payload.Tenant, nameof(payload.Tenant));
         }
 
         public async Task<OperationResult> Generate(PublicationDTO setting)
@@ -174,6 +181,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             try
             {
                 var payload = setting.Payload;
+                EnsurePayloadMatchesPublication(payload, setting);
 
                 _logger.LogInformation("GenerateWebsite {website} started", website);
 
@@ -216,7 +224,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 await _compressionFileService.DecompressFolder(basePath, setting.ZipFile);
 
                 var payload = setting.Payload;
-
+                EnsurePayloadMatchesPublication(payload, setting);
 
                 var server = setting.FtpServer;
                 var d = new DirectoryInfo(basePath);
@@ -252,12 +260,12 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
         #region private methods
 
-        private static void GenerateFileTimestamp(DirectoryInfo currentDirectory, string username)
+        private static async Task GenerateFileTimestamp(DirectoryInfo currentDirectory, string username)
         {
             var textFile = $"{currentDirectory}\\trinity-text.txt";
             var text = $"{username}|{DateTime.Now:dd-MM-yyyy|HH-mm-ss}";
 
-            System.IO.File.WriteAllText(textFile, text);
+            await System.IO.File.WriteAllTextAsync(textFile, text);
         }
 
         private async Task GenerateTextsFileBySite(string website, FrozenDictionary<string, ReadOnlyCollection<TextDTO>> textsPerLanguage, string directoryPath, PublicationFormat type)
@@ -311,7 +319,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                         }
                     }
 
-                    var filePath = $"{folder}\\{fileName}.{type.ToString().ToLower()}";
+                    var filePath = PathSafety.EnsureWithinRoot(directory.FullName, $"{folder}\\{fileName}.{type.ToString().ToLower()}");
                     //file.Save(filePath);
                     await System.IO.File.WriteAllBytesAsync(filePath, file);
                 }

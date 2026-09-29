@@ -5,13 +5,15 @@ namespace TrinityText.Utilities
 {
     public static class ImageExtensions
     {
+        // Building the provider fills a ~380-entry mapping table; it is read-only afterwards, so one
+        // shared instance is thread-safe and avoids re-allocating it on every call.
+        private static readonly Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider ContentTypeProvider = new();
+
         public static string GetMimeTypeForFile(string filePath)
         {
             const string DefaultContentType = "application/octet-stream";
 
-            var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
-
-            if (!provider.TryGetContentType(filePath, out string contentType))
+            if (!ContentTypeProvider.TryGetContentType(filePath, out string contentType))
             {
                 contentType = DefaultContentType;
             }

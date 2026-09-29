@@ -6,7 +6,7 @@ namespace TrinityText.Business
 {
     public interface IPublicationService
     {
-        Task<OperationResult<IList<PublicationDTO>>> GetAll();
+        Task<OperationResult<IList<PublicationDTO>>> GetAll(string[] websites = null);
 
         Task<OperationResult<PublicationDTO>> Get(int id, bool withContent);
 

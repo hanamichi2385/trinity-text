@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -10,7 +11,15 @@ namespace TrinityText.Business
         private readonly IFileManagerService _fileManagerService;
         private readonly IWidgetService _widgetService;
 
+        private const int MaxExpandedLength = 5 * 1024 * 1024;
+
         private static readonly Regex WidgetRegex = new(@"@\[WIDGET\((.+?)\)\]", RegexOptions.Compiled);
+
+        // The link pattern depends on the website name (low cardinality), so compiled instances are cached.
+        private static readonly ConcurrentDictionary<string, Regex> LinkRegexCache = new(StringComparer.Ordinal);
+
+        private static Regex GetLinkRegex(string website)
+            => LinkRegexCache.GetOrAdd(website, w => new Regex(@"""?(@/" + Regex.Escape(w) + @"/)([^""\s\t\]]+)""?", RegexOptions.Compiled));
 
         public WidgetUtilities(IFileManagerService fileManagerService, IWidgetService widgetService)
         {
@@ -76,7 +85,25 @@ namespace TrinityText.Business
                 }
 
                 var previous = newText;
-                newText = WidgetRegex.Replace(newText, m => resolved[m.Groups[1].Value] ?? string.Empty);
+
+                // nested widgets can multiply the output on each pass: bound the total size while expanding
+                long expanded = 0;
+                newText = WidgetRegex.Replace(newText, m =>
+                {
+                    var value = resolved[m.Groups[1].Value] ?? string.Empty;
+                    expanded += value.Length;
+                    if (expanded > MaxExpandedLength)
+                    {
+                        throw new InvalidOperationException($"Widget expansion exceeds {MaxExpandedLength} characters");
+                    }
+
+                    return value;
+                });
+
+                if (newText.Length > MaxExpandedLength)
+                {
+                    throw new InvalidOperationException($"Widget expansion exceeds {MaxExpandedLength} characters");
+                }
 
                 if (string.Equals(previous, newText, StringComparison.Ordinal))
                 {
@@ -92,7 +119,7 @@ namespace TrinityText.Business
             var newXml = xml;
             if (!string.IsNullOrWhiteSpace(baseUrl))
             {
-                var linkRegex = new Regex(@"""?(@/" + Regex.Escape(website) + @"/)([^""\s\t\]]+)""?", RegexOptions.Compiled);
+                var linkRegex = GetLinkRegex(website);
 
                 var urlSet = new HashSet<string>(StringComparer.Ordinal);
                 foreach (Match m in linkRegex.Matches(xml))

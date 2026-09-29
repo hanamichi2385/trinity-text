@@ -75,7 +75,7 @@ namespace TrinityText.Business.Services.Impl
             {
                 var list = _ftpServerRepository
                     .Repository
-                    .Where(f => f.CDNSERVERS.Where(c => c.FK_CDNSERVER == cdn).Any())
+                    .Where(f => f.CDNSERVERS.Any(c => c.FK_CDNSERVER == cdn))
                     .OrderBy(t => t.TYPE)
                     .ToList();
 

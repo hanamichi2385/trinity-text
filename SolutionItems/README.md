@@ -1,4 +1,22 @@
-﻿#2026-06-11
+﻿#2026-09-29
+- Security: `TextType.Name` validated with `PathSafety` (used as export file name); export file paths canonicalised and confined to the export root (`PathSafety.EnsureWithinRoot`)
+- Security: widget expansion capped at 5 MB total (nested widgets could grow exponentially)
+- Security: tenant / website / file names validated in `TransferService` before FTP/SFTP navigation; publication payload website must match the publication website (Generate/Publish)
+- Security: removed hard-coded `[TRINITY]` database name from raw SQL in `PublicationService`; `UpdateZipContent` failures are now propagated
+- Security: `IPublicationService.GetAll` accepts an optional `websites` filter (null keeps previous behavior)
+
+#2026-06-12
+- Performance: `Text.REVISIONS` no longer auto-included; only the latest revision is loaded per text via a single correlated query (was eager-loading every historical revision with full content on every read)
+- Performance: removed redundant circular `TextRevision.TEXT` auto-include
+- Performance: `CleanRevisions` deletes excess revisions via SQL correlated count (no revision content loaded into memory)
+- Security: `GetFileByFullname` resolves same-named files by folder path (was `NotImplementedException` on multi-match)
+- Security: `RemoveFolder` refuses non-deletable folders and folders whose subtree contains system folders
+- Security: path-segment validation (`PathSafety`) on folder names, TextType/PageType `Subfolder` and `OutputFilename` to prevent traversal
+- Fix: `Search` sorting crash when only some sort fields were set (`Nullable.Value` on unset field)
+- Fix: `TransferService.GetFile` now returns the downloaded bytes (were discarded)
+- Fix: `TrinityEFContext` transaction field reset on commit/rollback + guarded begin (stale transaction from pooled context)
+
+#2026-06-11
 - New: `CountAsync` on `IRepository<T>` (EF + NHibernate implementations)
 - Performance: async `Search` in TextService / PageService / WidgetService (`CountAsync` + `ToListAsync`)
 - Performance: async `WriteAllBytesAsync` / `ReadAllBytesAsync` in publication generation pipeline

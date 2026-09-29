@@ -42,6 +42,8 @@ namespace TrinityText.Business.Services.Impl
                 var totalCount = await _textRepository.CountAsync(query);
                 var list = await _textRepository.ToListAsync(query.GetPage(page, size));
 
+                await PopulateLatestRevisions(list);
+
                 var result = new PagedResult<TextDTO>()
                 {
                     Page = page,
@@ -125,17 +127,21 @@ namespace TrinityText.Business.Services.Impl
                         query.Where(r => r.ACTIVE == search.ShowOnlyActive.Value);
                 }
 
-                if ((!search.SortingName.HasValue && !search.SortingWebsite.HasValue && !search.SortingSite.HasValue && !search.SortingLanguage.HasValue) ||
-                    (search.SortingName.Value == SortingType.Unordered && search.SortingWebsite.Value == SortingType.Unordered && search.SortingSite.Value == SortingType.Unordered && search.SortingLanguage.Value == SortingType.Unordered))
+                var sortName = search.SortingName ?? SortingType.Unordered;
+                var sortWebsite = search.SortingWebsite ?? SortingType.Unordered;
+                var sortSite = search.SortingSite ?? SortingType.Unordered;
+                var sortLanguage = search.SortingLanguage ?? SortingType.Unordered;
+
+                if (sortName == SortingType.Unordered && sortWebsite == SortingType.Unordered && sortSite == SortingType.Unordered && sortLanguage == SortingType.Unordered)
                 {
                     query = query.Sort((r) => r.NAME, SortingType.Ascending);
                 }
                 else
                 {
-                    query = query.Sort((r) => r.NAME, search.SortingName);
-                    query = query.Sort((r) => r.FK_WEBSITE, search.SortingWebsite);
-                    query = query.Sort((r) => r.FK_PRICELIST, search.SortingSite);
-                    query = query.Sort((r) => r.FK_LANGUAGE, search.SortingLanguage);
+                    query = query.Sort((r) => r.NAME, sortName);
+                    query = query.Sort((r) => r.FK_WEBSITE, sortWebsite);
+                    query = query.Sort((r) => r.FK_PRICELIST, sortSite);
+                    query = query.Sort((r) => r.FK_LANGUAGE, sortLanguage);
                 }
             }
 
@@ -151,7 +157,12 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var result = _mapper.Map<IList<TextRevisionDTO>>(entity.REVISIONS);
+                    var revisions = await _textRevisionRepository.ToListAsync(
+                        _textRevisionRepository
+                            .Repository
+                            .Where(r => r.FK_TEXT == textId));
+
+                    var result = _mapper.Map<IList<TextRevisionDTO>>(revisions);
 
                     return OperationResult<IList<TextRevisionDTO>>.MakeSuccess(result);
                 }
@@ -176,6 +187,8 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
+                    await PopulateLatestRevisions([entity]);
+
                     var result = _mapper.Map<TextDTO>(entity);
 
                     return OperationResult<TextDTO>.MakeSuccess(result);
@@ -208,6 +221,10 @@ namespace TrinityText.Business.Services.Impl
                     if (dto.Id.HasValue)
                     {
                         var entity = await _textRepository.Read(dto.Id.Value);
+                        if (entity != null)
+                        {
+                            await PopulateLatestRevisions([entity]);
+                        }
                         return await Update(dto, entity, textType);
                     }
                     else
@@ -225,6 +242,39 @@ namespace TrinityText.Business.Services.Impl
             {
                 _logger.LogError(ex, "SAVE {message}", ex.Message);
                 return OperationResult<TextDTO>.MakeFailure([ErrorMessage.Create("SAVE", "GENERIC_ERROR")]);
+            }
+        }
+
+        private static (string, string, string, string, string) ImportKey(string name, string language, string website, string site, string country)
+            => (name?.ToUpperInvariant(), language?.ToUpperInvariant(), website?.ToUpperInvariant(), site?.ToUpperInvariant(), country?.ToUpperInvariant());
+
+        /// <summary>
+        /// Loads only the most recent revision (by REVISION_NUMBER) for each given Text in a single query and
+        /// assigns it to <see cref="Text.REVISIONS"/>. Replaces the former AutoInclude that eagerly loaded every
+        /// historical revision (with full CONTENT) on every Text read.
+        /// </summary>
+        private async Task PopulateLatestRevisions(IEnumerable<Text> texts)
+        {
+            var list = texts as ICollection<Text> ?? texts.ToList();
+            var ids = list.Select(t => t.ID).Distinct().ToArray();
+            if (ids.Length == 0)
+            {
+                return;
+            }
+
+            var latest = await _textRevisionRepository.ToListAsync(
+                _textRevisionRepository
+                    .Repository
+                    .Where(r => ids.Contains(r.FK_TEXT)
+                        && r.REVISION_NUMBER == _textRevisionRepository
+                            .Repository
+                            .Where(x => x.FK_TEXT == r.FK_TEXT)
+                            .Max(x => x.REVISION_NUMBER)));
+
+            var byText = latest.ToLookup(r => r.FK_TEXT);
+            foreach (var t in list)
+            {
+                t.REVISIONS = byText[t.ID].ToList();
             }
         }
 
@@ -382,6 +432,7 @@ namespace TrinityText.Business.Services.Impl
                             t.ACTIVE == true &&
                             (t.FK_WEBSITE == null || (t.FK_WEBSITE == website && string.IsNullOrWhiteSpace(t.FK_PRICELIST)))));
 
+                await PopulateLatestRevisions(textsGlobalByWebsiteList);
                 var textsGlobalByWebsite = _mapper.Map<IList<TextDTO>>(textsGlobalByWebsiteList).AsReadOnly();
 
                 var textsBySiteList = await _textRepository.ToListAsync(
@@ -393,6 +444,7 @@ namespace TrinityText.Business.Services.Impl
                             t.FK_WEBSITE == website &&
                             allSites.Contains(t.FK_PRICELIST)));
 
+                await PopulateLatestRevisions(textsBySiteList);
                 var textsBySiteAll = _mapper.Map<IList<TextDTO>>(textsBySiteList);
                 var textsBySiteLookup = textsBySiteAll.ToLookup(t => t.Site, StringComparer.OrdinalIgnoreCase);
 
@@ -545,6 +597,7 @@ namespace TrinityText.Business.Services.Impl
 
                 var query = GetTextsByFilter(search);
                 var q = await _textRepository.ToListAsync(query);
+                await PopulateLatestRevisions(q);
                 var all = _mapper.Map<IList<TextDTO>>(q).AsReadOnly();
 
                 var byLanguage = all.ToLookup(n => n.Language);
@@ -606,17 +659,16 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var texts = await _textRepository.ToListAsync(
-                    _textRepository
+                // A revision is "in excess" (to be deleted) when at least `revisionToMantain` newer revisions
+                // exist for the same text — i.e. it falls outside the most-recent N. Computed in SQL via a
+                // correlated count, so no revision content is loaded into memory.
+                var revisionIds = await _textRevisionRepository.ToListAsync(
+                    _textRevisionRepository
                         .Repository
-                        .Where(r => r.REVISIONS.Count > revisionToMantain));
-
-                var revisionIds = texts
-                    .SelectMany(t => t.REVISIONS
-                        .OrderByDescending(s => s.CREATION_DATE)
-                        .Skip(revisionToMantain))
-                    .Select(r => r.ID)
-                    .ToList();
+                        .Where(r => _textRevisionRepository
+                            .Repository
+                            .Count(x => x.FK_TEXT == r.FK_TEXT && x.CREATION_DATE > r.CREATION_DATE) >= revisionToMantain)
+                        .Select(r => r.ID));
 
                 if (revisionIds.Count > 0)
                 {
@@ -660,15 +712,21 @@ namespace TrinityText.Business.Services.Impl
                             && names.Contains(x.NAME)
                             && languages.Contains(x.FK_LANGUAGE)));
 
+                // The @override path calls Update, which compares against the latest revision's content;
+                // populate it explicitly (REVISIONS is no longer auto-included).
+                await PopulateLatestRevisions(existing);
+
+                // Key components normalized to upper case: the original per-row DB lookup relied on the
+                // case-insensitive SQL collation (and NAME is stored upper-cased by the mapper).
                 var existingMap = new Dictionary<(string, string, string, string, string), Text>(existing.Count);
                 foreach (var e in existing)
                 {
-                    existingMap[(e.NAME, e.FK_LANGUAGE, e.FK_WEBSITE, e.FK_PRICELIST, e.FK_COUNTRY)] = e;
+                    existingMap[ImportKey(e.NAME, e.FK_LANGUAGE, e.FK_WEBSITE, e.FK_PRICELIST, e.FK_COUNTRY)] = e;
                 }
 
                 foreach (var r in texts)
                 {
-                    existingMap.TryGetValue((r.Name, r.Language, r.Website, r.Site, r.Country), out var t);
+                    existingMap.TryGetValue(ImportKey(r.Name, r.Language, r.Website, r.Site, r.Country), out var t);
                     var exist = t != null;
 
                     if (!exist || @override)

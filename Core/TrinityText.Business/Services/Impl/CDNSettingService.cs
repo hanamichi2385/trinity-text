@@ -53,7 +53,7 @@ namespace TrinityText.Business.Services.Impl
             {
                 var list = _cdnSettingsRepository
                     .Repository
-                    .Where(c => c.CDNSERVERPERWEBSITES.Where(w => w.FK_WEBSITE == website).Any())
+                    .Where(c => c.CDNSERVERPERWEBSITES.Any(w => w.FK_WEBSITE == website))
                     .OrderBy(t => t.TYPE)
                     .ToList();
 

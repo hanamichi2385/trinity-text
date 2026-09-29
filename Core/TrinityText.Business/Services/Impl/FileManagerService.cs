@@ -115,7 +115,9 @@ namespace TrinityText.Business.Services.Impl
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Folder name cannot be empty");
-            return name.Trim();
+            name = name.Trim();
+            PathSafety.EnsureValidSegment(name, "folder name");
+            return name;
         }
 
         public async Task<OperationResult<FolderDTO>> SaveFolder(int? parentFolderId, FolderDTO dto)
@@ -172,20 +174,30 @@ namespace TrinityText.Business.Services.Impl
                 var entity = await _folderRepository
                     .Read(id);
 
-                if (entity != null)
-                {
-                    await _folderRepository.BeginTransaction();
-
-                    await EmptyFolder(entity);
-
-                    await _folderRepository.CommitTransaction();
-
-                    return OperationResult.MakeSuccess();
-                }
-                else
+                if (entity == null)
                 {
                     return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
                 }
+
+                if (!entity.DELETABLE)
+                {
+                    return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_DELETABLE")]);
+                }
+
+                // A deletable folder may still contain system (non-deletable) folders in its subtree;
+                // deleting the parent would cascade-remove them, bypassing the DELETABLE flag.
+                if (await HasNonDeletableDescendant(entity))
+                {
+                    return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_DELETABLE")]);
+                }
+
+                await _folderRepository.BeginTransaction();
+
+                await EmptyFolder(entity);
+
+                await _folderRepository.CommitTransaction();
+
+                return OperationResult.MakeSuccess();
             }
             catch (Exception ex)
             {
@@ -193,6 +205,33 @@ namespace TrinityText.Business.Services.Impl
                 _logger.LogError(ex, "REMOVE {message}", ex.Message);
                 return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "GENERIC_ERROR")]);
             }
+        }
+
+        private async Task<bool> HasNonDeletableDescendant(Folder root)
+        {
+            var websiteFolders = await _folderRepository.ToListAsync(
+                _folderRepository
+                    .Repository
+                    .Where(f => f.FK_WEBSITE == root.FK_WEBSITE)
+                    .Select(f => new Folder { ID = f.ID, FK_PARENT = f.FK_PARENT, DELETABLE = f.DELETABLE }));
+
+            var byParent = websiteFolders.ToLookup(f => f.FK_PARENT);
+
+            var stack = new Stack<int>();
+            stack.Push(root.ID);
+            while (stack.Count > 0)
+            {
+                var current = stack.Pop();
+                foreach (var child in byParent[current])
+                {
+                    if (!child.DELETABLE)
+                    {
+                        return true;
+                    }
+                    stack.Push(child.ID);
+                }
+            }
+            return false;
         }
 
 
@@ -744,123 +783,91 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public Task<OperationResult<FileDTO>> GetFileByFullname(string fullFilename)
+        public async Task<OperationResult<FileDTO>> GetFileByFullname(string fullFilename)
         {
             try
             {
-                var fileName = fullFilename.Replace("@/", "").Split('/', StringSplitOptions.RemoveEmptyEntries).Last();
-
-                var files = _fileRepository
-                    .Repository
-                    .Where(f => f.FILENAME.Equals(fileName))
-                    .Select(s => new File()
-                    {
-                        ID = s.ID,
-                        CONTENT = s.CONTENT,
-                    })
-                    .ToList();
-
-                if (files.Count > 0)
+                // Path format: @/<website>/<folder1>/.../<filename>
+                var parts = fullFilename.Replace("@/", string.Empty).Split('/', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 0)
                 {
-                    if (files.Count == 1)
-                    {
-                        var file = files.Single();
+                    return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GETFILEBYFULLNAME", "NOT_FOUND")]);
+                }
 
-                        var dto = new FileDTO()
+                var fileName = parts[^1];
+
+                var files = await _fileRepository.ToListAsync(
+                    _fileRepository
+                        .Repository
+                        .Where(f => f.FILENAME.Equals(fileName))
+                        .Select(s => new File()
                         {
-                            Id = file.ID,
-                            Content = file.CONTENT,
-                        };
+                            ID = s.ID,
+                            CONTENT = s.CONTENT,
+                            FK_FOLDER = s.FK_FOLDER,
+                            FK_WEBSITE = s.FK_WEBSITE,
+                        }));
 
-                        return Task.FromResult(OperationResult<FileDTO>.MakeSuccess(dto));
-                    }
-                    else
-                    {
-                        var foldersName = fullFilename.Replace(fileName, "").Replace("@/", "").Split('/', StringSplitOptions.RemoveEmptyEntries);
-                        throw new NotImplementedException();
-                        //var filesFolder =
-                        //    files
-                        //    .Select(f => f.FOLDER)
-                        //    .ToList();
-
-                        //Folder folderFound = null;
-                        //int folderIndex = foldersName.Length - 1;
-                        //do
-                        //{
-                            //var currentFolder = foldersName[folderIndex];
-
-                            //var folders =
-                            //    filesFolder
-                            //    .Where(f => f.NAME.Equals(currentFolder, StringComparison.InvariantCultureIgnoreCase))
-                            //    .ToList();
-
-                            //if (folders.Count == 1)
-                            //{
-                            //    folderFound = folders.Single();
-                            //}
-                            //else
-                            //{
-                            //    filesFolder = folders
-                            //        .Where(f => f.FK_PARENT != null)
-                            //        .Select(f => f.FK_PARENT)
-                            //        .ToList();
-
-                            //    folderIndex--;
-                            //}
-                            throw new NotImplementedException();
-
-                        //} while (folderFound == null && folderIndex >= 0);
-
-                        //if (folderFound == null || folderIndex < 0)
-                        //{
-                        //    return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("GETFILEBYFULLNAME", "FOLDER_NOT_FOUND") }); ;
-                        //}
-                        //else
-                        //{
-                            //Folder fileFolder = folderFound;
-
-                            //try
-                            //{
-                            //    for (int i = folderIndex; i < foldersName.Length - 1; i++)
-                            //    {
-                            //        var subFoldername = foldersName[i + 1];
-                            //        fileFolder =
-                            //            fileFolder.SUBFOLDERS
-                            //            .Where(f => f.NAME.Equals(subFoldername, StringComparison.InvariantCultureIgnoreCase))
-                            //            .Single();
-                            //    }
-
-                            //    var file = fileFolder
-                            //        .FILES
-                            //        .Where(f => f.FILENAME.Equals(fileName, StringComparison.InvariantCultureIgnoreCase))
-                            //        .Single();
-
-                            //    var dto = new FileDTO()
-                            //    {
-                            //        Id = file.ID,
-                            //        Content = file.CONTENT,
-                            //    };
-
-                            //    return OperationResult<FileDTO>.MakeSuccess(dto);
-                            //}
-                            //catch
-                            //{
-                            //    return OperationResult<FileDTO>.MakeFailure(new[] { ErrorMessage.Create("GETFILEBYFULLNAME", "GENERIC_ERROR") });
-                            //}
-                            throw new NotImplementedException();
-                        //}
-                    }
-                }
-                else
+                if (files.Count == 0)
                 {
-                    return Task.FromResult(OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GETFILEBYFULLNAME", "GENERIC_ERROR")]));
+                    return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GETFILEBYFULLNAME", "NOT_FOUND")]);
                 }
+
+                if (files.Count == 1)
+                {
+                    // Single match: behaviour unchanged (cross-tenant resolution tracked separately as an open point).
+                    var file = files[0];
+                    return OperationResult<FileDTO>.MakeSuccess(new FileDTO { Id = file.ID, Content = file.CONTENT });
+                }
+
+                // Multiple files share the filename: disambiguate by the folder path encoded in the link.
+                // The full path minus the filename is the folder chain (root → leaf), whose root folder is named after the website.
+                var website = parts[0];
+                var expectedChain = parts[..^1];
+
+                var folderMap = (await _folderRepository.ToListAsync(
+                    _folderRepository
+                        .Repository
+                        .Where(f => f.FK_WEBSITE == website)
+                        .Select(f => new Folder { ID = f.ID, NAME = f.NAME, FK_PARENT = f.FK_PARENT })))
+                    .ToDictionary(f => f.ID);
+
+                foreach (var candidate in files)
+                {
+                    if (FolderChainMatches(candidate.FK_FOLDER, expectedChain, folderMap))
+                    {
+                        return OperationResult<FileDTO>.MakeSuccess(new FileDTO { Id = candidate.ID, Content = candidate.CONTENT });
+                    }
+                }
+
+                return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GETFILEBYFULLNAME", "FOLDER_NOT_FOUND")]);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETFILEBYFULLNAME {message}", ex.Message);
-                return Task.FromResult(OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GETFILEBYFULLNAME", "GENERIC_ERROR")]));
+                return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GETFILEBYFULLNAME", "GENERIC_ERROR")]);
             }
+        }
+
+        private static bool FolderChainMatches(int folderId, string[] expectedChain, Dictionary<int, Folder> folderMap)
+        {
+            // Reconstruct the folder names from the file's folder up to the root, then compare leaf→root
+            // against the expected chain read in reverse.
+            var index = expectedChain.Length - 1;
+            int? currentId = folderId;
+
+            while (currentId != null && folderMap.TryGetValue(currentId.Value, out var folder))
+            {
+                if (index < 0 || !string.Equals(folder.NAME, expectedChain[index], StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return false;
+                }
+                index--;
+                currentId = folder.FK_PARENT;
+            }
+
+            // Matched iff every expected segment was consumed and we reached a root folder.
+            return index < 0 && currentId == null;
         }
 
         //public void RenameFolder(string oldName, string newName, bool isVendor, MorganEntities context)

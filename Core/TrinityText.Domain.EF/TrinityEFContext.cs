@@ -20,6 +20,13 @@ namespace TrinityText.Domain.EF
 
         public async Task BeginTransaction()
         {
+            // The context is pooled (AddDbContextPool); pooling does not reset custom fields,
+            // so a stale (already-disposed) transaction may linger from a previous lease.
+            if (_transaction != null)
+            {
+                _transaction.Dispose();
+                _transaction = null;
+            }
             _transaction = await Database.BeginTransactionAsync();
         }
 
@@ -29,12 +36,13 @@ namespace TrinityText.Domain.EF
             {
                 try
                 {
-                    SaveChanges();
+                    await SaveChangesAsync();
                     await _transaction.CommitAsync();
                 }
                 finally
                 {
                     _transaction.Dispose();
+                    _transaction = null;
                 }
             }
         }
@@ -50,6 +58,7 @@ namespace TrinityText.Domain.EF
                 finally
                 {
                     _transaction.Dispose();
+                    _transaction = null;
                 }
             }
         }
@@ -233,7 +242,8 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.FK_TEXTTYPE).HasColumnName("FK_TIPOLOGIA").UsePropertyAccessMode(PropertyAccessMode.Field);
                 entity.Property(e => e.ACTIVE).HasColumnName("ATTIVA");
                 entity.Property(e => e.NAME).HasColumnName("NOME");
-                entity.Navigation(e => e.REVISIONS).AutoInclude();
+                // REVISIONS intentionally NOT auto-included: callers load the needed revision(s) explicitly
+                // to avoid pulling every historical revision (with full CONTENT) on every Text query.
                 entity.Navigation(e => e.TEXTTYPE).AutoInclude();
 
                 entity
@@ -255,7 +265,7 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.REVISION_NUMBER).HasColumnName("REVISIONE");
                 entity.Property(e => e.CONTENT).HasColumnName("TESTO");
                 entity.Property(e => e.CREATION_USER).HasColumnName("UTENTE_CREAZIONE");
-                entity.Navigation(e => e.TEXT).AutoInclude();
+                // TEXT back-reference intentionally NOT auto-included (was a redundant circular load).
                 entity
                     .HasOne(e => e.TEXT)
                     .WithMany(e => e.REVISIONS)
