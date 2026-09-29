@@ -18,11 +18,12 @@ namespace TrinityText.Utilities
 
         public async Task<string> CompressFolder(string folder, string destinationFilePath)
         {
+            string fileZipName = null;
             try
             {
                 string folderName = Path.GetFileName(folder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
 
-                string fileZipName = Path.Combine(destinationFilePath, $"{folderName}.zip");
+                fileZipName = Path.Combine(destinationFilePath, $"{folderName}.zip");
 
                 await Task.Run(() => ZipFile.CreateFromDirectory(folder, fileZipName, CompressionLevel.Optimal, includeBaseDirectory: false));
 
@@ -31,12 +32,20 @@ namespace TrinityText.Utilities
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Errore durante la compressione della cartella: {Folder}", folder);
-                return string.Empty;
+
+                // do not leave a truncated archive behind, and do not report success with an empty path
+                TryDelete(fileZipName);
+                throw;
             }
         }
 
         public Task DecompressFolder(string basePath, byte[] zipFileByteArray)
         {
+            if (zipFileByteArray == null || zipFileByteArray.Length == 0)
+            {
+                throw new InvalidOperationException("The publication has no ZIP content to extract");
+            }
+
             try
             {
                 Directory.CreateDirectory(basePath);
@@ -48,8 +57,25 @@ namespace TrinityText.Utilities
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception during Decompress folder: {BasePath}", basePath);
+
+                // a broken archive must fail the publish, not upload an empty folder as a "success"
+                throw;
             }
             return Task.CompletedTask;
+        }
+
+        private static void TryDelete(string path)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(path) && File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch (IOException)
+            {
+            }
         }
     }
 }

@@ -25,7 +25,13 @@ namespace TrinityText.Business.Schema
                 }
             }
 
-            bool validFormat = int.TryParse(Value, out int integer);
+            // an optional number can be left empty: nothing more to validate
+            if (string.IsNullOrWhiteSpace(Value))
+            {
+                return errors.Count == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure(errors);
+            }
+
+            bool validFormat = int.TryParse(Value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int integer);
 
             if (validFormat)
             {

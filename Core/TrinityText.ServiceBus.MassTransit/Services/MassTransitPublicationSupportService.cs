@@ -67,83 +67,116 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
             var currentDirectory = baseDirectory.CreateSubdirectory($"{website}_{id}_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}");
 
-            var textSubDirectory = currentDirectory.CreateSubdirectory("Text");
-            //var filesSubDirectory = currentDirectory.CreateSubdirectory("Files");
-
-            var allLanguages = sites.SelectMany(s => s.Languages).Distinct().ToArray();
-
-            var siteLanguages = sites.ToDictionary(s => s.Site, v => v.Languages);
-
-            if (exportType == PublicationType.All || exportType == PublicationType.Texts)
+            // whatever happens after this point, do not leave a (possibly huge) partial export behind:
+            // every MassTransit retry would add another copy
+            try
             {
-                var textsByWebsiteRs = await _textService.GetPublishableTextsByWebsite(website, siteLanguages, textTypes);
 
-                if (textsByWebsiteRs.Success)
+                var textSubDirectory = currentDirectory.CreateSubdirectory("Text");
+                //var filesSubDirectory = currentDirectory.CreateSubdirectory("Files");
+
+                var allLanguages = sites.SelectMany(s => s.Languages).Distinct().ToArray();
+
+                var siteLanguages = sites.ToDictionary(s => s.Site, v => v.Languages);
+
+                if (exportType == PublicationType.All || exportType == PublicationType.Texts)
                 {
-                    var textsByWebsite = textsByWebsiteRs.Value;
-                    foreach (var s in sites)
-                    {
-                        var siteDirectory = textSubDirectory.CreateSubdirectory(s.Site.ToUpper());
+                    var textsByWebsiteRs = await _textService.GetPublishableTextsByWebsite(website, siteLanguages, textTypes);
 
-                        if (textsByWebsite.TryGetValue(s.Site, out var textsPerSite))
+                    if (textsByWebsiteRs.Success)
+                    {
+                        var textsByWebsite = textsByWebsiteRs.Value;
+                        foreach (var s in sites)
                         {
-                            var dict = textsPerSite.GroupBy(t => t.Language).ToFrozenDictionary(k => k.Key, v => v.ToList().AsReadOnly());
-                            await GenerateTextsFileBySite(website, dict, siteDirectory.FullName, publishType);
+                            var siteDirectory = textSubDirectory.CreateSubdirectory(s.Site.ToUpperInvariant());
+
+                            if (textsByWebsite.TryGetValue(s.Site, out var textsPerSite))
+                            {
+                                var dict = textsPerSite.GroupBy(t => t.Language).ToFrozenDictionary(k => k.Key, v => v.ToList().AsReadOnly());
+                                await GenerateTextsFileBySite(website, dict, siteDirectory.FullName, publishType);
+                            }
                         }
                     }
+                    else
+                    {
+                        TryDeleteDirectory(currentDirectory.FullName);
+                        return OperationResult<string>.MakeFailure(textsByWebsiteRs.Errors);
+                    }
+                }
+
+                if (exportType == PublicationType.All || exportType == PublicationType.Pages)
+                {
+                    var pageByWebsiteRs = await _pageService.GetPublishablePagesByWebsite(website, siteLanguages);
+
+                    if (pageByWebsiteRs.Success)
+                    {
+                        var pageByWebsite = pageByWebsiteRs.Value;
+                        foreach (var s in sites)
+                        {
+                            var siteDirectory = textSubDirectory.CreateSubdirectory(s.Site.ToUpperInvariant());
+
+                            if (pageByWebsite.TryGetValue(s.Site, out var textsPerSite))
+                            {
+                                var dict = textsPerSite.GroupBy(t => t.Language).ToFrozenDictionary(k => k.Key, v => v.ToList().AsReadOnly());
+                                await GeneratePagesFileBySite(tenant, website, s.Site, dict, siteDirectory.FullName, string.Empty, cdnServer, publishType);
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        TryDeleteDirectory(currentDirectory.FullName);
+                        return OperationResult<string>.MakeFailure(pageByWebsiteRs.Errors);
+                    }
+                }
+
+                if (exportType == PublicationType.All || exportType == PublicationType.Files)
+                {
+                    await GenerateFilesByWebsite(website, filesGenerationDate, currentDirectory.FullName);
+                }
+
+                await GenerateFileTimestamp(currentDirectory, user);
+
+                // I/O-bound recursive deletion: the sequential version avoids unbounded Parallel.ForEach
+                // thread-pool pressure; these trees are small (site/language folders).
+                DeleteEmptySubdirectories(currentDirectory.FullName);
+
+                if (compressFileOutput)
+                {
+                    var filePath = await _compressionFileService.CompressFolder(currentDirectory.FullName, basePath);
+                    if (string.IsNullOrWhiteSpace(filePath))
+                    {
+                        throw new InvalidOperationException("The export folder could not be compressed");
+                    }
+
+                    currentDirectory.Delete(true);
+
+                    return OperationResult<string>.MakeSuccess(filePath);
                 }
                 else
                 {
-                    return OperationResult<string>.MakeFailure(textsByWebsiteRs.Errors);
+                    return OperationResult<string>.MakeSuccess(currentDirectory.FullName);
                 }
             }
-
-            if (exportType == PublicationType.All || exportType == PublicationType.Pages)
+            catch
             {
-                var pageByWebsiteRs = await _pageService.GetPublishablePagesByWebsite(website, siteLanguages);
+                TryDeleteDirectory(currentDirectory.FullName);
+                throw;
+            }
+        }
 
-                if (pageByWebsiteRs.Success)
+        private void TryDeleteDirectory(string path)
+        {
+            try
+            {
+                if (Directory.Exists(path))
                 {
-                    var pageByWebsite = pageByWebsiteRs.Value;
-                    foreach (var s in sites)
-                    {
-                        var siteDirectory = textSubDirectory.CreateSubdirectory(s.Site.ToUpper());
-
-                        if (pageByWebsite.TryGetValue(s.Site, out var textsPerSite))
-                        {
-                            var dict = textsPerSite.GroupBy(t => t.Language).ToFrozenDictionary(k => k.Key, v => v.ToList().AsReadOnly());
-                            await GeneratePagesFileBySite(tenant, website, s.Site, dict, siteDirectory.FullName, string.Empty, cdnServer, publishType);
-                        }
-                    }
-
-                }
-                else
-                {
-                    return OperationResult<string>.MakeFailure(pageByWebsiteRs.Errors);
+                    Directory.Delete(path, true);
                 }
             }
-
-            if (exportType == PublicationType.All || exportType == PublicationType.Files)
+            catch (Exception ex)
             {
-                await GenerateFilesByWebsite(website, filesGenerationDate, currentDirectory.FullName);
-            }
-
-            await GenerateFileTimestamp(currentDirectory, user);
-
-            // I/O-bound recursive deletion: the sequential version avoids unbounded Parallel.ForEach
-            // thread-pool pressure; these trees are small (site/language folders).
-            DeleteEmptySubdirectories(currentDirectory.FullName);
-
-            if (compressFileOutput)
-            {
-                var filePath = await _compressionFileService.CompressFolder(currentDirectory.FullName, basePath);
-                currentDirectory.Delete(true);
-
-                return OperationResult<string>.MakeSuccess(filePath);
-            }
-            else
-            {
-                return OperationResult<string>.MakeSuccess(currentDirectory.FullName);
+                _logger.LogWarning(ex, "Unable to remove the export directory {path}", path);
             }
         }
 
@@ -169,6 +202,16 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
             PathSafety.EnsureValidSegment(payload.Website, nameof(payload.Website));
             PathSafety.EnsureValidSegment(payload.Tenant, nameof(payload.Tenant));
+
+            // site and language codes become directory names of the export
+            foreach (var site in payload.Sites ?? [])
+            {
+                PathSafety.EnsureValidSegment(site.Site, "Site");
+                foreach (var language in site.Languages ?? [])
+                {
+                    PathSafety.EnsureValidSegment(language, "Language");
+                }
+            }
         }
 
         public async Task<OperationResult> Generate(PublicationDTO setting)
@@ -205,7 +248,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                     if (updateRs.Success == false)
                     {
                         result.AppendErrors(updateRs.Errors);
-                        _logger.LogError("GenerateWebsite {website} end with errors: {errors}", website, string.Join(",", filePathRs.Errors.Select(s => s.Description)));
+                        _logger.LogError("GenerateWebsite {website} end with errors: {errors}", website, string.Join(",", updateRs.Errors.Select(s => s.Description)));
                     }
                 }
                 else
@@ -269,8 +312,8 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
         private static async Task GenerateFileTimestamp(DirectoryInfo currentDirectory, string username)
         {
-            var textFile = $"{currentDirectory}\\trinity-text.txt";
-            var text = $"{username}|{DateTime.Now:dd-MM-yyyy|HH-mm-ss}";
+            var textFile = Path.Combine(currentDirectory.FullName, "trinity-text.txt");
+            var text = $"{username}|{DateTime.Now.ToString("dd-MM-yyyy|HH-mm-ss", System.Globalization.CultureInfo.InvariantCulture)}";
 
             await System.IO.File.WriteAllTextAsync(textFile, text);
         }
@@ -313,21 +356,9 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                         PublicationFormat.JSON => CreateJsonResourcesDocument(textsPerType),
                         _ => throw new NotSupportedException(type.ToString()),
                     };
-                    var folder = new StringBuilder(langDir.FullName);
-                    var subfolder = types[t];
-                    if (!string.IsNullOrWhiteSpace(subfolder))
-                    {
-                        folder.Append($"\\{subfolder}");
+                    var folder = ResolveOutputFolder(directory.FullName, langDir.FullName, types[t]);
 
-                        var subfolderInfo = new DirectoryInfo(folder.ToString());
-                        if (!subfolderInfo.Exists)
-                        {
-                            subfolderInfo.Create();
-                        }
-                    }
-
-                    var filePath = PathSafety.EnsureWithinRoot(directory.FullName, $"{folder}\\{fileName}.{type.ToString().ToLower()}");
-                    //file.Save(filePath);
+                    var filePath = PathSafety.EnsureWithinRoot(directory.FullName, Path.Combine(folder, $"{fileName}.{type.ToString().ToLowerInvariant()}"));
                     await System.IO.File.WriteAllBytesAsync(filePath, file);
                 }
             }
@@ -339,11 +370,13 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             var mainFolderRs
                 = await _fileManagerService.GetAllFoldersByWebsite(website);
 
-            if (mainFolderRs.Success)
+            if (!mainFolderRs.Success)
             {
-                var mainFolder = mainFolderRs.Value;
-                await CreateFolderAndFiles(website, mainFolder, directoryPath, filesGenerationDate);
+                // a publication without (some of) its files must not be reported as successful
+                throw new InvalidOperationException($"Unable to read the folders of website {website}: {string.Join(",", mainFolderRs.Errors.Select(e => e.Description))}");
             }
+
+            await CreateFolderAndFiles(website, mainFolderRs.Value, directoryPath, filesGenerationDate);
         }
 
         private async Task CreateFolderAndFiles(string website, FolderDTO folder, string folderPath, DateTime filesGenerationDate)
@@ -358,34 +391,28 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             {
                 // metadata first, then one blob at a time: memory stays bounded by the largest file, not by the folder
                 var filesRs = await _fileManagerService.GetFilesByFolder(website, folder.Id.Value, false, filesGenerationDate);
-                if (filesRs.Success)
+                if (!filesRs.Success)
                 {
-                    var files = filesRs.Value;
+                    throw new InvalidOperationException($"Unable to read the files of folder {folder.Name} ({folder.Id}): {string.Join(",", filesRs.Errors.Select(e => e.Description))}");
+                }
 
-                    foreach (var f in files)
+                foreach (var f in filesRs.Value)
+                {
+                    var fileName = PathSafety.EnsureWithinRoot(directory.FullName, Path.Combine(directory.FullName, f.Filename));
+
+                    var contentRs = await _fileManagerService.GetFileContent(f.Id);
+                    if (!contentRs.Success)
                     {
-                        var fileName = PathSafety.EnsureWithinRoot(directory.FullName, $"{folderPath}\\{f.Filename}");
-
-                        var contentRs = await _fileManagerService.GetFileContent(f.Id);
-                        if (!contentRs.Success)
-                        {
-                            throw new InvalidOperationException($"Unable to read the content of file {f.Filename} ({f.Id})");
-                        }
-
-                        await File.WriteAllBytesAsync(fileName, contentRs.Value);
-
-                        //var file = new FileInfo(fileName);
-                        //using FileStream stream = file.OpenWrite();
-                        //stream.Write(f.Content, 0, f.Content.Length);
-                        //stream.Flush();
-                        //stream.Close();
+                        throw new InvalidOperationException($"Unable to read the content of file {f.Filename} ({f.Id})");
                     }
 
-                    foreach (var sub in folder.SubFolders)
-                    {
-                        string subfolderPath = PathSafety.EnsureWithinRoot(directory.FullName, $"{folderPath}\\{sub.Name}");
-                        await CreateFolderAndFiles(website, sub, subfolderPath, filesGenerationDate);
-                    }
+                    await File.WriteAllBytesAsync(fileName, contentRs.Value);
+                }
+
+                foreach (var sub in folder.SubFolders)
+                {
+                    var subfolderPath = PathSafety.EnsureWithinRoot(directory.FullName, Path.Combine(directory.FullName, sub.Name));
+                    await CreateFolderAndFiles(website, sub, subfolderPath, filesGenerationDate);
                 }
             }
         }
@@ -477,7 +504,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                         .AsReadOnly();
 
                     var documentSchema = contentsPerType.First().PageType.Schema;
-                    var fileName = contentsPerType.First().PageType.OutputFilename;
+                    var fileName = ResolvePageFileName(contentsPerType.First().PageType);
                     var structure = _pageSchemaService.GetContentStructure(documentSchema);
                     var file = type switch
                     {
@@ -485,24 +512,53 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                         PublicationFormat.JSON => await _pageSchemaService.CreateJsonContentsDocument(structure, contentsPerType, tenant, website, site, lang, baseUrl, cdnServer),
                         _ => throw new NotSupportedException(type.ToString()),
                     };
-                    var folder = new StringBuilder(langDir.FullName);
-                    var subfolder = types[t];
-                    if (!string.IsNullOrWhiteSpace(subfolder))
-                    {
-                        folder.Append($"\\{subfolder}");
+                    var folder = ResolveOutputFolder(directory.FullName, langDir.FullName, types[t]);
 
-                        var subfolderInfo = new DirectoryInfo(folder.ToString());
-                        if (!subfolderInfo.Exists)
-                        {
-                            subfolderInfo.Create();
-                        }
-                    }
-
-                    string filepath = $"{folder}\\{fileName}.{type.ToString().ToLower()}";
-                    //xml.Save(xmlFilePath);
+                    var filepath = PathSafety.EnsureWithinRoot(directory.FullName, Path.Combine(folder, $"{fileName}.{type.ToString().ToLowerInvariant()}"));
                     await System.IO.File.WriteAllBytesAsync(filepath, file);
                 }
             }
+        }
+
+        // language directory (+ optional subfolder), confined to the export root; created when missing
+        private static string ResolveOutputFolder(string root, string languageDirectory, string subfolder)
+        {
+            var folder = string.IsNullOrWhiteSpace(subfolder)
+                ? languageDirectory
+                : PathSafety.EnsureWithinRoot(root, Path.Combine(languageDirectory, subfolder));
+
+            Directory.CreateDirectory(folder);
+            return folder;
+        }
+
+        // an empty OutputFilename would make every page type write ".xml" over each other
+        private static string ResolvePageFileName(PageTypeDTO pageType)
+        {
+            if (!string.IsNullOrWhiteSpace(pageType.OutputFilename))
+            {
+                return pageType.OutputFilename;
+            }
+
+            return PathSafety.IsValidSegment(pageType.Name) ? pageType.Name : $"pagetype_{pageType.Id}";
+        }
+
+        // characters that XML 1.0 cannot represent (not even in CDATA) would abort the whole export
+        private static string RemoveInvalidXmlChars(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return value;
+            }
+
+            foreach (var c in value)
+            {
+                if (!System.Xml.XmlConvert.IsXmlChar(c) && !char.IsSurrogate(c))
+                {
+                    return string.Concat(value.Where(ch => System.Xml.XmlConvert.IsXmlChar(ch) || char.IsSurrogate(ch)));
+                }
+            }
+
+            return value;
         }
 
         private static byte[] CreateXmlResourcesDocument(IReadOnlyCollection<TextDTO> texts)
@@ -514,13 +570,13 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             foreach (var r in texts)
             {
                 var element = new XElement("resource");
-                element.SetAttributeValue("name", r.Name);
+                element.SetAttributeValue("name", RemoveInvalidXmlChars(r.Name));
 
                 if (!string.IsNullOrWhiteSpace(r.Country))
                 {
                     element.SetAttributeValue("country", r.Country);
                 }
-                var cdata = new XCData(r.TextRevision?.Content ?? string.Empty);
+                var cdata = new XCData(RemoveInvalidXmlChars(r.TextRevision?.Content ?? string.Empty));
                 element.Add(cdata);
 
                 root.Add(element);

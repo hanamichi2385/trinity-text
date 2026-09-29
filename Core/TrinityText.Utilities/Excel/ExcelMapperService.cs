@@ -141,7 +141,7 @@ namespace TrinityText.Utilities.Excel
                     {
                         var rw = (IDictionary<string, object>)r;
                         var key = GetExcelValue(r, "KEY");
-                        var typeName = GetExcelValue(r, "TYPE")?.ToUpper();
+                        var typeName = GetExcelValue(r, "TYPE")?.ToUpperInvariant();
                         var website = GetExcelValue(r, "WEBSITE");
                         var site = GetExcelValue(r, "SITE");
                         var country = GetExcelValue(r, "COUNTRY");
@@ -176,9 +176,9 @@ namespace TrinityText.Utilities.Excel
                                     },
                                     Active = true,
                                     TextTypeId = type?.Id,
-                                    Website = "*".Equals(website, StringComparison.InvariantCultureIgnoreCase) ? null : website,
-                                    Country = "*".Equals(country, StringComparison.InvariantCultureIgnoreCase) ? null : country,
-                                    Site = "*".Equals(site, StringComparison.InvariantCultureIgnoreCase) ? null : site,
+                                    Website = ScopeValue(website),
+                                    Country = ScopeValue(country),
+                                    Site = ScopeValue(site),
                                 };
 
                                 list.Add(dto);
@@ -189,11 +189,17 @@ namespace TrinityText.Utilities.Excel
             }
             catch (Exception ex)
             {
+                // an unreadable workbook must not look like "0 texts to import"
                 _logger.LogError(ex, "GetTextsFromStream");
+                throw;
             }
 
             return [.. list];
         }
+
+        // "*" or a blank cell = not scoped (null), never an empty string
+        private static string ScopeValue(string cell)
+            => string.IsNullOrWhiteSpace(cell) || "*".Equals(cell, StringComparison.Ordinal) ? null : cell;
 
         private static string GetExcelValue(IDictionary<string, object> r, string key)
         {

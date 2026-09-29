@@ -48,8 +48,8 @@ namespace TrinityText.Business
 
         public void SetPayload(string payload)
         {
-            var ss = JsonSerializer.Deserialize<PayloadDTO>(payload);
-            this.Payload= ss;
+            // a publication stored without payload must still be readable (the consumers report the missing payload)
+            this.Payload = string.IsNullOrWhiteSpace(payload) ? null : JsonSerializer.Deserialize<PayloadDTO>(payload);
         }
 
         public void SetPayload(PayloadDTO payload)

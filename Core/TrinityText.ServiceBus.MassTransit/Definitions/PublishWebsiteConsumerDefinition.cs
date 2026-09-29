@@ -13,9 +13,10 @@ namespace TrinityText.ServiceBus.MassTransit.Definitions
         public PublishWebsiteConsumerDefinition(IConfiguration configuration)
         {
             var options = configuration.GetSection("MassTransit");
-            var concurrentLimit = options.GetValue<int>("ConcurrentLimit");
-            var retry = options.GetValue<int>("Retry");
-            var retryIntervalMinutes = options.GetValue<int>("RetryIntervalMinutes");
+            // missing keys used to default to 0: concurrency limit 0 blocks the endpoint, interval 0 retries immediately
+            var concurrentLimit = Math.Max(1, options.GetValue<int?>("ConcurrentLimit") ?? 1);
+            var retry = Math.Max(0, options.GetValue<int?>("Retry") ?? 0);
+            var retryIntervalMinutes = Math.Max(1, options.GetValue<int?>("RetryIntervalMinutes") ?? 1);
 
             EndpointName = "publish_queue";
             ConcurrentMessageLimit = concurrentLimit;

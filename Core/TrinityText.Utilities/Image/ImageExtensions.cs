@@ -26,6 +26,12 @@ namespace TrinityText.Utilities
             newWidth = width;
             newHeight = height;
 
+            // an unset (0) limit would make the loops below run forever
+            if (options.ThumbWidth <= 0 || options.ThumbHeight <= 0)
+            {
+                throw new InvalidOperationException("ThumbWidth and ThumbHeight must be greater than zero");
+            }
+
             while (newWidth > options.ThumbWidth)
             {
                 decimal percWidth = (decimal)options.ThumbWidth / (decimal)width;

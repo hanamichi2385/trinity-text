@@ -249,7 +249,11 @@ namespace TrinityText.Business.Services.Impl
         }
 
         private static (string, string, string, string, string) ImportKey(string name, string language, string website, string site, string country)
-            => (name?.ToUpperInvariant(), language?.ToUpperInvariant(), website?.ToUpperInvariant(), site?.ToUpperInvariant(), country?.ToUpperInvariant());
+            => (name?.ToUpperInvariant(), language?.ToUpperInvariant(), ScopeKey(website), ScopeKey(site), ScopeKey(country));
+
+        // null and "" both mean "not scoped"
+        private static string ScopeKey(string value)
+            => string.IsNullOrWhiteSpace(value) ? null : value.ToUpperInvariant();
 
         /// <summary>
         /// Loads only the most recent revision (by REVISION_NUMBER) for each given Text in a single query and
@@ -288,6 +292,7 @@ namespace TrinityText.Business.Services.Impl
 
 
             var revision = entity.REVISIONS.ElementAt(0);
+            revision.ID = 0;
             revision.CREATION_DATE = DateTime.Now;
             revision.REVISION_NUMBER = 1;
             entity.ACTIVE = true;
@@ -317,7 +322,7 @@ namespace TrinityText.Business.Services.Impl
                 entity.FK_PRICELIST = dto.Site;
                 //entity.FK_TEXTTYPE = dto.TextTypeId;
                 entity.FK_WEBSITE = dto.Website;
-                entity.NAME = dto.Name;
+                entity.NAME = dto.Name?.ToUpperInvariant();
 
                 if (entity.FK_TEXTTYPE != dto.TextTypeId)
                 {
@@ -332,13 +337,16 @@ namespace TrinityText.Business.Services.Impl
                     }
                 }
 
-                var lastRevision = entity.REVISIONS.OrderByDescending(d => d.CREATION_DATE).FirstOrDefault();
-                if (lastRevision != null && string.Equals(lastRevision.CONTENT, dto.TextRevision.Content) == false)
+                entity.REVISIONS ??= new List<TextRevision>();
+                var lastRevision = entity.REVISIONS.OrderByDescending(d => d.REVISION_NUMBER).FirstOrDefault();
+                if (lastRevision == null || string.Equals(lastRevision.CONTENT, dto.TextRevision.Content) == false)
                 {
                     var revision = _mapper.Map<TextRevision>(dto.TextRevision);
                     //revision.TEXT = entity;
                     //revision.FK_TEXT = entity.ID;
-                    revision.REVISION_NUMBER = lastRevision.REVISION_NUMBER + 1;
+                    // always a NEW row: the DTO may carry the id of the latest revision (round-tripped from Get)
+                    revision.ID = 0;
+                    revision.REVISION_NUMBER = (lastRevision?.REVISION_NUMBER ?? 0) + 1;
                     revision.CREATION_DATE = DateTime.Now;
 
                     entity.REVISIONS.Add(revision);
@@ -385,7 +393,7 @@ namespace TrinityText.Business.Services.Impl
                 else
                 {
                     query =
-                        query.Where(r => r.FK_WEBSITE == null);
+                        query.Where(r => r.FK_WEBSITE == null || r.FK_WEBSITE == "");
                 }
 
                 if (!string.IsNullOrWhiteSpace(dto.Site))
@@ -396,7 +404,7 @@ namespace TrinityText.Business.Services.Impl
                 else
                 {
                     query =
-                        query.Where(r => r.FK_PRICELIST == null);
+                        query.Where(r => r.FK_PRICELIST == null || r.FK_PRICELIST == "");
                 }
 
                 if (!string.IsNullOrWhiteSpace(dto.Country))
@@ -407,7 +415,7 @@ namespace TrinityText.Business.Services.Impl
                 else
                 {
                     query =
-                        query.Where(r => r.FK_COUNTRY == null);
+                        query.Where(r => r.FK_COUNTRY == null || r.FK_COUNTRY == "");
                 }
 
                 if (dto.Id.HasValue)
@@ -440,7 +448,7 @@ namespace TrinityText.Business.Services.Impl
                         .Where(t => allLanguages.Contains(t.FK_LANGUAGE) &&
                             textTypesIds.Contains(t.FK_TEXTTYPE) &&
                             t.ACTIVE == true &&
-                            (t.FK_WEBSITE == null || (t.FK_WEBSITE == website && (t.FK_PRICELIST == null || t.FK_PRICELIST == "")))));
+                            ((t.FK_WEBSITE == null || t.FK_WEBSITE == "") || (t.FK_WEBSITE == website && (t.FK_PRICELIST == null || t.FK_PRICELIST == "")))));
 
                 await PopulateLatestRevisions(textsGlobalByWebsiteList);
                 var textsGlobalByWebsite = _mapper.Map<IList<TextDTO>>(textsGlobalByWebsiteList).AsReadOnly();
@@ -496,7 +504,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        private static List<TextDTO> ReduceTexts(IReadOnlyList<TextDTO> texts, string website, string site, int?[] textTypesIds)
+        internal static List<TextDTO> ReduceTexts(IReadOnlyList<TextDTO> texts, string website, string site, int?[] textTypesIds)
         {
             var byType = texts.ToLookup(t => t.TextType?.Id);
             var list = new List<TextDTO>(texts.Count);
@@ -518,7 +526,7 @@ namespace TrinityText.Business.Services.Impl
             return list;
         }
 
-        private static void PickBest(List<TextDTO> textByName, string website, string site, List<TextDTO> output)
+        internal static void PickBest(List<TextDTO> textByName, string website, string site, List<TextDTO> output)
         {
             if (textByName.Count == 1)
             {
@@ -555,7 +563,9 @@ namespace TrinityText.Business.Services.Impl
                     return;
                 }
 
-                var countries = globalTexts.Select(ris => ris.Country).Distinct().ToList();
+                // no global text at all (e.g. only website-level texts without site): never drop them silently
+                var candidates = globalTexts.Count > 0 ? globalTexts : textByWebsite;
+                var countries = candidates.Select(ris => ris.Country).Distinct().ToList();
                 AppendByCountry(textByName, countries, site, output);
                 return;
             }
@@ -570,7 +580,10 @@ namespace TrinityText.Business.Services.Impl
             AppendByCountry(textByName, countriesAll, site, output);
         }
 
-        private static void AppendByCountry(List<TextDTO> textByName, List<string> countries, string site, List<TextDTO> output)
+        private static int Specificity(TextDTO text)
+            => (string.IsNullOrWhiteSpace(text.Website) ? 0 : 2) + (string.IsNullOrWhiteSpace(text.Site) ? 0 : 1);
+
+        internal static void AppendByCountry(List<TextDTO> textByName, List<string> countries, string site, List<TextDTO> output)
         {
             foreach (var country in countries)
             {
@@ -582,7 +595,10 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    var text = textsForCountry.Single(ris => ris.Site == site);
+                    // the text of the requested site wins; otherwise the most specific one (website over global).
+                    // Single() used to throw here and abort the whole publication.
+                    var text = textsForCountry.FirstOrDefault(ris => ris.Site == site)
+                        ?? textsForCountry.OrderByDescending(Specificity).First();
                     output.Add(text);
                 }
             }
@@ -672,16 +688,23 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
+                // 0 or negative would delete every revision of every text (the predicate below is always true)
+                if (revisionToMantain < 1)
+                {
+                    return OperationResult.MakeFailure([ErrorMessage.Create("CLEAN_REVISIONS", "INVALID_ARGUMENT")]);
+                }
+
                 // A revision is "in excess" (to be deleted) when at least `revisionToMantain` newer revisions
                 // exist for the same text — i.e. it falls outside the most-recent N. Computed in SQL via a
                 // correlated count, so no revision content is loaded into memory.
+                // "Newer" = higher REVISION_NUMBER (covered by the (RISORSA, REVISIONE) index, not affected by clock changes).
                 // Single DELETE with the same predicate: no id list is materialised and sent back as a huge IN (...).
                 await _textRevisionRepository.ExecuteDeleteAsync(
                     _textRevisionRepository
                         .Repository
                         .Where(r => _textRevisionRepository
                             .Repository
-                            .Count(x => x.FK_TEXT == r.FK_TEXT && x.CREATION_DATE > r.CREATION_DATE) >= revisionToMantain));
+                            .Count(x => x.FK_TEXT == r.FK_TEXT && x.REVISION_NUMBER > r.REVISION_NUMBER) >= revisionToMantain));
 
                 return OperationResult.MakeSuccess();
             }
@@ -730,7 +753,8 @@ namespace TrinityText.Business.Services.Impl
                 }
 
                 // new texts are inserted in a single batch (one SaveChanges / flush) instead of one per row
-                var toCreate = new List<Text>();
+                // rows repeated inside the same file collapse to one text (the last one wins)
+                var toCreate = new Dictionary<(string, string, string, string, string), Text>();
                 foreach (var r in texts)
                 {
                     existingMap.TryGetValue(ImportKey(r.Name, r.Language, r.Website, r.Site, r.Country), out var t);
@@ -738,7 +762,7 @@ namespace TrinityText.Business.Services.Impl
 
                     if (!exist)
                     {
-                        toCreate.Add(BuildNewText(r));
+                        toCreate[ImportKey(r.Name, r.Language, r.Website, r.Site, r.Country)] = BuildNewText(r);
                     }
                     else if (@override)
                     {
@@ -752,7 +776,7 @@ namespace TrinityText.Business.Services.Impl
 
                 if (toCreate.Count > 0)
                 {
-                    await _textRepository.AddRangeAsync(toCreate);
+                    await _textRepository.AddRangeAsync(toCreate.Values);
                     counter += toCreate.Count;
                 }
                 await _textRepository.CommitTransaction();

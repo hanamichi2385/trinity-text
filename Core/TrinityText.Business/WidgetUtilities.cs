@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -100,9 +101,21 @@ namespace TrinityText.Business
                     if (!cache.Widgets.TryGetValue(cacheKey, out var content))
                     {
                         var widgetRs = await _widgetService.GetByKeys(key, website, site, language);
-                        content = widgetRs.Success
-                            ? CdataSafe(widgetRs.Value?.Content ?? string.Empty)
-                            : key;
+                        if (widgetRs.Success)
+                        {
+                            content = CdataSafe(widgetRs.Value?.Content ?? string.Empty);
+                        }
+                        else if (widgetRs.Errors.Any(e => e.Description == "NOT_FOUND"))
+                        {
+                            // unknown key: the placeholder text stays visible (existing behavior)
+                            content = key;
+                        }
+                        else
+                        {
+                            // a lookup error (e.g. database down) must not be cached and published as if the widget were its own key
+                            throw new InvalidOperationException($"Unable to resolve widget '{key}'");
+                        }
+
                         cache.Widgets[cacheKey] = content;
                     }
 

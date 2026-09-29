@@ -16,34 +16,64 @@ namespace TrinityText.Domain.EF
 
         private IDbContextTransaction _transaction;
 
+        // Begin/Commit/Rollback nest: services calling each other join the outermost transaction
+        // (the inner Commit only flushes, the real commit happens when the outermost one completes;
+        // any Rollback rolls back the whole transaction).
+        private int _transactionDepth;
+
         public string ConnectionString => Database.GetConnectionString();
 
         public async Task BeginTransaction()
         {
             // The context is pooled (AddDbContextPool); pooling does not reset custom fields,
             // so a stale (already-disposed) transaction may linger from a previous lease.
+            if (_transactionDepth > 0 && (_transaction == null || Database.CurrentTransaction == null))
+            {
+                _transaction?.Dispose();
+                _transaction = null;
+                _transactionDepth = 0;
+            }
+
+            if (_transactionDepth > 0)
+            {
+                _transactionDepth++;
+                return;
+            }
+
             if (_transaction != null)
             {
                 _transaction.Dispose();
                 _transaction = null;
             }
+
             _transaction = await Database.BeginTransactionAsync();
+            _transactionDepth = 1;
         }
 
         public async Task CommitTransaction()
         {
-            if (_transaction != null)
+            if (_transaction == null)
             {
-                try
-                {
-                    await SaveChangesAsync();
-                    await _transaction.CommitAsync();
-                }
-                finally
-                {
-                    _transaction.Dispose();
-                    _transaction = null;
-                }
+                return;
+            }
+
+            if (_transactionDepth > 1)
+            {
+                await SaveChangesAsync();
+                _transactionDepth--;
+                return;
+            }
+
+            try
+            {
+                await SaveChangesAsync();
+                await _transaction.CommitAsync();
+            }
+            finally
+            {
+                _transaction.Dispose();
+                _transaction = null;
+                _transactionDepth = 0;
             }
         }
 
@@ -59,6 +89,7 @@ namespace TrinityText.Domain.EF
                 {
                     _transaction.Dispose();
                     _transaction = null;
+                    _transactionDepth = 0;
                 }
             }
         }

@@ -1,33 +1,51 @@
 name: Build
+
 on:
   push:
-   branches:
-   - 'main'
+    branches:
+    - 'main'
+  pull_request:
+    branches:
+    - 'main'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SOLUTION_NAME: Trinity.sln
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    outputs:
-     solution-name: ${{ steps.setup-solution.outputs.solution }}
+    timeout-minutes: 20
     steps:
     - uses: actions/checkout@v5
-    - name: Setup .NET Core
+
+    - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 8.0.x
-        
-    - name: Setup Solution
-      id: setup-solution
-      env: 
-        SOLUTION_NAME: "Trinity.sln"
-      run: |      
-        echo "solution=$SOLUTION_NAME" >> $GITHUB_OUTPUT
-    - name: Install dependencies
-      env: 
-        SOLUTION_NAME: ${{ steps.setup-solution.outputs.solution }}
+
+    - name: Restore
+      run: dotnet restore "$SOLUTION_NAME"
+
+    - name: Build
+      run: dotnet build "$SOLUTION_NAME" --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
+
+    # Only tests that need no database (the others require a SQL Server, see TestCategory("Offline"))
+    - name: Test (offline)
+      run: dotnet test "$SOLUTION_NAME" --configuration Release --no-build --filter "TestCategory=Offline" --logger "console;verbosity=normal"
+
+    # Reported as a warning for now: turn into a failure (exit 1) once the known advisories are cleared
+    - name: Check vulnerable packages
       run: |
-       echo $SOLUTION_NAME
-       dotnet restore $SOLUTION_NAME
-    - name: Build Solution
-      env: 
-        SOLUTION_NAME: ${{ steps.setup-solution.outputs.solution }}
-      run: dotnet build $SOLUTION_NAME --configuration Release --no-restore
+        dotnet list "$SOLUTION_NAME" package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
+        if grep -q "has the following vulnerable packages" vulnerable.txt; then
+          echo "::warning title=Vulnerable packages::dotnet list package reported vulnerable dependencies (see the step log)"
+        fi

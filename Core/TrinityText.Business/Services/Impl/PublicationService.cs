@@ -241,6 +241,9 @@ namespace TrinityText.Business.Services.Impl
 
                 var result = _mapper.Map<PublicationDTO>(saved);
                 result.SetPayload(entity.PAYLOAD);
+                // the mapper only sees the FK ids of the (not loaded) servers
+                result.FtpServer = dto.FtpServer;
+                result.CdnServer = dto.CdnServer;
 
                 return OperationResult<PublicationDTO>.MakeSuccess(result);
             }

@@ -25,4 +25,7 @@
 	  <ProjectReference Include="..\TrinityText.Domain\TrinityText.Domain.csproj" />
 	</ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="TrinityText.UnitTests" />
+  </ItemGroup>
 </Project>

@@ -146,6 +146,13 @@ namespace TrinityText.Business.Services.Impl
                         .Read(dto.Id.Value);
                     if (entity != null)
                     {
+                        // key / website / site / language are the identity of a widget: renaming must not create a duplicate
+                        var duplicatedRs = await NotDuplicated(dto);
+                        if (!duplicatedRs.Success)
+                        {
+                            return OperationResult<WidgetDTO>.MakeFailure(duplicatedRs.Errors);
+                        }
+
                         //entity.ACTIVE = dto.Active;
                         entity.FK_LANGUAGE = dto.Language;
                         entity.FK_PRICELIST = dto.Site;
@@ -213,7 +220,7 @@ namespace TrinityText.Business.Services.Impl
                 else
                 {
                     query =
-                        query.Where(r => r.FK_WEBSITE == null);
+                        query.Where(r => r.FK_WEBSITE == null || r.FK_WEBSITE == "");
                 }
 
                 if (!string.IsNullOrWhiteSpace(dto.Site))
@@ -224,7 +231,12 @@ namespace TrinityText.Business.Services.Impl
                 else
                 {
                     query =
-                        query.Where(r => r.FK_PRICELIST == null);
+                        query.Where(r => r.FK_PRICELIST == null || r.FK_PRICELIST == "");
+                }
+
+                if (dto.Id.HasValue)
+                {
+                    query = query.Where(r => r.ID != dto.Id.Value);
                 }
 
                 var resx = await _widgetRepository.CountAsync(query);

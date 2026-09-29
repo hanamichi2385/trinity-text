@@ -27,9 +27,7 @@ namespace TrinityText.Utilities.Transfer
 
                 var uri = new Uri(host);
 
-                var directories = host
-                    .Replace($"{uri.Scheme}://", string.Empty)
-                    .Replace(uri.Host, string.Empty);
+                var directories = GetRemoteDirectory(uri);
 
                 var service = GetService(uri);
                 var ftpfile = await service.GetFile(tenant, website, file, uri.Host, username, password, directories);
@@ -54,9 +52,7 @@ namespace TrinityText.Utilities.Transfer
 
                 var uri = new Uri(host);
 
-                var directories = host
-                    .Replace($"{uri.Scheme}://", string.Empty)
-                    .Replace(uri.Host, string.Empty);
+                var directories = GetRemoteDirectory(uri);
 
                 var service = GetService(uri);
 
@@ -73,16 +69,39 @@ namespace TrinityText.Utilities.Transfer
             }
             finally
             {
-                baseDirectory.Delete(true);
+                // the local copy is always removed, but a folder that is already gone must not hide the result
+                try
+                {
+                    if (baseDirectory.Exists)
+                    {
+                        baseDirectory.Delete(true);
+                    }
+                }
+                catch (IOException)
+                {
+                }
             }
             return result;
+        }
+
+        // Remote folder of the URL ("sftp://host:22/dir/sub" -> "/dir/sub"). The previous string replacement kept
+        // the port and the "user:password@" part of the URL as folder names, created on the remote server.
+        private static string GetRemoteDirectory(Uri uri)
+        {
+            var segments = Uri.UnescapeDataString(uri.AbsolutePath).Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Any(s => s == ".." || s == "." || s.Contains((char)92) || s.Any(char.IsControl)))
+            {
+                throw new ArgumentException("Invalid remote directory in the server address");
+            }
+
+            return "/" + string.Join('/', segments);
         }
 
         private ITransferService GetService(Uri host)
         {
             if (Services.Count > 1)
             {
-                var key = host.Scheme.ToLower();
+                var key = host.Scheme.ToLowerInvariant();
 
                 if (Services.TryGetValue(key, out ITransferService value))
                 {

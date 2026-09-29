@@ -46,6 +46,7 @@ namespace TrinityText.Business.Services.Impl
                             Website = s.FK_WEBSITE,
                             Name = s.NAME,
                             Note = s.NOTE,
+                            Deletable = s.DELETABLE,
                         }));
 
                 var result = BuildFolderTree(dtos);
@@ -167,6 +168,21 @@ namespace TrinityText.Business.Services.Impl
             return true;
         }
 
+        // two folders with the same name under the same parent make @/website/... links ambiguous
+        private async Task<bool> ExistsSibling(string website, int? parentFolderId, string name, int? excludeId)
+        {
+            var query = _folderRepository
+                .Repository
+                .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == parentFolderId && f.NAME == name);
+
+            if (excludeId.HasValue)
+            {
+                query = query.Where(f => f.ID != excludeId.Value);
+            }
+
+            return await _folderRepository.CountAsync(query) > 0;
+        }
+
         public async Task<OperationResult<FolderDTO>> SaveFolder(int? parentFolderId, FolderDTO dto)
         {
             try
@@ -178,15 +194,27 @@ namespace TrinityText.Business.Services.Impl
 
                     if (entity != null)
                     {
-                        if (!await IsValidParent(entity.ID, parentFolderId, dto.Website ?? entity.FK_WEBSITE))
+                        // system folders (website root, Files / Images, site and language folders) define the export layout
+                        if (!entity.DELETABLE)
+                        {
+                            return OperationResult<FolderDTO>.MakeFailure([ErrorMessage.Create("SAVE", "NOT_EDITABLE")]);
+                        }
+
+                        // the website of an existing folder never changes
+                        if (!await IsValidParent(entity.ID, parentFolderId, entity.FK_WEBSITE))
                         {
                             return OperationResult<FolderDTO>.MakeFailure([ErrorMessage.Create("SAVE", "INVALID_PARENT")]);
                         }
 
-                        entity.NAME = NormalizeFolderName(dto.Name);
+                        var name = NormalizeFolderName(dto.Name);
+                        if (await ExistsSibling(entity.FK_WEBSITE, parentFolderId, name, entity.ID))
+                        {
+                            return OperationResult<FolderDTO>.MakeFailure([ErrorMessage.Create("SAVE", "DUPLICATED")]);
+                        }
+
+                        entity.NAME = name;
                         entity.FK_PARENT = parentFolderId;
                         entity.NOTE = dto.Note;
-                        entity.FK_WEBSITE = dto.Website;
 
                         var result = await _folderRepository.Update(entity);
 
@@ -208,6 +236,11 @@ namespace TrinityText.Business.Services.Impl
                         return OperationResult<FolderDTO>.MakeFailure([ErrorMessage.Create("SAVE", "INVALID_PARENT")]);
                     }
 
+                    if (await ExistsSibling(dto.Website, parentFolderId, dto.Name, null))
+                    {
+                        return OperationResult<FolderDTO>.MakeFailure([ErrorMessage.Create("SAVE", "DUPLICATED")]);
+                    }
+
                     var entity = _mapper.Map<Folder>(dto);
                     entity.DELETABLE = true;
                     entity.FK_PARENT = parentFolderId;
@@ -227,6 +260,7 @@ namespace TrinityText.Business.Services.Impl
 
         public async Task<OperationResult> RemoveFolder(int id)
         {
+            var transactionStarted = false;
             try
             {
                 var entity = await _folderRepository
@@ -242,16 +276,30 @@ namespace TrinityText.Business.Services.Impl
                     return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_DELETABLE")]);
                 }
 
+                var levels = await GetSubtreeLevels(entity);
+
                 // A deletable folder may still contain system (non-deletable) folders in its subtree;
-                // deleting the parent would cascade-remove them, bypassing the DELETABLE flag.
-                if (await HasNonDeletableDescendant(entity))
+                // deleting the parent would remove them too, bypassing the DELETABLE flag.
+                if (levels.Any(level => level.Any(f => !f.DELETABLE)))
                 {
                     return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_DELETABLE")]);
                 }
 
                 await _folderRepository.BeginTransaction();
+                transactionStarted = true;
 
-                await EmptyFolder(entity);
+                // Folder and File have no navigation properties and the FKs do not cascade:
+                // remove the files of the subtree, then the folders from the deepest level up.
+                var folderIds = levels.SelectMany(level => level.Select(f => f.ID)).ToArray();
+                await _fileRepository.ExecuteDeleteAsync(
+                    _fileRepository.Repository.Where(f => folderIds.Contains(f.FK_FOLDER)));
+
+                for (var depth = levels.Count - 1; depth >= 0; depth--)
+                {
+                    var levelIds = levels[depth].Select(f => f.ID).ToArray();
+                    await _folderRepository.ExecuteDeleteAsync(
+                        _folderRepository.Repository.Where(f => levelIds.Contains(f.ID)));
+                }
 
                 await _folderRepository.CommitTransaction();
 
@@ -259,13 +307,18 @@ namespace TrinityText.Business.Services.Impl
             }
             catch (Exception ex)
             {
-                await _folderRepository.RollbackTransaction();
+                if (transactionStarted)
+                {
+                    await _folderRepository.RollbackTransaction();
+                }
+
                 _logger.LogError(ex, "REMOVE {message}", ex.Message);
                 return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "GENERIC_ERROR")]);
             }
         }
 
-        private async Task<bool> HasNonDeletableDescendant(Folder root)
+        // the folder and all its descendants, grouped by depth (index 0 = the folder itself)
+        private async Task<List<List<Folder>>> GetSubtreeLevels(Folder root)
         {
             var websiteFolders = await _folderRepository.ToListAsync(
                 _folderRepository
@@ -275,43 +328,24 @@ namespace TrinityText.Business.Services.Impl
 
             var byParent = websiteFolders.ToLookup(f => f.FK_PARENT);
 
-            var stack = new Stack<int>();
-            stack.Push(root.ID);
-            while (stack.Count > 0)
+            var levels = new List<List<Folder>> { new() { new Folder { ID = root.ID, FK_PARENT = root.FK_PARENT, DELETABLE = root.DELETABLE } } };
+            var visited = new HashSet<int> { root.ID };
+            while (true)
             {
-                var current = stack.Pop();
-                foreach (var child in byParent[current])
+                var next = levels[^1]
+                    .SelectMany(f => byParent[f.ID])
+                    .Where(f => visited.Add(f.ID))
+                    .ToList();
+
+                if (next.Count == 0)
                 {
-                    if (!child.DELETABLE)
-                    {
-                        return true;
-                    }
-                    stack.Push(child.ID);
+                    break;
                 }
+
+                levels.Add(next);
             }
-            return false;
-        }
 
-
-        private async Task EmptyFolder(Folder folder)
-        {
-            //while (folder.SUBFOLDERS.Any())
-            //{
-            //    var subfolder = folder.SUBFOLDERS.First();
-            //    await EmptyFolder(subfolder);
-
-            //    folder.SUBFOLDERS.Remove(subfolder);
-            //}
-
-            //while (folder.FILES.Count > 0)
-            //{
-            //    var file = folder.FILES.First();
-            //    folder.FILES.Remove(file);
-
-            //    await _fileRepository.Delete(file);
-            //}
-
-            await _folderRepository.Delete(folder);
+            return levels;
         }
 
         public async Task<OperationResult<FileDTO>> GetFile(Guid id, bool withThumb)
@@ -456,6 +490,12 @@ namespace TrinityText.Business.Services.Impl
 
                 if (folder != null)
                 {
+                    // a file stored under another website than its folder would never be exported
+                    if (!string.Equals(folder.FK_WEBSITE, website, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return OperationResult.MakeFailure([ErrorMessage.Create("ADDFILE_TO_FOLDER", "FOLDER_NOT_FOUND")]);
+                    }
+
                     dto.Filename = NormalizeFilename(dto.Filename);
 
                     var content = dto.Content;
@@ -612,12 +652,12 @@ namespace TrinityText.Business.Services.Impl
                     }
                     else
                     {
-                        return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "FILE_NOT_FOUND")]);
+                        return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "FOLDER_NOT_FOUND")]);
                     }
                 }
                 else
                 {
-                    return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "FOLDER_NOT_FOUND")]);
+                    return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "FILE_NOT_FOUND")]);
                 }
 
             }
@@ -636,17 +676,23 @@ namespace TrinityText.Business.Services.Impl
                 _fileRepository
                     .Repository
                     .Where(f => f.ID == fileId)
-                    .Select(f => new { f.FILENAME }));
+                    .Select(f => new { f.FILENAME, f.FK_FOLDER }));
 
             if (file == null)
             {
-                return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "FOLDER_NOT_FOUND")]);
+                return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "FILE_NOT_FOUND")]);
             }
 
             var folder = await _folderRepository.Read(newFolder);
             if (folder == null)
             {
-                return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "FILE_NOT_FOUND")]);
+                return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "FOLDER_NOT_FOUND")]);
+            }
+
+            // already there: CheckFileToFolder would see the file itself and rename it "name(1).ext"
+            if (file.FK_FOLDER == folder.ID)
+            {
+                return OperationResult<FileDTO>.MakeSuccess(await GetFileMetadata(fileId));
             }
 
             var newFilename = await CheckFileToFolder(file.FILENAME, folder);
@@ -948,7 +994,9 @@ namespace TrinityText.Business.Services.Impl
             try
             {
                 // Path format: @/<website>/<folder1>/.../<filename>
-                var parts = fullFilename.Replace("@/", string.Empty).Split('/', StringSplitOptions.RemoveEmptyEntries);
+                var parts = fullFilename.Replace("@/", string.Empty).Split('/', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(Uri.UnescapeDataString)
+                    .ToArray();
                 if (parts.Length == 0)
                 {
                     return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("GETFILEBYFULLNAME", "NOT_FOUND")]);

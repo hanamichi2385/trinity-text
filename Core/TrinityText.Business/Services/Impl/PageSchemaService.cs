@@ -45,7 +45,7 @@ namespace TrinityText.Business.Services.Impl
 
             foreach (var part in content.Elements())
             {
-                string partName = part.Name.ToString().ToLower();
+                string partName = part.Name.ToString().ToLowerInvariant();
                 bool isRequired = part.Attribute("isrequired") != null && bool.Parse(part.Attribute("isrequired").Value);
                 string partId = part.Attribute("id") != null ? part.Attribute("id").Value : string.Empty;
                 string description = part.Attribute("description") != null ? part.Attribute("description").Value : string.Empty;
@@ -56,8 +56,8 @@ namespace TrinityText.Business.Services.Impl
                     case "textpart":
                         var textAtom = new TextAtom();
                         bool isHtml = part.Attribute("ishtml") != null && bool.Parse(part.Attribute("ishtml").Value);
-                        int? maxLenght = part.Attribute("maxlenght") != null ? int.Parse(part.Attribute("maxlenght").Value) : int.MaxValue;
-                        int? minLenght = part.Attribute("minlenght") != null ? int.Parse(part.Attribute("minlenght").Value) : int.MinValue;
+                        int? maxLenght = part.Attribute("maxlenght") != null ? int.Parse(part.Attribute("maxlenght").Value, System.Globalization.CultureInfo.InvariantCulture) : int.MaxValue;
+                        int? minLenght = part.Attribute("minlenght") != null ? int.Parse(part.Attribute("minlenght").Value, System.Globalization.CultureInfo.InvariantCulture) : int.MinValue;
                         bool extend = part.Attribute("extend") != null && bool.Parse(part.Attribute("extend").Value);
                         textAtom.Id = partId;
                         textAtom.IsHtml = isHtml;
@@ -120,12 +120,12 @@ namespace TrinityText.Business.Services.Impl
                         int? minValue = null;
                         if (part.Attribute("minvalue") != null)
                         {
-                            minValue = int.Parse(part.Attribute("minvalue").Value);
+                            minValue = int.Parse(part.Attribute("minvalue").Value, System.Globalization.CultureInfo.InvariantCulture);
                         }
                         int? maxValue = null;
                         if (part.Attribute("maxvalue") != null)
                         {
-                            maxValue = int.Parse(part.Attribute("maxvalue").Value);
+                            maxValue = int.Parse(part.Attribute("maxvalue").Value, System.Globalization.CultureInfo.InvariantCulture);
                         }
                         numberAtom.IsRequired = isRequired;
                         numberAtom.MinValue = minValue;
@@ -312,7 +312,7 @@ namespace TrinityText.Business.Services.Impl
                     //    break;
                     case TrinityText.Business.Schema.AtomType.Checkbox:
                         var checkbox = part as CheckBoxAtom;
-                        elementPart.Add(string.IsNullOrWhiteSpace(checkbox.Value) ? "false" : checkbox.Value.ToLower());
+                        elementPart.Add(string.IsNullOrWhiteSpace(checkbox.Value) ? "false" : checkbox.Value.ToLowerInvariant());
                         break;
 
                     case TrinityText.Business.Schema.AtomType.Separator:
@@ -324,7 +324,7 @@ namespace TrinityText.Business.Services.Impl
 
                         if (DateTime.TryParseExact(dateTime.Value, DateTimeAtom.Format, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
                         {
-                            elementPart.Add(date.ToString(DateTimeAtom.Format));
+                            elementPart.Add(date.ToString(DateTimeAtom.Format, System.Globalization.CultureInfo.InvariantCulture));
                         }
                         break;
                 }
@@ -426,7 +426,7 @@ namespace TrinityText.Business.Services.Impl
                                 var orderValue = item.Element("order") != null ? item.Element("order").Value : string.Empty;
                                 if (!string.IsNullOrWhiteSpace(orderValue))
                                 {
-                                    if(int.TryParse(orderValue, out order) == false)
+                                    if(int.TryParse(orderValue, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out order) == false)
                                     {
                                         order = 0;
                                     }
@@ -548,12 +548,20 @@ namespace TrinityText.Business.Services.Impl
 
             foreach (var c in contentsPerType)
             {
-                var xml = await _widgetUtilities.Replace(tenant, vendor, instance, language, c.Content, cache);
+                try
+                {
+                    var xml = await _widgetUtilities.Replace(tenant, vendor, instance, language, c.Content, cache);
 
-                xml = await _widgetUtilities.ReplaceLink(xml, tenant, vendor, baseUrl, cdnServer, cache);
+                    xml = await _widgetUtilities.ReplaceLink(xml, tenant, vendor, baseUrl, cdnServer, cache);
 
-                XElement element = SafeXml.ParseElement(xml);
-                root.Add(element);
+                    XElement element = SafeXml.ParseElement(xml);
+                    root.Add(element);
+                }
+                catch (Exception ex)
+                {
+                    // one bad page must be identifiable, not just "the export failed"
+                    throw new InvalidOperationException($"Page {c.Id} '{c.Title}' ({language}): {ex.Message}", ex);
+                }
             }
             doc.Add(root);
             var file = doc.ToString(SaveOptions.DisableFormatting);
@@ -568,21 +576,28 @@ namespace TrinityText.Business.Services.Impl
 
             foreach (var c in contentsPerType)
             {
-                var xml = await _widgetUtilities.Replace(tenant, vendor, instance, language, c.Content, cache);
-
-                xml = await _widgetUtilities.ReplaceLink(xml, tenant, vendor, baseUrl, cdnServer, cache);
-
-                var element = SafeXml.ParseElement(xml);
-                var node_cdata = element.DescendantNodes().OfType<XCData>().ToList();
-
-                foreach (var node in node_cdata)
+                try
                 {
-                    node.Parent.Add(node.Value);
-                    node.Remove();
-                }
+                    var xml = await _widgetUtilities.Replace(tenant, vendor, instance, language, c.Content, cache);
 
-                var jsontext = JsonConvert.SerializeXNode(element, Newtonsoft.Json.Formatting.None, false);
-                list.Add(new JRaw(jsontext));
+                    xml = await _widgetUtilities.ReplaceLink(xml, tenant, vendor, baseUrl, cdnServer, cache);
+
+                    var element = SafeXml.ParseElement(xml);
+                    var node_cdata = element.DescendantNodes().OfType<XCData>().ToList();
+
+                    foreach (var node in node_cdata)
+                    {
+                        node.Parent.Add(node.Value);
+                        node.Remove();
+                    }
+
+                    var jsontext = JsonConvert.SerializeXNode(element, Newtonsoft.Json.Formatting.None, false);
+                    list.Add(new JRaw(jsontext));
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException($"Page {c.Id} '{c.Title}' ({language}): {ex.Message}", ex);
+                }
             }
             var file = JsonConvert.SerializeObject(list);
             return Encoding.UTF8.GetBytes(file);

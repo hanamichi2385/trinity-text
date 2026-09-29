@@ -29,7 +29,7 @@ namespace TrinityText.Utilities
             {
                 var h = new Uri(host);
 
-                ftp = new SftpClient(h.Host, username, password);
+                ftp = new SftpClient(h.Host, h.Port > 0 ? h.Port : 22, username, password);
 
                 ftp.Connect();
 
@@ -95,6 +95,8 @@ namespace TrinityText.Utilities
                         operationLog.AppendLine("--innerex: " + ex.InnerException.Message);
                     }
                 }
+
+                ftp?.Dispose();
             }
             return Task.FromResult(operationLog.ToString());
         }
@@ -141,8 +143,12 @@ namespace TrinityText.Utilities
                 {
                     ftp.Disconnect();
                 }
+
+                ftp?.Dispose();
             }
-            return null;
+
+            // "not found" is a null result, not a null Task (awaiting it threw a NullReferenceException)
+            return Task.FromResult<byte[]>(null);
         }
 
         private string NavigateTo(string directoryName, SftpClient ftp, StringBuilder operationLog)
@@ -186,7 +192,7 @@ namespace TrinityText.Utilities
                 {
                     foreach (var f in filesToUpload)
                     {
-                        using var stream = f.Open(FileMode.Open);
+                        using var stream = f.OpenRead();
                         ftp.UploadFile(stream, f.Name);
                     }
                 }

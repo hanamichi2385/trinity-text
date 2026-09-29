@@ -11,6 +11,7 @@ namespace TrinityText.UnitTests
 {
     /// <summary>Image processing checks: no database needed.</summary>
     [TestClass]
+    [TestCategory("Offline")]
     public class ImageDrawingServiceTests
     {
         private static WebPImageDrawingService CreateService(long maxPixels = 50_000_000)

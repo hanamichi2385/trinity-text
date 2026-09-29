@@ -123,39 +123,59 @@ namespace TrinityText.Business.Services.Impl
 
                 if (dto.Id.HasValue)
                 {
-                    var entity = await _cdnSettingsRepository
-                        .Read(dto.Id.Value);
+                    var cdnId = dto.Id.Value;
+                    var exists = await _cdnSettingsRepository.CountAsync(
+                        _cdnSettingsRepository.Repository.Where(c => c.ID == cdnId)) > 0;
 
-                    if (entity != null)
+                    if (exists)
                     {
-                        entity.BASEURL = dto.BaseUrl;
-                        entity.NAME = dto.Name;
-                        entity.TYPE = (int)dto.Type;
-
-                        var cdnId = entity.ID;
-
-                        var existingSet = await _cdnSettingsRepository.ToListAsync(
-                            _ftpServerPerCdnRepository
-                                .Repository
-                                .Where(x => x.FK_CDNSERVER == cdnId)
-                                .Select(x => x.FK_FTPSERVER));
-                        var existingHash = existingSet.ToHashSet();
-
-                        await _cdnSettingsRepository.ExecuteDeleteAsync(
-                            _ftpServerPerCdnRepository
-                                .Repository
-                                .Where(x => x.FK_CDNSERVER == cdnId && !desiredSet.Contains(x.FK_FTPSERVER)));
-
-                        var toAdd = desiredSet
-                            .Except(existingHash)
-                            .Select(id => new FtpServerPerCdnServer { FK_CDNSERVER = cdnId, FK_FTPSERVER = id })
-                            .ToList();
-                        if (toAdd.Count > 0)
+                        // scalar columns + join table change together or not at all
+                        await _cdnSettingsRepository.BeginTransaction();
+                        try
                         {
-                            await _ftpServerPerCdnRepository.AddRangeAsync(toAdd);
+                            var baseUrl = dto.BaseUrl;
+                            var name = dto.Name;
+                            var type = (int)dto.Type;
+
+                            // targeted UPDATE: updating the loaded entity graph would also rewrite the auto-included FTP servers
+                            await _cdnSettingsRepository.ExecuteUpdateAsync(
+                                _cdnSettingsRepository.Repository.Where(c => c.ID == cdnId),
+                                set => set
+                                    .Set(c => c.BASEURL, baseUrl)
+                                    .Set(c => c.NAME, name)
+                                    .Set(c => c.TYPE, type));
+
+                            var existingSet = await _cdnSettingsRepository.ToListAsync(
+                                _ftpServerPerCdnRepository
+                                    .Repository
+                                    .Where(x => x.FK_CDNSERVER == cdnId)
+                                    .Select(x => x.FK_FTPSERVER));
+                            var existingHash = existingSet.ToHashSet();
+
+                            await _cdnSettingsRepository.ExecuteDeleteAsync(
+                                _ftpServerPerCdnRepository
+                                    .Repository
+                                    .Where(x => x.FK_CDNSERVER == cdnId && !desiredSet.Contains(x.FK_FTPSERVER)));
+
+                            var toAdd = desiredSet
+                                .Except(existingHash)
+                                .Select(id => new FtpServerPerCdnServer { FK_CDNSERVER = cdnId, FK_FTPSERVER = id })
+                                .ToList();
+                            if (toAdd.Count > 0)
+                            {
+                                await _ftpServerPerCdnRepository.AddRangeAsync(toAdd);
+                            }
+
+                            await _cdnSettingsRepository.CommitTransaction();
+                        }
+                        catch
+                        {
+                            await _cdnSettingsRepository.RollbackTransaction();
+                            throw;
                         }
 
-                        var result = await _cdnSettingsRepository.Update(entity);
+                        var result = await _cdnSettingsRepository.FirstOrDefaultAsync(
+                            _cdnSettingsRepository.Repository.Where(c => c.ID == cdnId));
 
                         var r = _mapper.Map<CdnServerDTO>(result);
 

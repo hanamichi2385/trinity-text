@@ -18,6 +18,7 @@ namespace TrinityText.UnitTests
     /// raised after translation succeeded.
     /// </summary>
     [TestClass]
+    [TestCategory("Offline")]
     public class RepositoryUpdateTranslationTests
     {
         [TestMethod]

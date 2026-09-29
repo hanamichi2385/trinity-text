@@ -283,7 +283,7 @@ namespace TrinityText.Business.Services.Impl
         //        else
         //        {
         //            query =
-        //                query.Where(r => r.FK_WEBSITE == null);
+        //                query.Where(r => r.FK_WEBSITE == null || r.FK_WEBSITE == "");
         //        }
 
         //        if (!string.IsNullOrWhiteSpace(dto.Site))
@@ -294,7 +294,7 @@ namespace TrinityText.Business.Services.Impl
         //        else
         //        {
         //            query =
-        //                query.Where(r => r.FK_PRICELIST == null);
+        //                query.Where(r => r.FK_PRICELIST == null || r.FK_PRICELIST == "");
         //        }
 
         //        var resx = query.Count();
@@ -373,7 +373,7 @@ namespace TrinityText.Business.Services.Impl
                             .Repository
                             .Where(t => allLanguages.Contains(t.FK_LANGUAGE) &&
                                 t.ACTIVE == true &&
-                                (t.FK_WEBSITE == null || (t.FK_WEBSITE == website && (t.FK_PRICELIST == null || t.FK_PRICELIST == ""))))));
+                                ((t.FK_WEBSITE == null || t.FK_WEBSITE == "") || (t.FK_WEBSITE == website && (t.FK_PRICELIST == null || t.FK_PRICELIST == ""))))));
 
                 var pagesBySiteList = await _pageRepository.ToListAsync(
                     WithoutPageType(

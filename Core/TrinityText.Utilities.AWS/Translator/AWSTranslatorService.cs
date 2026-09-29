@@ -9,30 +9,27 @@ using TrinityText.Business;
 
 namespace TrinityText.Utilities.AWS
 {
-    public class AWSTranslatorService : ITranslatorService
+    public class AWSTranslatorService : ITranslatorService, IDisposable
     {
         private readonly ILogger<AWSTranslatorService> _logger;
 
         private readonly AWSOptions _options;
 
+        // one client per service instance (a new HTTP stack + handshake for every text was expensive)
+        private readonly Lazy<AmazonTranslateClient> _client;
+
         public AWSTranslatorService(IOptions<AWSOptions> options, ILogger<AWSTranslatorService> logger)
         {
             _options = options.Value;
             _logger = logger;
+            _client = new Lazy<AmazonTranslateClient>(() =>
+                new AmazonTranslateClient(_options.AccessId, _options.SecretKey, RegionEndpoint.GetBySystemName(_options.Region)));
         }
 
         public async Task<string> TranslateText(string text, string sourceLang, string targetLang)
         {
-            var translateText = string.Empty;
-
             try
             {
-                var accessId = _options.AccessId;
-                var secretKey = _options.SecretKey;
-                var region = _options.Region;
-                var cfg = new AmazonTranslateConfig() { RegionEndpoint = RegionEndpoint.EUWest1 };
-
-                using var cfc = new AmazonTranslateClient(accessId, secretKey, RegionEndpoint.GetBySystemName(region));
                 var request = new TranslateTextRequest()
                 {
                     SourceLanguageCode = sourceLang,
@@ -40,19 +37,29 @@ namespace TrinityText.Utilities.AWS
                     Text = text,
                 };
 
-                var response = await cfc.TranslateTextAsync(request);
+                var response = await _client.Value.TranslateTextAsync(request);
 
-                if (response.HttpStatusCode == System.Net.HttpStatusCode.OK)
+                if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
                 {
-                    translateText = response.TranslatedText;
+                    throw new InvalidOperationException($"AWS Translate returned {response.HttpStatusCode}");
                 }
+
+                return response.TranslatedText;
             }
             catch (Exception ex)
             {
+                // an empty string used to be returned here and could be saved as "the translation"
                 _logger.LogError(ex, "AWS.TRANSLATETEXT");
+                throw;
             }
+        }
 
-            return translateText;
+        public void Dispose()
+        {
+            if (_client.IsValueCreated)
+            {
+                _client.Value.Dispose();
+            }
         }
     }
 }

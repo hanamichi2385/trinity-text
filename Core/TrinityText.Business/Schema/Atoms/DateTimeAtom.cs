@@ -39,8 +39,9 @@ namespace TrinityText.Business.Schema
                     ValidateDateTime(propertyName, propertyBinding, errors);
                 }
             }
-            else
+            else if (!string.IsNullOrWhiteSpace(Value))
             {
+                // an optional date can be left empty
                 ValidateDateTime(propertyName, propertyBinding, errors);
             }
 

@@ -20,7 +20,7 @@ namespace TrinityText.Business
                 .ForMember(d => d.Country, src => src.MapFrom(s => s.FK_COUNTRY))
                 .ForMember(d => d.Language, src => src.MapFrom(s => s.FK_LANGUAGE))
                 .ForMember(d => d.TextType, src => src.MapFrom(s => s.TEXTTYPE))
-                .ForMember(d => d.Name, src => src.MapFrom(s => s.NAME.ToUpper()))
+                .ForMember(d => d.Name, src => src.MapFrom(s => s.NAME.ToUpperInvariant()))
                 .ForMember(d => d.TextRevision, src => src.MapFrom(s => GetTextRevision(s.REVISIONS)));
 
             CreateMap<TextDTO, Text>()
@@ -29,8 +29,9 @@ namespace TrinityText.Business
                 .ForMember(d => d.FK_TEXTTYPE, src => src.MapFrom(s => s.TextTypeId))
                 .ForMember(d => d.FK_COUNTRY, src => src.MapFrom(s => s.Country))
                 .ForMember(d => d.FK_LANGUAGE, src => src.MapFrom(s => s.Language))
-                .ForMember(d => d.TEXTTYPE, src => src.MapFrom(s => s.TextType))
-                .ForMember(d => d.NAME, src => src.MapFrom(s => s.Name.ToUpper()))
+                // the type is linked through FK_TEXTTYPE: mapping the nested DTO would try to insert a TextType
+                .ForMember(d => d.TEXTTYPE, src => src.Ignore())
+                .ForMember(d => d.NAME, src => src.MapFrom(s => s.Name.ToUpperInvariant()))
                 .ForMember(d => d.REVISIONS, src => src.MapFrom(s => new[] { s.TextRevision }));
 
             CreateMap<TextRevision, TextRevisionDTO>()
@@ -163,7 +164,7 @@ namespace TrinityText.Business
             {
                 return null;
             }
-            return revisions.MaxBy(rev => rev.CREATION_DATE);
+            return revisions.MaxBy(rev => rev.REVISION_NUMBER);
         }
     }
 }
