@@ -21,6 +21,10 @@
 - Performance: multi-sheet Excel export in memory (no temp file)
 - Performance: remaining synchronous reads (`GetAll*`, `NotDuplicated`, folder/file lookups) are now async; `PublicationService.GetAll` no longer reads FTP credentials (new `IRepository<FtpServer>` constructor dependency, resolved by DI)
 - Performance: FTP transfers use FluentFTP `AsyncFtpClient`
+- Performance: thumbnails decoded directly at reduced size (`SKCodec.GetScaledDimensions`) with linear sampling; one codec per image operation (size limit, animation check and decode share it)
+- Performance: `GetPublishableTextsByWebsite` groups global texts by language once (`ToLookup`, `Concat` instead of `Union`); `GetPublishableTexts` skips the redundant SQL ORDER BY
+- Performance: `CleanRevisions` is a single set-based DELETE (no id list materialised)
+- Performance: default site / language folder creation reads the parent's children once
 - Performance: `WidgetService.GetByKeys` is async; owner/website filters use `col == null || col == ""` instead of `IsNullOrWhiteSpace` (index friendly)
 - New: `Core/TrinityText.Domain/Db/indexes.sql` with recommended non-clustered indexes (run manually on the database)
 

@@ -28,18 +28,36 @@ namespace TrinityText.Utilities
                 var bytes = default(byte[]);
                 if (ImageExtensions.IsConvertible(dto))
                 {
-                    using var inputFile = new MemoryStream(dto.Content);
-                    using var inputStream = new SKManagedStream(inputFile);
-                    if (WithinPixelLimit(dto.Content) && CanProcess(dto.Filename, inputStream))
+                    // one codec per operation: header checks (size limit, animation) and the decode share it
+                    using var codec = SKCodec.Create(new SKMemoryStream(dto.Content));
+                    if (codec != null && CanProcess(dto.Filename, codec) && WithinPixelLimit(codec))
                     {
-                        using var original = SKBitmap.Decode(inputStream);
-                        ImageExtensions.CheckImageSize(_options, original.Width, original.Height, out int w, out int h);
+                        var source = codec.Info;
+                        ImageExtensions.CheckImageSize(_options, source.Width, source.Height, out int w, out int h);
 
-                        var info = new SKImageInfo() { Width = w, Height = h, ColorType = original.ColorType, AlphaType = original.AlphaType, ColorSpace = original.ColorSpace };
-
-                        using var thumb = original.Resize(info, SKSamplingOptions.Default);
-                        using var data = thumb.Encode(SKEncodedImageFormat.Webp, _options.Quality);
-                        bytes = data.ToArray();
+                        // decode straight at a reduced size when the format supports it (JPEG / WebP): far less
+                        // work and memory than decoding the full bitmap and shrinking it afterwards
+                        var scale = Math.Min(1f, Math.Max(w / (float)source.Width, h / (float)source.Height));
+                        var decodeSize = codec.GetScaledDimensions(scale);
+                        using var decoded = SKBitmap.Decode(codec, CreateDecodeInfo(source, decodeSize.Width, decodeSize.Height));
+                        if (decoded != null)
+                        {
+                            if (decoded.Width == w && decoded.Height == h)
+                            {
+                                using var data = decoded.Encode(SKEncodedImageFormat.Webp, _options.Quality);
+                                bytes = data.ToArray();
+                            }
+                            else
+                            {
+                                var info = new SKImageInfo(w, h, decoded.ColorType, decoded.AlphaType, decoded.Info.ColorSpace);
+                                using var thumb = decoded.Resize(info, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear));
+                                if (thumb != null)
+                                {
+                                    using var data = thumb.Encode(SKEncodedImageFormat.Webp, _options.Quality);
+                                    bytes = data.ToArray();
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -66,13 +84,16 @@ namespace TrinityText.Utilities
                 var bytes = default(byte[]);
                 if (ImageExtensions.IsConvertible(dto))
                 {
-                    using var inputFile = new MemoryStream(dto.Content);
-                    using var inputStream = new SKManagedStream(inputFile);
-                    if (WithinPixelLimit(dto.Content) && CanProcess(dto.Filename, inputStream))
+                    using var codec = SKCodec.Create(new SKMemoryStream(dto.Content));
+                    if (codec != null && CanProcess(dto.Filename, codec) && WithinPixelLimit(codec))
                     {
-                        using var original = SKBitmap.Decode(inputStream);
-                        using var data = original.Encode(SKEncodedImageFormat.Webp, _options.Quality);
-                        bytes = data.ToArray();
+                        var source = codec.Info;
+                        using var original = SKBitmap.Decode(codec, CreateDecodeInfo(source, source.Width, source.Height));
+                        if (original != null)
+                        {
+                            using var data = original.Encode(SKEncodedImageFormat.Webp, _options.Quality);
+                            bytes = data.ToArray();
+                        }
                     }
                 }
 
@@ -92,27 +113,26 @@ namespace TrinityText.Utilities
             }
         }
 
-        private static bool CanProcess(string filename, SKManagedStream stream)
+        // same color type / alpha handling as SKBitmap.Decode(SKCodec), with a custom size
+        private static SKImageInfo CreateDecodeInfo(SKImageInfo source, int width, int height)
+            => new(width, height, SKImageInfo.PlatformColorType,
+                source.AlphaType == SKAlphaType.Unpremul ? SKAlphaType.Premul : source.AlphaType,
+                source.ColorSpace);
+
+        private static bool CanProcess(string filename, SKCodec codec)
         {
             var contentType = ImageExtensions.GetMimeTypeForFile(filename);
             if ("image/gif".Equals(contentType, StringComparison.InvariantCultureIgnoreCase))
             {
-                using var codec = SKCodec.Create(stream);
-                return codec != null && codec.FrameCount <= 1;
+                // animated GIFs are left untouched
+                return codec.FrameCount <= 1;
             }
             return true;
         }
 
         // reads only the header: a tiny file can declare a huge canvas
-        private bool WithinPixelLimit(byte[] content)
+        private bool WithinPixelLimit(SKCodec codec)
         {
-            using var stream = new MemoryStream(content);
-            using var codec = SKCodec.Create(stream);
-            if (codec == null)
-            {
-                return false;
-            }
-
             var pixels = (long)codec.Info.Width * codec.Info.Height;
             if (pixels > _options.MaxPixels)
             {

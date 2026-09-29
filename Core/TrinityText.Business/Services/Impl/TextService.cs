@@ -61,7 +61,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        private IQueryable<Text> GetTextsByFilter(SearchTextDTO search)
+        private IQueryable<Text> GetTextsByFilter(SearchTextDTO search, bool applySorting = true)
         {
             var websites = search.UserWebsites ?? [];
             var languages = search.WebsiteLanguages ?? [];
@@ -127,21 +127,24 @@ namespace TrinityText.Business.Services.Impl
                         query.Where(r => r.ACTIVE == search.ShowOnlyActive.Value);
                 }
 
-                var sortName = search.SortingName ?? SortingType.Unordered;
-                var sortWebsite = search.SortingWebsite ?? SortingType.Unordered;
-                var sortSite = search.SortingSite ?? SortingType.Unordered;
-                var sortLanguage = search.SortingLanguage ?? SortingType.Unordered;
+                if (applySorting)
+                {
+                    var sortName = search.SortingName ?? SortingType.Unordered;
+                    var sortWebsite = search.SortingWebsite ?? SortingType.Unordered;
+                    var sortSite = search.SortingSite ?? SortingType.Unordered;
+                    var sortLanguage = search.SortingLanguage ?? SortingType.Unordered;
 
-                if (sortName == SortingType.Unordered && sortWebsite == SortingType.Unordered && sortSite == SortingType.Unordered && sortLanguage == SortingType.Unordered)
-                {
-                    query = query.Sort((r) => r.NAME, SortingType.Ascending);
-                }
-                else
-                {
-                    query = query.Sort((r) => r.NAME, sortName);
-                    query = query.Sort((r) => r.FK_WEBSITE, sortWebsite);
-                    query = query.Sort((r) => r.FK_PRICELIST, sortSite);
-                    query = query.Sort((r) => r.FK_LANGUAGE, sortLanguage);
+                    if (sortName == SortingType.Unordered && sortWebsite == SortingType.Unordered && sortSite == SortingType.Unordered && sortLanguage == SortingType.Unordered)
+                    {
+                        query = query.Sort((r) => r.NAME, SortingType.Ascending);
+                    }
+                    else
+                    {
+                        query = query.Sort((r) => r.NAME, sortName);
+                        query = query.Sort((r) => r.FK_WEBSITE, sortWebsite);
+                        query = query.Sort((r) => r.FK_PRICELIST, sortSite);
+                        query = query.Sort((r) => r.FK_LANGUAGE, sortLanguage);
+                    }
                 }
             }
 
@@ -441,6 +444,8 @@ namespace TrinityText.Business.Services.Impl
 
                 await PopulateLatestRevisions(textsGlobalByWebsiteList);
                 var textsGlobalByWebsite = _mapper.Map<IList<TextDTO>>(textsGlobalByWebsiteList).AsReadOnly();
+                // grouped once: the loop below runs for every site x language
+                var textsGlobalByLanguage = textsGlobalByWebsite.ToLookup(t => t.Language);
 
                 var textsBySiteList = await _textRepository.ToListAsync(
                     _textRepository
@@ -465,9 +470,9 @@ namespace TrinityText.Business.Services.Impl
                     var list = new List<TextDTO>();
                     foreach (var l in supportedLanguages)
                     {
-                        var textBySiteLang = textsGlobalByWebsite
-                            .Where(ttw => ttw.Language == l)
-                            .Union(textsBySite.Where(wbs => wbs.Language == l))
+                        // global and site-specific texts are disjoint sets: Concat is enough (no hashing like Union)
+                        var textBySiteLang = textsGlobalByLanguage[l]
+                            .Concat(textsBySite.Where(wbs => wbs.Language == l))
                             .OrderBy(x => x.Name)
                             .ToList()
                             .AsReadOnly();
@@ -602,7 +607,8 @@ namespace TrinityText.Business.Services.Impl
                     TextTypeIds = textTypesIds,
                 };
 
-                var query = GetTextsByFilter(search);
+                // rows are ordered by name per language in memory below: skip the SQL ORDER BY
+                var query = GetTextsByFilter(search, applySorting: false);
                 var q = await _textRepository.ToListAsync(query);
                 await PopulateLatestRevisions(q);
                 var all = _mapper.Map<IList<TextDTO>>(q).AsReadOnly();
@@ -669,21 +675,13 @@ namespace TrinityText.Business.Services.Impl
                 // A revision is "in excess" (to be deleted) when at least `revisionToMantain` newer revisions
                 // exist for the same text — i.e. it falls outside the most-recent N. Computed in SQL via a
                 // correlated count, so no revision content is loaded into memory.
-                var revisionIds = await _textRevisionRepository.ToListAsync(
+                // Single DELETE with the same predicate: no id list is materialised and sent back as a huge IN (...).
+                await _textRevisionRepository.ExecuteDeleteAsync(
                     _textRevisionRepository
                         .Repository
                         .Where(r => _textRevisionRepository
                             .Repository
-                            .Count(x => x.FK_TEXT == r.FK_TEXT && x.CREATION_DATE > r.CREATION_DATE) >= revisionToMantain)
-                        .Select(r => r.ID));
-
-                if (revisionIds.Count > 0)
-                {
-                    await _textRepository.ExecuteDeleteAsync(
-                        _textRevisionRepository
-                            .Repository
-                            .Where(r => revisionIds.Contains(r.ID)));
-                }
+                            .Count(x => x.FK_TEXT == r.FK_TEXT && x.CREATION_DATE > r.CREATION_DATE) >= revisionToMantain));
 
                 return OperationResult.MakeSuccess();
             }

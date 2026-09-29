@@ -92,6 +92,62 @@ namespace TrinityText.UnitTests
             }
         }
 
+        // CleanRevisions: single DELETE with a correlated count on the same table
+        private static Task ExecuteCleanRevisionsDelete(IRepository<TextRevision> repository, int keep)
+            => repository.ExecuteDeleteAsync(
+                repository
+                    .Repository
+                    .Where(r => repository
+                        .Repository
+                        .Count(x => x.FK_TEXT == r.FK_TEXT && x.CREATION_DATE > r.CREATION_DATE) >= keep));
+
+        [TestMethod]
+        public async Task EFCleanRevisionsDelete_Translates()
+        {
+            var options = new DbContextOptionsBuilder<TrinityEFContext>()
+                .UseSqlServer("Server=127.0.0.1,1;Database=x;User Id=u;Password=p;Connect Timeout=1;Encrypt=False")
+                .Options;
+
+            using var ctx = new TrinityEFContext(options);
+
+            try
+            {
+                await ExecuteCleanRevisionsDelete(new EFRepository<TextRevision>(ctx), 5);
+                Assert.Fail("The server is unreachable: the command cannot succeed");
+            }
+            catch (SqlException)
+            {
+            }
+        }
+
+        [TestMethod]
+        public async Task NHCleanRevisionsDelete_Translates()
+        {
+            var cfg = new NHibernate.Cfg.Configuration()
+                .DataBaseIntegration(db =>
+                {
+                    db.Dialect<MsSql2012Dialect>();
+                    db.Driver<NHibernate.Driver.MicrosoftDataSqlClientDriver>();
+                    db.ConnectionString = "Server=127.0.0.1,1;Database=x;User Id=u;Password=p;Connect Timeout=1;Encrypt=False";
+                })
+                .CurrentSessionContext<NHibernate.Context.CallSessionContext>();
+            cfg.SetProperty(NHibernate.Cfg.Environment.Hbm2ddlKeyWords, "none");
+
+            var services = new ServiceCollection();
+            services.AddTrinityWithNHibernate(cfg);
+            using var provider = services.BuildServiceProvider();
+            using var scope = provider.CreateScope();
+
+            try
+            {
+                await ExecuteCleanRevisionsDelete(scope.ServiceProvider.GetRequiredService<IRepository<TextRevision>>(), 5);
+                Assert.Fail("The server is unreachable: the command cannot succeed");
+            }
+            catch (Exception ex) when (HasSqlException(ex))
+            {
+            }
+        }
+
         private static bool HasSqlException(Exception ex)
         {
             for (var e = ex; e != null; e = e.InnerException)

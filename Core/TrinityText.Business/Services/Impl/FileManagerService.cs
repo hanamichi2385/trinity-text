@@ -835,18 +835,48 @@ namespace TrinityText.Business.Services.Impl
 
         private async Task CreateLanguagesFolder(string website, string folderName, Folder folder, Folder parent, string[] languages)
         {
-            if (folder == null)
+            // validate every name up front (they become directories in the export)
+            PathSafety.EnsureValidSegment(folderName, "folder name");
+            foreach (var l in languages ?? [])
             {
-                await CreateFolderByName(website, folderName, parent);
+                PathSafety.EnsureValidSegment(l, "folder name");
             }
 
-            if (languages != null && languages.Length > 0)
+            // children of the parent loaded once instead of one lookup per folder
+            var parentId = parent?.ID;
+            var existingNames = (await _folderRepository.ToListAsync(
+                _folderRepository
+                    .Repository
+                    .Where(c => c.FK_WEBSITE == website && c.FK_PARENT == parentId)
+                    .Select(c => c.NAME)))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (folder == null && existingNames.Add(folderName))
             {
-                foreach (var l in languages)
+                await CreateSystemFolder(website, folderName, parent);
+            }
+
+            foreach (var l in languages ?? [])
+            {
+                if (existingNames.Add(l))
                 {
-                    await CreateFolderByName(website, l, parent);
+                    await CreateSystemFolder(website, l, parent);
                 }
             }
+        }
+
+        private async Task<Folder> CreateSystemFolder(string website, string name, Folder parent)
+        {
+            var folder = new Folder()
+            {
+                DELETABLE = false,
+                NAME = name,
+                NOTE = $"System folder {name}",
+                FK_WEBSITE = website,
+                FK_PARENT = parent != null ? (int?)parent.ID : null,
+            };
+
+            return await _folderRepository.Create(folder);
         }
 
         private async Task<Folder> CreateFolderByName(string website, string name, Folder parent)
