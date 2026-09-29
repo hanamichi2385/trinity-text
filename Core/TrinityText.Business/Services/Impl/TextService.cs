@@ -278,7 +278,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        private async Task<OperationResult<TextDTO>> Create(TextDTO dto, TextType textType)
+        private Text BuildNewText(TextDTO dto)
         {
             var entity = _mapper.Map<Text>(dto);
             //entity.TEXTTYPE = textType;
@@ -288,6 +288,13 @@ namespace TrinityText.Business.Services.Impl
             revision.CREATION_DATE = DateTime.Now;
             revision.REVISION_NUMBER = 1;
             entity.ACTIVE = true;
+
+            return entity;
+        }
+
+        private async Task<OperationResult<TextDTO>> Create(TextDTO dto, TextType textType)
+        {
+            var entity = BuildNewText(dto);
             await _textRepository.Create(entity);
 
             var r = _mapper.Map<TextDTO>(entity);
@@ -347,7 +354,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        private Task<OperationResult> NotDuplicated(TextDTO dto)
+        private async Task<OperationResult> NotDuplicated(TextDTO dto)
         {
             try
             {
@@ -405,14 +412,14 @@ namespace TrinityText.Business.Services.Impl
                     query = query.Where(r => r.ID != dto.Id.Value);
                 }
 
-                var resx = query.Count();
+                var resx = await _textRepository.CountAsync(query);
 
-                return Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure([ErrorMessage.Create("DUPLICATED", "DUPLICATED")]));
+                return resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure([ErrorMessage.Create("DUPLICATED", "DUPLICATED")]);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "EXIST {message}", ex.Message);
-                return Task.FromResult(OperationResult.MakeFailure([ErrorMessage.Create("EXIST", "GENERIC_ERROR")]));
+                return OperationResult.MakeFailure([ErrorMessage.Create("EXIST", "GENERIC_ERROR")]);
             }
         }
 
@@ -724,21 +731,31 @@ namespace TrinityText.Business.Services.Impl
                     existingMap[ImportKey(e.NAME, e.FK_LANGUAGE, e.FK_WEBSITE, e.FK_PRICELIST, e.FK_COUNTRY)] = e;
                 }
 
+                // new texts are inserted in a single batch (one SaveChanges / flush) instead of one per row
+                var toCreate = new List<Text>();
                 foreach (var r in texts)
                 {
                     existingMap.TryGetValue(ImportKey(r.Name, r.Language, r.Website, r.Site, r.Country), out var t);
                     var exist = t != null;
 
-                    if (!exist || @override)
+                    if (!exist)
                     {
-                        var rs = exist
-                            ? await Update(r, t, textType)
-                            : await Create(r, textType);
+                        toCreate.Add(BuildNewText(r));
+                    }
+                    else if (@override)
+                    {
+                        var rs = await Update(r, t, textType);
                         if (rs.Success)
                         {
                             counter++;
                         }
                     }
+                }
+
+                if (toCreate.Count > 0)
+                {
+                    await _textRepository.AddRangeAsync(toCreate);
+                    counter += toCreate.Count;
                 }
                 await _textRepository.CommitTransaction();
 

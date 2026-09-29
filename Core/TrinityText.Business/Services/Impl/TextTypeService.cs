@@ -24,24 +24,22 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public Task<OperationResult<IList<TextTypeDTO>>> GetAll()
+        public async Task<OperationResult<IList<TextTypeDTO>>> GetAll()
         {
             try
             {
-                var list = _textTypeRepository
-                    .Repository
+                var list = await _textTypeRepository.ToListAsync(_textTypeRepository.Repository
                     .OrderBy(t => t.SUBFOLDER)
-                    .ThenBy(t => t.CONTENTTYPE)
-                    .ToList();
+                    .ThenBy(t => t.CONTENTTYPE));
 
                 var result = _mapper.Map<IList<TextTypeDTO>>(list);
 
-                return Task.FromResult(OperationResult<IList<TextTypeDTO>>.MakeSuccess(result));
+                return OperationResult<IList<TextTypeDTO>>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return Task.FromResult(OperationResult<IList<TextTypeDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
+                return OperationResult<IList<TextTypeDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
             }
         }
 
@@ -70,25 +68,23 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public Task<OperationResult<IList<TextTypeDTO>>> GetAllByWebsite(string website)
+        public async Task<OperationResult<IList<TextTypeDTO>>> GetAllByWebsite(string website)
         {
             try
             {
-                var list = _textTypeRepository
-                    .Repository
+                var list = await _textTypeRepository.ToListAsync(_textTypeRepository.Repository
                     .Where(tt => tt.TEXTTYPEPERWEBSITES.Any(tx => tx.FK_WEBSITE == website))
                     .OrderBy(t => t.SUBFOLDER)
-                    .ThenBy(t => t.CONTENTTYPE)
-                    .ToList();
+                    .ThenBy(t => t.CONTENTTYPE));
 
                 var result = _mapper.Map<IList<TextTypeDTO>>(list);
 
-                return Task.FromResult(OperationResult<IList<TextTypeDTO>>.MakeSuccess(result));
+                return OperationResult<IList<TextTypeDTO>>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return Task.FromResult(OperationResult<IList<TextTypeDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
+                return OperationResult<IList<TextTypeDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
             }
         }
 

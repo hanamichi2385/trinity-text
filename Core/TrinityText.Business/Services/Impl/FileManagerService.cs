@@ -478,11 +478,10 @@ namespace TrinityText.Business.Services.Impl
 
                     if (@override == true)
                     {
-                        var sameNameFile =
+                        var sameNameFile = await _fileRepository.FirstOrDefaultAsync(
                             _fileRepository
                             .Repository
-                            .Where(f => f.FK_FOLDER == folderId && f.FILENAME.Equals(dto.Filename) == true)
-                            .FirstOrDefault();
+                            .Where(f => f.FK_FOLDER == folderId && f.FILENAME.Equals(dto.Filename) == true));
 
                         if (sameNameFile != null)
                         {
@@ -514,7 +513,7 @@ namespace TrinityText.Business.Services.Impl
                     }
                     else
                     {
-                        var newfilename = CheckFileToFolder(dto.Filename, folder);
+                        var newfilename = await CheckFileToFolder(dto.Filename, folder);
                         var file = new File()
                         {
                             CONTENT = content,
@@ -546,13 +545,13 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        private string CheckFileToFolder(string filename, Folder folder)
+        private async Task<string> CheckFileToFolder(string filename, Folder folder)
         {
-            var existingNames = _fileRepository
+            var existingNames = (await _fileRepository.ToListAsync(
+                _fileRepository
                 .Repository
                 .Where(f => f.FK_FOLDER == folder.ID)
-                .Select(f => f.FILENAME)
-                .ToList()
+                .Select(f => f.FILENAME)))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             if (!existingNames.Contains(filename))
@@ -590,7 +589,7 @@ namespace TrinityText.Business.Services.Impl
 
                     if (folder != null)
                     {
-                        var newFilename = CheckFileToFolder(file.FILENAME, folder);
+                        var newFilename = await CheckFileToFolder(file.FILENAME, folder);
 
                         var fileCopy = new File()
                         {
@@ -650,7 +649,7 @@ namespace TrinityText.Business.Services.Impl
                 return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "FILE_NOT_FOUND")]);
             }
 
-            var newFilename = CheckFileToFolder(file.FILENAME, folder);
+            var newFilename = await CheckFileToFolder(file.FILENAME, folder);
             var now = DateTime.Now;
             var folderId = folder.ID;
             var website = folder.FK_WEBSITE;
@@ -736,10 +735,10 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var exist = _folderRepository
+                var exist = (await _folderRepository.CountAsync(
+                    _folderRepository
                     .Repository
-                    .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == null)
-                    .Any();
+                    .Where(f => f.FK_WEBSITE == website && f.FK_PARENT == null))) > 0;
 
                 if (!exist)
                 {
@@ -856,11 +855,10 @@ namespace TrinityText.Business.Services.Impl
             PathSafety.EnsureValidSegment(name, "folder name");
 
             int? parentId = parent != null ? (int?)parent.ID : null;
-            var exfolder =
+            var exfolder = await _folderRepository.FirstOrDefaultAsync(
                 _folderRepository
                 .Repository
-                    .Where(c => c.FK_WEBSITE == website && c.FK_PARENT == parentId && c.NAME == name)
-                    .FirstOrDefault();
+                    .Where(c => c.FK_WEBSITE == website && c.FK_PARENT == parentId && c.NAME == name));
 
             if (exfolder == null)
             {
@@ -880,6 +878,27 @@ namespace TrinityText.Business.Services.Impl
             else
             {
                 return exfolder;
+            }
+        }
+
+        public async Task<OperationResult<byte[]>> GetFileContent(Guid id)
+        {
+            try
+            {
+                var content = await _fileRepository.FirstOrDefaultAsync(
+                    _fileRepository
+                        .Repository
+                        .Where(f => f.ID == id)
+                        .Select(f => f.CONTENT));
+
+                return content != null
+                    ? OperationResult<byte[]>.MakeSuccess(content)
+                    : OperationResult<byte[]>.MakeFailure([ErrorMessage.Create("GETFILECONTENT", "NOT_FOUND")]);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "GETFILECONTENT {message}", ex.Message);
+                return OperationResult<byte[]>.MakeFailure([ErrorMessage.Create("GETFILECONTENT", "GENERIC_ERROR")]);
             }
         }
 

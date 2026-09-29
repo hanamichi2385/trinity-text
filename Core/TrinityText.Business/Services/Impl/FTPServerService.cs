@@ -49,44 +49,40 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public Task<OperationResult<IList<FTPServerDTO>>> GetAll()
+        public async Task<OperationResult<IList<FTPServerDTO>>> GetAll()
         {
             try
             {
-                var list = _ftpServerRepository
-                    .Repository
-                    .OrderBy(t => t.TYPE)
-                    .ToList();
+                var list = await _ftpServerRepository.ToListAsync(_ftpServerRepository.Repository
+                    .OrderBy(t => t.TYPE));
 
                 var result = _mapper.Map<IList<FTPServerDTO>>(list);
 
-                return Task.FromResult(OperationResult<IList<FTPServerDTO>>.MakeSuccess(result));
+                return OperationResult<IList<FTPServerDTO>>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return Task.FromResult(OperationResult<IList<FTPServerDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
+                return OperationResult<IList<FTPServerDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
             }
         }
 
-        public Task<OperationResult<IList<FTPServerDTO>>> GetAllByCDN(int cdn)
+        public async Task<OperationResult<IList<FTPServerDTO>>> GetAllByCDN(int cdn)
         {
             try
             {
-                var list = _ftpServerRepository
-                    .Repository
+                var list = await _ftpServerRepository.ToListAsync(_ftpServerRepository.Repository
                     .Where(f => f.CDNSERVERS.Any(c => c.FK_CDNSERVER == cdn))
-                    .OrderBy(t => t.TYPE)
-                    .ToList();
+                    .OrderBy(t => t.TYPE));
 
                 var result = _mapper.Map<IList<FTPServerDTO>>(list);
 
-                return Task.FromResult(OperationResult<IList<FTPServerDTO>>.MakeSuccess(result));
+                return OperationResult<IList<FTPServerDTO>>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return Task.FromResult(OperationResult<IList<FTPServerDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
+                return OperationResult<IList<FTPServerDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
             }
         }
 

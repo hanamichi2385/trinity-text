@@ -24,23 +24,21 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public Task<OperationResult<PageTypeDTO[]>> GetAll()
+        public async Task<OperationResult<PageTypeDTO[]>> GetAll()
         {
             try
             {
-                var list = _pageTypeRepository
-                    .Repository
-                    .OrderBy(t => t.NAME)
-                    .ToArray();
+                var list = await _pageTypeRepository.ToListAsync(_pageTypeRepository.Repository
+                    .OrderBy(t => t.NAME));
 
                 var result = _mapper.Map<PageTypeDTO[]>(list);
 
-                return Task.FromResult(OperationResult<PageTypeDTO[]>.MakeSuccess(result));
+                return OperationResult<PageTypeDTO[]>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return Task.FromResult(OperationResult<PageTypeDTO[]>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
+                return OperationResult<PageTypeDTO[]>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
             }
         }
 
@@ -69,15 +67,13 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public Task<OperationResult<IList<PageTypeDTO>>> GetAllByUser(string[] websites, string[] visibilities)
+        public async Task<OperationResult<IList<PageTypeDTO>>> GetAllByUser(string[] websites, string[] visibilities)
         {
             try
             {
-                var entities = _pageTypeRepository
-                    .Repository
+                var entities = await _pageTypeRepository.ToListAsync(_pageTypeRepository.Repository
                     .Where(t => (string.IsNullOrWhiteSpace(t.FK_WEBSITE) || (!string.IsNullOrWhiteSpace(t.FK_WEBSITE) && websites.Contains(t.FK_WEBSITE))))
-                    .OrderBy(t => t.NAME)
-                    .ToList();
+                    .OrderBy(t => t.NAME));
 
                 if (entities != null)
                 {
@@ -89,17 +85,17 @@ namespace TrinityText.Business.Services.Impl
 
                     var result = _mapper.Map<IList<PageTypeDTO>>(filtered);
 
-                    return Task.FromResult(OperationResult<IList<PageTypeDTO>>.MakeSuccess(result));
+                    return OperationResult<IList<PageTypeDTO>>.MakeSuccess(result);
                 }
                 else
                 {
-                    return Task.FromResult(OperationResult<IList<PageTypeDTO>>.MakeFailure([ErrorMessage.Create("GET_BYUSER", "NOT_FOUND")]));
+                    return OperationResult<IList<PageTypeDTO>>.MakeFailure([ErrorMessage.Create("GET_BYUSER", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET {message}", ex.Message);
-                return Task.FromResult(OperationResult<IList<PageTypeDTO>>.MakeFailure([ErrorMessage.Create("GET_BYUSER", "GENERIC_ERROR")]));
+                return OperationResult<IList<PageTypeDTO>>.MakeFailure([ErrorMessage.Create("GET_BYUSER", "GENERIC_ERROR")]);
             }
         }
 

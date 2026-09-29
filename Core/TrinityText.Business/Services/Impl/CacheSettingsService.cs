@@ -24,23 +24,21 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public Task<OperationResult<IList<CacheSettingsDTO>>> GetAll()
+        public async Task<OperationResult<IList<CacheSettingsDTO>>> GetAll()
         {
             try
             {
-                var list = _cacheSettingsRepository
-                    .Repository
-                    .OrderBy(t => t.TYPE)
-                    .ToList();
+                var list = await _cacheSettingsRepository.ToListAsync(_cacheSettingsRepository.Repository
+                    .OrderBy(t => t.TYPE));
 
                 var result = _mapper.Map<IList<CacheSettingsDTO>>(list);
 
-                return Task.FromResult(OperationResult<IList<CacheSettingsDTO>>.MakeSuccess(result));
+                return OperationResult<IList<CacheSettingsDTO>>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return Task.FromResult(OperationResult<IList<CacheSettingsDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
+                return OperationResult<IList<CacheSettingsDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
             }
         }
 
@@ -69,30 +67,28 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public Task<OperationResult<CacheSettingsDTO>> GetByCdnServer(int cdnServerId)
+        public async Task<OperationResult<CacheSettingsDTO>> GetByCdnServer(int cdnServerId)
         {
             try
             {
-                var entity = _cacheSettingsRepository
-                    .Repository
-                    .Where(c => c.FK_CDNSERVER == cdnServerId)
-                    .FirstOrDefault();
+                var entity = await _cacheSettingsRepository.FirstOrDefaultAsync(_cacheSettingsRepository.Repository
+                    .Where(c => c.FK_CDNSERVER == cdnServerId));
 
                 if (entity != null)
                 {
                     var result = _mapper.Map<CacheSettingsDTO>(entity);
 
-                    return Task.FromResult(OperationResult<CacheSettingsDTO>.MakeSuccess(result));
+                    return OperationResult<CacheSettingsDTO>.MakeSuccess(result);
                 }
                 else
                 {
-                    return Task.FromResult(OperationResult<CacheSettingsDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]));
+                    return OperationResult<CacheSettingsDTO>.MakeFailure([ErrorMessage.Create("GET", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return Task.FromResult(OperationResult<CacheSettingsDTO>.MakeFailure([ErrorMessage.Create("GET", "GENERIC_ERROR")]));
+                return OperationResult<CacheSettingsDTO>.MakeFailure([ErrorMessage.Create("GET", "GENERIC_ERROR")]);
             }
         }
 

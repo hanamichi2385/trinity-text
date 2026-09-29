@@ -190,10 +190,17 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 if (filePathRs.Success)
                 {
                     var filePath = filePathRs.Value;
-                    byte[] byteArray = await System.IO.File.ReadAllBytesAsync(filePath);
-                    System.IO.File.Delete(filePath);
-
-                    var updateRs = await _publicationService.Update(setting.Id.Value, PublicationStatus.Generating, "Zip file completed", byteArray);
+                    // the ZIP is streamed from disk to the database: it is never fully loaded in memory
+                    OperationResult updateRs;
+                    try
+                    {
+                        await using var zipStream = new System.IO.FileStream(filePath, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read, 81920, System.IO.FileOptions.Asynchronous | System.IO.FileOptions.SequentialScan);
+                        updateRs = await _publicationService.UpdateWithZipStream(setting.Id.Value, PublicationStatus.Generating, "Zip file completed", zipStream);
+                    }
+                    finally
+                    {
+                        System.IO.File.Delete(filePath);
+                    }
 
                     if (updateRs.Success == false)
                     {
@@ -349,16 +356,23 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
             if (folder != null && (folder?.Id.HasValue ?? false))
             {
-                var filesRs = await _fileManagerService.GetFilesByFolder(website, folder.Id.Value, true, filesGenerationDate);
+                // metadata first, then one blob at a time: memory stays bounded by the largest file, not by the folder
+                var filesRs = await _fileManagerService.GetFilesByFolder(website, folder.Id.Value, false, filesGenerationDate);
                 if (filesRs.Success)
                 {
                     var files = filesRs.Value;
 
                     foreach (var f in files)
                     {
-                        var fileName = $"{folderPath}\\{f.Filename}";
+                        var fileName = PathSafety.EnsureWithinRoot(directory.FullName, $"{folderPath}\\{f.Filename}");
 
-                        await File.WriteAllBytesAsync(fileName, f.Content);
+                        var contentRs = await _fileManagerService.GetFileContent(f.Id);
+                        if (!contentRs.Success)
+                        {
+                            throw new InvalidOperationException($"Unable to read the content of file {f.Filename} ({f.Id})");
+                        }
+
+                        await File.WriteAllBytesAsync(fileName, contentRs.Value);
 
                         //var file = new FileInfo(fileName);
                         //using FileStream stream = file.OpenWrite();
@@ -369,7 +383,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                     foreach (var sub in folder.SubFolders)
                     {
-                        string subfolderPath = $"{folderPath}\\{sub.Name}";
+                        string subfolderPath = PathSafety.EnsureWithinRoot(directory.FullName, $"{folderPath}\\{sub.Name}");
                         await CreateFolderAndFiles(website, sub, subfolderPath, filesGenerationDate);
                     }
                 }

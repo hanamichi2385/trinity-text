@@ -31,24 +31,23 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public Task<OperationResult<IList<WebsiteConfigurationDTO>>> GetAll(string website)
+        public async Task<OperationResult<IList<WebsiteConfigurationDTO>>> GetAll(string website)
         {
             try
             {
-                var list = _websiteConfigurationRepository
-                    .Repository
+                var list = await _websiteConfigurationRepository.ToListAsync(_websiteConfigurationRepository.Repository
                     .Where(w => w.FK_WEBSITE == website)
                     .OrderBy(t => t.TYPE)
-                    .ToList();
+                    );
 
                 var result = _mapper.Map<IList<WebsiteConfigurationDTO>>(list);
 
-                return Task.FromResult(OperationResult<IList<WebsiteConfigurationDTO>>.MakeSuccess(result));
+                return OperationResult<IList<WebsiteConfigurationDTO>>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return Task.FromResult(OperationResult<IList<WebsiteConfigurationDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
+                return OperationResult<IList<WebsiteConfigurationDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
             }
         }
 

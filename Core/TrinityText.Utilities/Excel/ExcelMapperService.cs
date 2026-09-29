@@ -86,53 +86,34 @@ namespace TrinityText.Utilities.Excel
 
         public async Task<byte[]> GetExcelFileStream(IDictionary<KeyValuePair<string, string>, TextDTO[]> textsForSiteLang)
         {
-            //var basePath = _options.TempDirectory;
-            //var separator = basePath.EndsWith('/') ? string.Empty : "/";
-            //var filePath = $@"{basePath}{separator}Translations{Guid.NewGuid()}.xlsx";
-            var filePath = GetFilePath("Translations");
-            try
+            // The mapper keeps the workbook between calls: every SaveAsync adds a sheet and rewrites the whole
+            // workbook to the target, so the (reset) MemoryStream replaces the former temp file + read-back + delete.
+            using var ms = new MemoryStream();
+            var em = new ExcelMapper();
+            foreach (var site in textsForSiteLang)
             {
-                //var sheetNames = new List<string>();
-                //var sheetHeaders = new List<Dictionary<string, int?>>();
-                //var sheetCells = new List<Dictionary<KeyValuePair<int, int>, string>>();
+                var siteName = site.Key.Key;
+                var lang = site.Key.Value;
 
-                var sheetIndex = 0;
-                var em = new ExcelMapper();
-                foreach (var site in textsForSiteLang)
-                {
-                    var siteName = site.Key.Key;
-                    var lang = site.Key.Value;
+                var sheetName = $"{siteName}-{lang}";
 
-                    var sheetName = $"{siteName}-{lang}";
+                var list =
+                    site.Value
+                    .Select(l => new
+                    {
+                        KEY = l.Name,
+                        TYPE = l.TextType != null ? l.TextType.Name : (!string.IsNullOrWhiteSpace(l.Site) ? l.Website : "*"),
+                        WEBSITE = !string.IsNullOrWhiteSpace(l.Website) ? l.Website : "*",
+                        SITE = !string.IsNullOrWhiteSpace(l.Site) ? l.Site : "*",
+                        LANGUAGE = l.Language ?? "",
+                        CONTENT = l.TextRevision?.Content ?? string.Empty,
+                    }).ToArray();
 
-                    var list =
-                        site.Value
-                        .Select(l => new
-                        {
-                            KEY = l.Name,
-                            TYPE = l.TextType != null ? l.TextType.Name : (!string.IsNullOrWhiteSpace(l.Site) ? l.Website : "*"),
-                            WEBSITE = !string.IsNullOrWhiteSpace(l.Website) ? l.Website : "*",
-                            SITE = !string.IsNullOrWhiteSpace(l.Site) ? l.Site : "*",
-                            LANGUAGE = l.Language ?? "",
-                            CONTENT = l.TextRevision?.Content ?? string.Empty,
-                        }).ToArray();
-
-                    await em.SaveAsync(filePath, list, sheetName);
-
-                    sheetIndex++;
-                }
-
-                return await GetStream(filePath);
+                ms.SetLength(0);
+                await em.SaveAsync(ms, list, sheetName, xlsx: true);
             }
-            finally
-            {
-                var file = new FileInfo(filePath);
 
-                if (file.Exists)
-                {
-                    file.Delete();
-                }
-            }
+            return ms.ToArray();
         }
 
         public async Task<TextDTO[]> GetTextsFromStream(string user, Stream fileStream)
@@ -145,6 +126,13 @@ namespace TrinityText.Utilities.Excel
                 if (typesRs.Success)
                 {
                     var types = typesRs.Value;
+
+                    // one lookup per row on the type list -> dictionary (first match wins, case-insensitive)
+                    var typesByName = new Dictionary<string, TextTypeDTO>(StringComparer.InvariantCultureIgnoreCase);
+                    foreach (var t in types)
+                    {
+                        typesByName.TryAdd(t.Name, t);
+                    }
 
                     var em = new ExcelMapper(fileStream);
                     var rows = em.Fetch();
@@ -169,9 +157,7 @@ namespace TrinityText.Utilities.Excel
                             if (!"*".Equals(typeName, StringComparison.InvariantCultureIgnoreCase)
                                 && !string.IsNullOrWhiteSpace(typeName))
                             {
-                                type = types
-                                    .Where(t => t.Name.Equals(typeName, StringComparison.InvariantCultureIgnoreCase))
-                                    .FirstOrDefault();
+                                typesByName.TryGetValue(typeName, out type);
 
                                 cont = type != null;
                             }
@@ -212,43 +198,6 @@ namespace TrinityText.Utilities.Excel
         private static string GetExcelValue(IDictionary<string, object> r, string key)
         {
             return r.TryGetValue(key, out object v) ? v?.ToString()?.Trim() : string.Empty;
-        }
-
-        private static async Task<byte[]> GetStream(string filePath)
-        {
-            byte[] fileBytes = [];
-            try
-            {
-                //using (System.IO.FileStream fs = System.IO.File.OpenRead(filePath))
-                //{
-                //    fileBytes = new byte[fs.Length];
-                //    int br = await fs.ReadAsync(fileBytes, 0, fileBytes.Length);
-                //    if (br != fs.Length)
-                //        throw new System.IO.IOException(filePath);
-                //    fs.Close();
-                //}
-                fileBytes = await File.ReadAllBytesAsync(filePath);
-            }
-            finally
-            {
-                var file = new FileInfo(filePath);
-
-                if (file.Exists)
-                {
-                    file.Delete();
-                }
-            }
-
-            return fileBytes;
-        }
-
-        private string GetFilePath(string fileName)
-        {
-            var basePath = _options.TempDirectory;
-            var separator = basePath.EndsWith('/') ? string.Empty : "/";
-            var filePath = $@"{basePath}{separator}{fileName}{Guid.NewGuid()}.xlsx";
-
-            return filePath;
         }
     }
 

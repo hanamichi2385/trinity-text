@@ -14,13 +14,16 @@ namespace TrinityText.Business.Services.Impl
     {
         private readonly IRepository<Publication> _publicationRepository;
 
+        private readonly IRepository<FtpServer> _ftpServerRepository;
+
         private readonly ILogger<PublicationService> _logger;
 
         private readonly IMapper _mapper;
 
-        public PublicationService(IRepository<Publication> publicationRepository, IMapper mapper, ILogger<PublicationService> logger)
+        public PublicationService(IRepository<Publication> publicationRepository, IRepository<FtpServer> ftpServerRepository, IMapper mapper, ILogger<PublicationService> logger)
         {
             _publicationRepository = publicationRepository;
+            _ftpServerRepository = ftpServerRepository;
             _mapper = mapper;
             _logger = logger;
         }
@@ -92,7 +95,7 @@ namespace TrinityText.Business.Services.Impl
             return bytes;
         }
 
-        private async Task UpdateZipContent(int id, byte[] zipFile)
+        private async Task UpdateZipContent(int id, object zipFile)
         {
             try
             {
@@ -100,7 +103,8 @@ namespace TrinityText.Business.Services.Impl
                 await sqlConnection.OpenAsync();
                 using var sqlCommand = new SqlCommand(@"UPDATE [dbo].[Generazioni] SET [ZIP_FILE] = @zip  WHERE ID = @id", sqlConnection);
                 sqlCommand.Parameters.Add(new SqlParameter("id", id));
-                sqlCommand.Parameters.Add(new SqlParameter("zip", zipFile));
+                // byte[] or Stream (streamed to the server, VarBinary(max))
+                sqlCommand.Parameters.Add(new SqlParameter("zip", System.Data.SqlDbType.VarBinary, -1) { Value = zipFile });
 
                 await sqlCommand.ExecuteNonQueryAsync();
             }
@@ -112,7 +116,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public Task<OperationResult<IList<PublicationDTO>>> GetAll(string[] websites = null)
+        public async Task<OperationResult<IList<PublicationDTO>>> GetAll(string[] websites = null)
         {
             try
             {
@@ -123,7 +127,7 @@ namespace TrinityText.Business.Services.Impl
                     query = query.Where(f => websites.Contains(f.FK_WEBSITE));
                 }
 
-                var list = query
+                var list = await _publicationRepository.ToListAsync(query
                     .OrderByDescending(f => f.LASTUPDATE_DATE)
                     .Select(f => new
                     {
@@ -132,16 +136,26 @@ namespace TrinityText.Business.Services.Impl
                         PUBLICATIONTYPE = f.DATATYPE,
                         LASTUPDATE_DATE = f.LASTUPDATE_DATE,
                         CREATION_USER = f.CREATION_USER,
-                        FTP_SERVER = f.FTPSERVER,
+                        FTP_ID = f.FK_FTPSERVER,
                         WEBSITE = f.FK_WEBSITE,
                         MANUALDELETE = f.MANUALDELETE,
                         FILTERDATA_DATE = f.FILTERDATA_DATE,
                         STATUS_CODE = f.STATUS_CODE,
-                        CDNSERVER = f.CDNSERVER,
                         HAS_FILEZIP = false,
                         FORMAT=f.FORMAT,
-                    })
-                    .ToList();
+                    }));
+
+                // FTP names are read with a separate, narrow query: navigating f.FTPSERVER inside the projection
+                // could become an inner join (dropping publications without FTP server) depending on the provider
+                var ftpIds = list.Where(f => f.FTP_ID.HasValue).Select(f => f.FTP_ID.Value).Distinct().ToArray();
+                var ftpNames = ftpIds.Length == 0
+                    ? new Dictionary<int, string>()
+                    : (await _ftpServerRepository.ToListAsync(
+                        _ftpServerRepository
+                            .Repository
+                            .Where(s => ftpIds.Contains(s.ID))
+                            .Select(s => new { s.ID, s.NAME })))
+                        .ToDictionary(s => s.ID, s => s.NAME);
 
                 var result = 
                     list
@@ -154,7 +168,7 @@ namespace TrinityText.Business.Services.Impl
                         StatusCode = (PublicationStatus)f.STATUS_CODE,
                         LastUpdate = f.LASTUPDATE_DATE,
                         CreationUser = f.CREATION_USER,
-                        FtpServer = f.FTP_SERVER != null ? new FTPServerDTO() { Name = f.FTP_SERVER.NAME } : null,
+                        FtpServer = f.FTP_ID.HasValue ? new FTPServerDTO() { Name = ftpNames.GetValueOrDefault(f.FTP_ID.Value) } : null,
                         Website = f.WEBSITE,
                         ManualDelete = f.MANUALDELETE,
                         FilterDataDate = f.FILTERDATA_DATE,
@@ -162,12 +176,12 @@ namespace TrinityText.Business.Services.Impl
                     })
                     .ToList();
 
-                return Task.FromResult(OperationResult<IList<PublicationDTO>>.MakeSuccess(result));
+                return OperationResult<IList<PublicationDTO>>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return Task.FromResult(OperationResult<IList<PublicationDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
+                return OperationResult<IList<PublicationDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
             }
         }
 
@@ -237,21 +251,28 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult> Update(int id, PublicationStatus status, string message, byte[] zipFile)
+        public Task<OperationResult> Update(int id, PublicationStatus status, string message, byte[] zipFile)
+            => UpdateInternal(id, status, message, zipFile);
+
+        public Task<OperationResult> UpdateWithZipStream(int id, PublicationStatus status, string message, System.IO.Stream zipFile)
+            => UpdateInternal(id, status, message, zipFile);
+
+        private async Task<OperationResult> UpdateInternal(int id, PublicationStatus status, string message, object zipFile)
         {
             try
             {
-                var entity = await _publicationRepository
-                    .Read(id);
+                var statusCode = (int)status;
 
-                if (entity != null)
+                // targeted UPDATE of the two status columns: no entity (with CDN / FTP graph) is loaded and rewritten
+                var updated = await _publicationRepository.ExecuteUpdateAsync(
+                    _publicationRepository.Repository.Where(p => p.ID == id),
+                    set => set
+                        .Set(p => p.STATUS_CODE, statusCode)
+                        .Set(p => p.STATUS_MESSAGE, message));
+
+                if (updated > 0)
                 {
-                    entity.STATUS_CODE = (int)status;
-                    entity.STATUS_MESSAGE = message;
-
-                    await _publicationRepository.Update(entity);
-
-                    _logger.LogInformation("Update publication {id} status {status}: {message}",id, status, message);
+                    _logger.LogInformation("Update publication {id} status {status}: {message}", id, status, message);
 
                     if (zipFile != null)
                     {
@@ -271,7 +292,5 @@ namespace TrinityText.Business.Services.Impl
                 return OperationResult.MakeFailure([ErrorMessage.Create("UPDATE", "GENERIC_ERROR")]);
             }
         }
-
-       
     }
 }

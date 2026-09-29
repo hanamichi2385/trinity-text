@@ -14,6 +14,13 @@
 - Performance: `DeleteFile` via set-based delete and `GetFileLink` via metadata projection (no blob loading)
 - New: `ExecuteUpdateAsync` on `IRepository<T>` (set-based UPDATE of selected columns; EF Core + NHibernate implementations, `UpdateSetters<T>`)
 - Performance: `RenameFile` and `MoveFile` update the row in place (no blob load/rewrite); a moved file keeps its id (before: new row + delete)
+- Performance: file export loads one blob at a time (`IFileManagerService.GetFileContent`) instead of the whole folder; export paths confined to the export root
+- Performance: publication ZIP streamed from disk to SQL (`IPublicationService.UpdateWithZipStream`, VarBinary(max)); publication status updated with a targeted UPDATE (no entity graph rewrite)
+- Performance: publishable pages loaded without repeating the PageType schema XML on every row (page types loaded once)
+- Performance: `ImportTexts` inserts new texts in a single batch (`AddRangeAsync`); Excel import resolves text types via dictionary
+- Performance: multi-sheet Excel export in memory (no temp file)
+- Performance: remaining synchronous reads (`GetAll*`, `NotDuplicated`, folder/file lookups) are now async; `PublicationService.GetAll` no longer reads FTP credentials (new `IRepository<FtpServer>` constructor dependency, resolved by DI)
+- Performance: FTP transfers use FluentFTP `AsyncFtpClient`
 - Performance: `WidgetService.GetByKeys` is async; owner/website filters use `col == null || col == ""` instead of `IsNullOrWhiteSpace` (index friendly)
 - New: `Core/TrinityText.Domain/Db/indexes.sql` with recommended non-clustered indexes (run manually on the database)
 

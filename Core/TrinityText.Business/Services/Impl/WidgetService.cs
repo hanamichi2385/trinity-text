@@ -194,7 +194,7 @@ namespace TrinityText.Business.Services.Impl
 
         #region Private methods
 
-        private Task<OperationResult> NotDuplicated(WidgetDTO dto)
+        private async Task<OperationResult> NotDuplicated(WidgetDTO dto)
         {
             try
             {
@@ -227,14 +227,14 @@ namespace TrinityText.Business.Services.Impl
                         query.Where(r => r.FK_PRICELIST == null);
                 }
 
-                var resx = query.Count();
+                var resx = await _widgetRepository.CountAsync(query);
 
-                return Task.FromResult(resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure([ErrorMessage.Create("DUPLICATED", "DUPLICATED")]));
+                return resx == 0 ? OperationResult.MakeSuccess() : OperationResult.MakeFailure([ErrorMessage.Create("DUPLICATED", "DUPLICATED")]);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "EXIST {message}", ex.Message);
-                return Task.FromResult(OperationResult.MakeFailure([ErrorMessage.Create("EXIST", "GENERIC_ERROR")]));
+                return OperationResult.MakeFailure([ErrorMessage.Create("EXIST", "GENERIC_ERROR")]);
             }
         }
 

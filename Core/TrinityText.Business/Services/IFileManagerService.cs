@@ -16,6 +16,9 @@ namespace TrinityText.Business
         Task<OperationResult<FileDTO>> GetFile(Guid id, bool withThumb);
         Task<OperationResult<FileDTO>> GetFileByFullname(string fullFilename);
 
+        /// <summary>Content of a single file (no thumbnail, no other columns). Lets exports load one blob at a time.</summary>
+        Task<OperationResult<byte[]>> GetFileContent(Guid id);
+
         /// <summary>Same resolution as <see cref="GetFileByFullname"/> but returns only the file id (the content is not loaded).</summary>
         Task<OperationResult<Guid>> GetFileIdByFullname(string fullFilename);
         Task<OperationResult<string>> GetFileLink(Guid id);

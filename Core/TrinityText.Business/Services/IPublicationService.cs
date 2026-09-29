@@ -14,6 +14,9 @@ namespace TrinityText.Business
 
         Task<OperationResult> Update(int id, PublicationStatus status, string message, byte[] file);
 
+        /// <summary>Same as Update, but the ZIP is streamed to the database without being loaded in memory.</summary>
+        Task<OperationResult> UpdateWithZipStream(int id, PublicationStatus status, string message, System.IO.Stream zipFile);
+
         Task<OperationResult> Remove(int id);
     }
 }

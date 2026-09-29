@@ -307,7 +307,7 @@ namespace TrinityText.Business.Services.Impl
         //        return OperationResult<TextDTO>.MakeFailure(new[] { ErrorMessage.Create("EXIST", "GENERIC_ERROR") });
         //    }
         //}
-        public Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>> GetPublishablePages(string website, string site, string[] languages)
+        public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>> GetPublishablePages(string website, string site, string[] languages)
         {
             try
             {
@@ -324,21 +324,39 @@ namespace TrinityText.Business.Services.Impl
                 var query =
                     GetPagesByFilter(search);
 
-                var contents = query.ToList();
+                var contents = await _pageRepository.ToListAsync(query);
 
                 var list = _mapper.Map<List<PageDTO>>(contents);
 
                 var result = list.GroupBy(c => c.Language).ToFrozenDictionary(c => c.Key, c => c.ToList().AsReadOnly());
 
-                return Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeSuccess(result));
+                return OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PUBLISH_PAGES {message}", ex.Message);
-                return Task.FromResult(OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_PAGES", "GENERIC_ERROR")]));
+                return OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>.MakeFailure([ErrorMessage.Create("PUBLISH_PAGES", "GENERIC_ERROR")]);
             }
         }
 
+
+        private static IQueryable<Page> WithoutPageType(IQueryable<Page> query)
+            => query.Select(q => new Page()
+            {
+                ACTIVE = q.ACTIVE,
+                CONTENT = q.CONTENT,
+                ID = q.ID,
+                CREATION_DATE = q.CREATION_DATE,
+                CREATION_USER = q.CREATION_USER,
+                FK_LANGUAGE = q.FK_LANGUAGE,
+                FK_PAGETYPE = q.FK_PAGETYPE,
+                FK_PRICELIST = q.FK_PRICELIST,
+                FK_WEBSITE = q.FK_WEBSITE,
+                GENERATE_PDF = q.GENERATE_PDF,
+                LASTUPDATE_DATE = q.LASTUPDATE_DATE,
+                LASTUPDATE_USER = q.LASTUPDATE_USER,
+                TITLE = q.TITLE,
+            });
 
         public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>> GetPublishablePagesByWebsite(string website, Dictionary<string, string[]> sitesLanguages)
         {
@@ -347,20 +365,33 @@ namespace TrinityText.Business.Services.Impl
                 var allLanguages = sitesLanguages.Values.SelectMany(v => v).Distinct().ToArray();
                 var allSites = sitesLanguages.Keys.ToArray();
 
+                // PageType is auto-included and carries the whole schema XML: projecting the page columns avoids
+                // repeating it on every row; the (few) page types are loaded once and attached below.
                 var pagesGlobalList = await _pageRepository.ToListAsync(
-                    _pageRepository
-                        .Repository
-                        .Where(t => allLanguages.Contains(t.FK_LANGUAGE) &&
-                            t.ACTIVE == true &&
-                            (t.FK_WEBSITE == null || (t.FK_WEBSITE == website && (t.FK_PRICELIST == null || t.FK_PRICELIST == "")))));
+                    WithoutPageType(
+                        _pageRepository
+                            .Repository
+                            .Where(t => allLanguages.Contains(t.FK_LANGUAGE) &&
+                                t.ACTIVE == true &&
+                                (t.FK_WEBSITE == null || (t.FK_WEBSITE == website && (t.FK_PRICELIST == null || t.FK_PRICELIST == ""))))));
 
                 var pagesBySiteList = await _pageRepository.ToListAsync(
-                    _pageRepository
-                        .Repository
-                        .Where(t => allLanguages.Contains(t.FK_LANGUAGE) &&
-                            t.ACTIVE == true &&
-                            t.FK_WEBSITE == website &&
-                            allSites.Contains(t.FK_PRICELIST)));
+                    WithoutPageType(
+                        _pageRepository
+                            .Repository
+                            .Where(t => allLanguages.Contains(t.FK_LANGUAGE) &&
+                                t.ACTIVE == true &&
+                                t.FK_WEBSITE == website &&
+                                allSites.Contains(t.FK_PRICELIST))));
+
+                var typeIds = pagesGlobalList.Concat(pagesBySiteList).Select(p => p.FK_PAGETYPE).Distinct().ToArray();
+                var pageTypes = (await _pageTypeRepository.ToListAsync(
+                    _pageTypeRepository.Repository.Where(pt => typeIds.Contains(pt.ID))))
+                    .ToDictionary(pt => pt.ID);
+                foreach (var page in pagesGlobalList.Concat(pagesBySiteList))
+                {
+                    page.PAGETYPE = pageTypes.GetValueOrDefault(page.FK_PAGETYPE);
+                }
 
                 var pagesGlobalDto = _mapper.Map<IList<PageDTO>>(pagesGlobalList).AsReadOnly();
                 var pagesBySiteDto = _mapper.Map<IList<PageDTO>>(pagesBySiteList);

@@ -27,44 +27,42 @@ namespace TrinityText.Business.Services.Impl
             _logger = logger;
         }
 
-        public Task<OperationResult<IList<CdnServerDTO>>> GetAll()
+        public async Task<OperationResult<IList<CdnServerDTO>>> GetAll()
         {
             try
             {
-                var list = _cdnSettingsRepository
-                    .Repository
+                var list = await _cdnSettingsRepository.ToListAsync(_cdnSettingsRepository.Repository
                     .OrderBy(t => t.TYPE)
-                    .ToList();
+                    );
 
                 var result = _mapper.Map<IList<CdnServerDTO>>(list);
 
-                return Task.FromResult(OperationResult<IList<CdnServerDTO>>.MakeSuccess(result));
+                return OperationResult<IList<CdnServerDTO>>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return Task.FromResult(OperationResult<IList<CdnServerDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
+                return OperationResult<IList<CdnServerDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
             }
         }
 
-        public Task<OperationResult<IList<CdnServerDTO>>> GetAllByWebsite(string website)
+        public async Task<OperationResult<IList<CdnServerDTO>>> GetAllByWebsite(string website)
         {
             try
             {
-                var list = _cdnSettingsRepository
-                    .Repository
+                var list = await _cdnSettingsRepository.ToListAsync(_cdnSettingsRepository.Repository
                     .Where(c => c.CDNSERVERPERWEBSITES.Any(w => w.FK_WEBSITE == website))
                     .OrderBy(t => t.TYPE)
-                    .ToList();
+                    );
 
                 var result = _mapper.Map<IList<CdnServerDTO>>(list);
 
-                return Task.FromResult(OperationResult<IList<CdnServerDTO>>.MakeSuccess(result));
+                return OperationResult<IList<CdnServerDTO>>.MakeSuccess(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GETALL {message}", ex.Message);
-                return Task.FromResult(OperationResult<IList<CdnServerDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]));
+                return OperationResult<IList<CdnServerDTO>>.MakeFailure([ErrorMessage.Create("GETALL", "GENERIC_ERROR")]);
             }
         }
 
