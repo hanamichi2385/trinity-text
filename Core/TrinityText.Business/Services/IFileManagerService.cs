@@ -15,6 +15,9 @@ namespace TrinityText.Business
         Task<OperationResult<FolderDTO>> GetAllFoldersByWebsite(string website);
         Task<OperationResult<FileDTO>> GetFile(Guid id, bool withThumb);
         Task<OperationResult<FileDTO>> GetFileByFullname(string fullFilename);
+
+        /// <summary>Same resolution as <see cref="GetFileByFullname"/> but returns only the file id (the content is not loaded).</summary>
+        Task<OperationResult<Guid>> GetFileIdByFullname(string fullFilename);
         Task<OperationResult<string>> GetFileLink(Guid id);
         Task<OperationResult<IReadOnlyCollection<FileDTO>>> GetFilesByFolder(string website, int id, bool withFileContent, DateTime? lastUpdate);
         Task<OperationResult<FolderDTO>> GetFolder(int id);

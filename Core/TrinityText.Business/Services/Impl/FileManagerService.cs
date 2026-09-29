@@ -108,6 +108,9 @@ namespace TrinityText.Business.Services.Impl
             if (name.IndexOfAny(InvalidNameChars) >= 0)
                 throw new ArgumentException($"Invalid char in name: {name}");
 
+            // rejects ".", ".." and separators: file names end up in export paths
+            PathSafety.EnsureValidSegment(name, "file name");
+
             return name;
         }
 
@@ -118,6 +121,50 @@ namespace TrinityText.Business.Services.Impl
             name = name.Trim();
             PathSafety.EnsureValidSegment(name, "folder name");
             return name;
+        }
+
+        /// <summary>
+        /// The parent must exist in the same website and must not be the folder itself or one of its descendants
+        /// (a cycle would make every tree walk loop forever).
+        /// </summary>
+        private async Task<bool> IsValidParent(int? folderId, int? parentFolderId, string website)
+        {
+            if (parentFolderId == null)
+            {
+                return true;
+            }
+
+            if (folderId.HasValue && parentFolderId == folderId)
+            {
+                return false;
+            }
+
+            var websiteFolders = await _folderRepository.ToListAsync(
+                _folderRepository
+                    .Repository
+                    .Where(f => f.FK_WEBSITE == website)
+                    .Select(f => new { f.ID, f.FK_PARENT }));
+
+            var parents = websiteFolders.ToDictionary(f => f.ID, f => f.FK_PARENT);
+            if (!parents.ContainsKey(parentFolderId.Value))
+            {
+                return false; // missing or belonging to another website
+            }
+
+            // walk up from the new parent: reaching the folder being edited means it would become its own ancestor
+            var visited = new HashSet<int>();
+            int? current = parentFolderId;
+            while (current != null && visited.Add(current.Value))
+            {
+                if (folderId.HasValue && current == folderId)
+                {
+                    return false;
+                }
+
+                current = parents.TryGetValue(current.Value, out var next) ? next : null;
+            }
+
+            return true;
         }
 
         public async Task<OperationResult<FolderDTO>> SaveFolder(int? parentFolderId, FolderDTO dto)
@@ -131,6 +178,11 @@ namespace TrinityText.Business.Services.Impl
 
                     if (entity != null)
                     {
+                        if (!await IsValidParent(entity.ID, parentFolderId, dto.Website ?? entity.FK_WEBSITE))
+                        {
+                            return OperationResult<FolderDTO>.MakeFailure([ErrorMessage.Create("SAVE", "INVALID_PARENT")]);
+                        }
+
                         entity.NAME = NormalizeFolderName(dto.Name);
                         entity.FK_PARENT = parentFolderId;
                         entity.NOTE = dto.Note;
@@ -150,6 +202,12 @@ namespace TrinityText.Business.Services.Impl
                 else
                 {
                     dto.Name = NormalizeFolderName(dto.Name);
+
+                    if (!await IsValidParent(null, parentFolderId, dto.Website))
+                    {
+                        return OperationResult<FolderDTO>.MakeFailure([ErrorMessage.Create("SAVE", "INVALID_PARENT")]);
+                    }
+
                     var entity = _mapper.Map<Folder>(dto);
                     entity.DELETABLE = true;
                     entity.FK_PARENT = parentFolderId;
@@ -329,19 +387,13 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var entity = await _fileRepository
-                    .Read(id);
+                // set-based delete: the file content and thumbnail are never loaded
+                var deleted = await _fileRepository.ExecuteDeleteAsync(
+                    _fileRepository.Repository.Where(f => f.ID == id));
 
-                if (entity != null)
-                {
-                    await _fileRepository.Delete(entity);
-
-                    return OperationResult.MakeSuccess();
-                }
-                else
-                {
-                    return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
-                }
+                return deleted > 0
+                    ? OperationResult.MakeSuccess()
+                    : OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
             }
             catch (Exception ex)
             {
@@ -354,20 +406,27 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var entity = await _fileRepository.Read(id);
+                // metadata only: CONTENT / THUMBNAIL are not needed to build the link
+                var entity = await _fileRepository.FirstOrDefaultAsync(
+                    _fileRepository
+                        .Repository
+                        .Where(f => f.ID == id)
+                        .Select(f => new { f.FILENAME, f.FK_FOLDER, f.FK_WEBSITE }));
                 if (entity != null)
                 {
-                    var folderMap = _folderRepository
-                        .Repository
-                        .Where(f => f.FK_WEBSITE == entity.FK_WEBSITE)
-                        .Select(f => new { f.ID, f.NAME, f.FK_PARENT })
+                    var folderMap = (await _folderRepository.ToListAsync(
+                        _folderRepository
+                            .Repository
+                            .Where(f => f.FK_WEBSITE == entity.FK_WEBSITE)
+                            .Select(f => new { f.ID, f.NAME, f.FK_PARENT })))
                         .ToDictionary(f => f.ID);
 
                     var segments = new Stack<string>();
                     segments.Push(Uri.EscapeDataString(entity.FILENAME));
 
+                    var visited = new HashSet<int>();
                     var currentFolderId = (int?)entity.FK_FOLDER;
-                    while (currentFolderId != null && folderMap.TryGetValue(currentFolderId.Value, out var folder))
+                    while (currentFolderId != null && visited.Add(currentFolderId.Value) && folderMap.TryGetValue(currentFolderId.Value, out var folder))
                     {
                         segments.Push(Uri.EscapeDataString(folder.NAME));
                         currentFolderId = folder.FK_PARENT;
@@ -516,6 +575,11 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
+                if (move)
+                {
+                    return await MoveFileToFolder(user, newFolder, fileId);
+                }
+
                 var file = await _fileRepository
                     .Read(fileId);
 
@@ -531,22 +595,17 @@ namespace TrinityText.Business.Services.Impl
                         var fileCopy = new File()
                         {
                             CONTENT = file.CONTENT,
-                            CREATION_DATE = move ? file.CREATION_DATE : DateTime.Now,
+                            CREATION_DATE = DateTime.Now,
                             LASTUPDATE_DATE = DateTime.Now,
                             FILENAME = newFilename,
                             FK_FOLDER = folder.ID,
                             THUMBNAIL = file.THUMBNAIL,
                             FK_WEBSITE = folder.FK_WEBSITE,
-                            CREATION_USER = move ? file.CREATION_USER : user,
+                            CREATION_USER = user,
                             LASTUPDATE_USER = user,
                         };
 
                         var newFile = await _fileRepository.Create(fileCopy);
-
-                        if (move)
-                        {
-                            await _fileRepository.Delete(file);
-                        }
 
                         var dto = _mapper.Map<FileDTO>(newFile);
 
@@ -568,6 +627,44 @@ namespace TrinityText.Business.Services.Impl
                 _logger.LogError(ex, "PASTEFILE {message}", ex.Message);
                 return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "GENERIC_ERROR")]);
             }
+        }
+
+        // A move only changes the folder (and name on conflict): update the row in place instead of copying the blobs
+        // into a new row and deleting the old one. The file keeps its id, so existing references stay valid.
+        private async Task<OperationResult<FileDTO>> MoveFileToFolder(string user, int newFolder, Guid fileId)
+        {
+            var file = await _fileRepository.FirstOrDefaultAsync(
+                _fileRepository
+                    .Repository
+                    .Where(f => f.ID == fileId)
+                    .Select(f => new { f.FILENAME }));
+
+            if (file == null)
+            {
+                return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "FOLDER_NOT_FOUND")]);
+            }
+
+            var folder = await _folderRepository.Read(newFolder);
+            if (folder == null)
+            {
+                return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("PASTEFILE", "FILE_NOT_FOUND")]);
+            }
+
+            var newFilename = CheckFileToFolder(file.FILENAME, folder);
+            var now = DateTime.Now;
+            var folderId = folder.ID;
+            var website = folder.FK_WEBSITE;
+
+            await _fileRepository.ExecuteUpdateAsync(
+                _fileRepository.Repository.Where(f => f.ID == fileId),
+                set => set
+                    .Set(f => f.FILENAME, newFilename)
+                    .Set(f => f.FK_FOLDER, folderId)
+                    .Set(f => f.FK_WEBSITE, website)
+                    .Set(f => f.LASTUPDATE_DATE, now)
+                    .Set(f => f.LASTUPDATE_USER, user));
+
+            return OperationResult<FileDTO>.MakeSuccess(await GetFileMetadata(fileId));
         }
 
         public async Task<OperationResult<FileDTO>> MoveFile(string user, int newFolder, Guid fileId)
@@ -755,6 +852,9 @@ namespace TrinityText.Business.Services.Impl
 
         private async Task<Folder> CreateFolderByName(string website, string name, Folder parent)
         {
+            // site / language names become directories in the export
+            PathSafety.EnsureValidSegment(name, "folder name");
+
             int? parentId = parent != null ? (int?)parent.ID : null;
             var exfolder =
                 _folderRepository
@@ -783,7 +883,18 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult<FileDTO>> GetFileByFullname(string fullFilename)
+        public Task<OperationResult<FileDTO>> GetFileByFullname(string fullFilename)
+            => ResolveFileByFullname(fullFilename, withContent: true);
+
+        public async Task<OperationResult<Guid>> GetFileIdByFullname(string fullFilename)
+        {
+            var rs = await ResolveFileByFullname(fullFilename, withContent: false);
+            return rs.Success
+                ? OperationResult<Guid>.MakeSuccess(rs.Value.Id)
+                : OperationResult<Guid>.MakeFailure(rs.Errors);
+        }
+
+        private async Task<OperationResult<FileDTO>> ResolveFileByFullname(string fullFilename, bool withContent)
         {
             try
             {
@@ -796,17 +907,29 @@ namespace TrinityText.Business.Services.Impl
 
                 var fileName = parts[^1];
 
-                var files = await _fileRepository.ToListAsync(
-                    _fileRepository
-                        .Repository
-                        .Where(f => f.FILENAME.Equals(fileName))
-                        .Select(s => new File()
-                        {
-                            ID = s.ID,
-                            CONTENT = s.CONTENT,
-                            FK_FOLDER = s.FK_FOLDER,
-                            FK_WEBSITE = s.FK_WEBSITE,
-                        }));
+                // the content column is projected only when the caller needs it
+                var files = withContent
+                    ? await _fileRepository.ToListAsync(
+                        _fileRepository
+                            .Repository
+                            .Where(f => f.FILENAME.Equals(fileName))
+                            .Select(s => new File()
+                            {
+                                ID = s.ID,
+                                CONTENT = s.CONTENT,
+                                FK_FOLDER = s.FK_FOLDER,
+                                FK_WEBSITE = s.FK_WEBSITE,
+                            }))
+                    : await _fileRepository.ToListAsync(
+                        _fileRepository
+                            .Repository
+                            .Where(f => f.FILENAME.Equals(fileName))
+                            .Select(s => new File()
+                            {
+                                ID = s.ID,
+                                FK_FOLDER = s.FK_FOLDER,
+                                FK_WEBSITE = s.FK_WEBSITE,
+                            }));
 
                 if (files.Count == 0)
                 {
@@ -894,18 +1017,20 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var entity = await _fileRepository
-                    .Read(fileId);
+                var name = NormalizeFilename(newName);
+                var now = DateTime.Now;
 
-                if (entity != null)
+                // targeted UPDATE: CONTENT / THUMBNAIL are neither loaded nor rewritten
+                var updated = await _fileRepository.ExecuteUpdateAsync(
+                    _fileRepository.Repository.Where(f => f.ID == fileId),
+                    set => set
+                        .Set(f => f.FILENAME, name)
+                        .Set(f => f.LASTUPDATE_DATE, now)
+                        .Set(f => f.LASTUPDATE_USER, user));
+
+                if (updated > 0)
                 {
-                    entity.FILENAME = NormalizeFilename(newName);
-                    entity.LASTUPDATE_DATE = DateTime.Now;
-                    entity.LASTUPDATE_USER = user;
-
-                    var result = await _fileRepository.Update(entity);
-
-                    var r = _mapper.Map<FileDTO>(result);
+                    var r = await GetFileMetadata(fileId);
 
                     return OperationResult<FileDTO>.MakeSuccess(r);
                 }
@@ -920,6 +1045,23 @@ namespace TrinityText.Business.Services.Impl
                 return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("SAVE", "GENERIC_ERROR")]);
             }
         }
+
+        // FileDTO without content (HasThumbnail is computed in SQL, the thumbnail is not loaded)
+        private Task<FileDTO> GetFileMetadata(Guid fileId)
+            => _fileRepository.FirstOrDefaultAsync(
+                _fileRepository
+                    .Repository
+                    .Where(f => f.ID == fileId)
+                    .Select(f => new FileDTO
+                    {
+                        Id = f.ID,
+                        Filename = f.FILENAME,
+                        CreationDate = f.CREATION_DATE,
+                        CreationUser = f.CREATION_USER,
+                        LastUpdate = f.LASTUPDATE_DATE,
+                        LastUpdateUser = f.LASTUPDATE_USER,
+                        HasThumbnail = f.THUMBNAIL != null,
+                    }));
 
         //public IList<FileDto> GetLastFiles(int count, string[] userVendor)
         //{

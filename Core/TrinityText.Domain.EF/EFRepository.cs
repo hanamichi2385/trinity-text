@@ -1,5 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore.Query;
+using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -43,6 +47,42 @@ namespace TrinityText.Domain.EF
 
         public Task<int> ExecuteDeleteAsync<TEntity>(IQueryable<TEntity> source) where TEntity : class
             => source.ExecuteDeleteAsync();
+
+        public Task<int> ExecuteUpdateAsync<TEntity>(IQueryable<TEntity> source, Action<UpdateSetters<TEntity>> configure) where TEntity : class
+        {
+            var setters = new UpdateSetters<TEntity>();
+            configure(setters);
+            if (setters.Items.Count == 0)
+            {
+                return Task.FromResult(0);
+            }
+
+            // s => s.SetProperty(x => x.A, valueA).SetProperty(x => x.B, valueB)...
+            var callsType = typeof(SetPropertyCalls<TEntity>);
+            var parameter = Expression.Parameter(callsType, "s");
+            Expression body = parameter;
+            foreach (var setter in setters.Items)
+            {
+                // EF Core 8 overload (Func<T, TProp>, TProp): second parameter is the generic argument itself.
+                // Inside an expression tree the property selector is passed as a plain lambda node (no Quote).
+                var method = callsType
+                    .GetMethods()
+                    .Single(m => m.Name == nameof(SetPropertyCalls<TEntity>.SetProperty)
+                        && m.GetParameters().Length == 2
+                        && m.GetParameters()[1].ParameterType.IsGenericParameter)
+                    .MakeGenericMethod(setter.PropertyType);
+
+                // the value goes through a closure field so EF sends it as a parameter (query plan reuse)
+                var box = Activator.CreateInstance(typeof(StrongBox<>).MakeGenericType(setter.PropertyType));
+                box.GetType().GetField(nameof(StrongBox<int>.Value)).SetValue(box, setter.Value);
+                var value = Expression.Field(Expression.Constant(box), nameof(StrongBox<int>.Value));
+
+                body = Expression.Call(body, method, setter.Property, value);
+            }
+
+            var lambda = Expression.Lambda<Func<SetPropertyCalls<TEntity>, SetPropertyCalls<TEntity>>>(body, parameter);
+            return source.ExecuteUpdateAsync(lambda);
+        }
 
         public async Task Delete(T entityToDelete)
         {

@@ -70,8 +70,8 @@ namespace TrinityText.Business.Services.Impl
             var query = _textRepository
                 .Repository
                 .Where(s =>
-                        (string.IsNullOrWhiteSpace(s.FK_WEBSITE) ||
-                        (!string.IsNullOrWhiteSpace(s.FK_WEBSITE) && websites.Contains(s.FK_WEBSITE)))
+                        ((s.FK_WEBSITE == null || s.FK_WEBSITE == "") ||
+                        ((s.FK_WEBSITE != null && s.FK_WEBSITE != "") && websites.Contains(s.FK_WEBSITE)))
                         && languages.Contains(s.FK_LANGUAGE));
 
             if (search != null)
@@ -88,8 +88,8 @@ namespace TrinityText.Business.Services.Impl
                     query =
                         query
                         .Where(s =>
-                        (string.IsNullOrWhiteSpace(s.FK_WEBSITE) ||
-                        (!string.IsNullOrWhiteSpace(s.FK_WEBSITE) && s.FK_WEBSITE == search.Website)));
+                        ((s.FK_WEBSITE == null || s.FK_WEBSITE == "") ||
+                        ((s.FK_WEBSITE != null && s.FK_WEBSITE != "") && s.FK_WEBSITE == search.Website)));
                 }
 
                 if (!string.IsNullOrWhiteSpace(search.Site))
@@ -97,8 +97,8 @@ namespace TrinityText.Business.Services.Impl
                     query =
                         query
                         .Where(s =>
-                        (string.IsNullOrWhiteSpace(s.FK_PRICELIST) ||
-                        (!string.IsNullOrWhiteSpace(s.FK_PRICELIST) && s.FK_PRICELIST == search.Site)));
+                        ((s.FK_PRICELIST == null || s.FK_PRICELIST == "") ||
+                        ((s.FK_PRICELIST != null && s.FK_PRICELIST != "") && s.FK_PRICELIST == search.Site)));
                 }
 
                 if ((search.LanguageIds?.Length ?? 0) != 0)
@@ -118,7 +118,7 @@ namespace TrinityText.Business.Services.Impl
                 {
                     query =
                         query
-                        .Where(s => !string.IsNullOrWhiteSpace(s.FK_WEBSITE) == search.ShowOnlyDedicated.Value);
+                        .Where(s => (s.FK_WEBSITE != null && s.FK_WEBSITE != "") == search.ShowOnlyDedicated.Value);
                 }
 
                 if (search.ShowOnlyActive.HasValue)
@@ -430,7 +430,7 @@ namespace TrinityText.Business.Services.Impl
                         .Where(t => allLanguages.Contains(t.FK_LANGUAGE) &&
                             textTypesIds.Contains(t.FK_TEXTTYPE) &&
                             t.ACTIVE == true &&
-                            (t.FK_WEBSITE == null || (t.FK_WEBSITE == website && string.IsNullOrWhiteSpace(t.FK_PRICELIST)))));
+                            (t.FK_WEBSITE == null || (t.FK_WEBSITE == website && (t.FK_PRICELIST == null || t.FK_PRICELIST == "")))));
 
                 await PopulateLatestRevisions(textsGlobalByWebsiteList);
                 var textsGlobalByWebsite = _mapper.Map<IList<TextDTO>>(textsGlobalByWebsiteList).AsReadOnly();

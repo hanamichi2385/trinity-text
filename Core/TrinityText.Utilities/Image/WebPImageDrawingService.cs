@@ -30,7 +30,7 @@ namespace TrinityText.Utilities
                 {
                     using var inputFile = new MemoryStream(dto.Content);
                     using var inputStream = new SKManagedStream(inputFile);
-                    if (CanProcess(dto.Filename, inputStream))
+                    if (WithinPixelLimit(dto.Content) && CanProcess(dto.Filename, inputStream))
                     {
                         using var original = SKBitmap.Decode(inputStream);
                         ImageExtensions.CheckImageSize(_options, original.Width, original.Height, out int w, out int h);
@@ -68,7 +68,7 @@ namespace TrinityText.Utilities
                 {
                     using var inputFile = new MemoryStream(dto.Content);
                     using var inputStream = new SKManagedStream(inputFile);
-                    if (CanProcess(dto.Filename, inputStream))
+                    if (WithinPixelLimit(dto.Content) && CanProcess(dto.Filename, inputStream))
                     {
                         using var original = SKBitmap.Decode(inputStream);
                         using var data = original.Encode(SKEncodedImageFormat.Webp, _options.Quality);
@@ -98,8 +98,28 @@ namespace TrinityText.Utilities
             if ("image/gif".Equals(contentType, StringComparison.InvariantCultureIgnoreCase))
             {
                 using var codec = SKCodec.Create(stream);
-                return codec.FrameCount <= 1;
+                return codec != null && codec.FrameCount <= 1;
             }
+            return true;
+        }
+
+        // reads only the header: a tiny file can declare a huge canvas
+        private bool WithinPixelLimit(byte[] content)
+        {
+            using var stream = new MemoryStream(content);
+            using var codec = SKCodec.Create(stream);
+            if (codec == null)
+            {
+                return false;
+            }
+
+            var pixels = (long)codec.Info.Width * codec.Info.Height;
+            if (pixels > _options.MaxPixels)
+            {
+                _logger.LogWarning("Image skipped: {pixels} pixels exceed the limit of {max}", pixels, _options.MaxPixels);
+                return false;
+            }
+
             return true;
         }
     }

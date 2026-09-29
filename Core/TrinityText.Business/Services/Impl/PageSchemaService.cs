@@ -22,13 +22,13 @@ namespace TrinityText.Business.Services.Impl
 
         public PageSchema GetContentStructure(string xml)
         {
-            var doc = XDocument.Parse(xml);
+            var doc = SafeXml.ParseDocument(xml);
             return GetContentStructure(doc);
         }
 
         public PageSchema GetContentStructure(Stream stream)
         {
-            var doc = XDocument.Load(stream);
+            var doc = SafeXml.LoadDocument(stream);
             return GetContentStructure(doc);
         }
 
@@ -337,7 +337,7 @@ namespace TrinityText.Business.Services.Impl
 
         public PageSchema ParseContent(Stream stream, PageSchema structure)
         {
-            var doc = XDocument.Load(stream);
+            var doc = SafeXml.LoadDocument(stream);
             return ParseContent(doc, structure);
         }
 
@@ -534,7 +534,7 @@ namespace TrinityText.Business.Services.Impl
                 return structure;
             }
 
-            var doc = XDocument.Parse(xml);
+            var doc = SafeXml.ParseDocument(xml);
             return ParseContent(doc, structure);
         }
 
@@ -544,14 +544,15 @@ namespace TrinityText.Business.Services.Impl
             var declaration = new XDeclaration("1.0", "utf-8", string.Empty);
             doc.Declaration = declaration;
             var root = new XElement(structure.RootName);
+            var cache = new WidgetResolutionCache();
 
             foreach (var c in contentsPerType)
             {
-                var xml = await _widgetUtilities.Replace(tenant, vendor, instance, language, c.Content);
+                var xml = await _widgetUtilities.Replace(tenant, vendor, instance, language, c.Content, cache);
 
-                xml = await _widgetUtilities.ReplaceLink(xml, tenant, vendor, baseUrl, cdnServer);
+                xml = await _widgetUtilities.ReplaceLink(xml, tenant, vendor, baseUrl, cdnServer, cache);
 
-                XElement element = XElement.Parse(xml);
+                XElement element = SafeXml.ParseElement(xml);
                 root.Add(element);
             }
             doc.Add(root);
@@ -563,14 +564,15 @@ namespace TrinityText.Business.Services.Impl
         public async Task<byte[]> CreateJsonContentsDocument(PageSchema structure, IList<PageDTO> contentsPerType, string tenant, string vendor, string instance, string language, string baseUrl, CdnServerDTO cdnServer)
         {
             var list = new List<JRaw>(contentsPerType.Count);
+            var cache = new WidgetResolutionCache();
 
             foreach (var c in contentsPerType)
             {
-                var xml = await _widgetUtilities.Replace(tenant, vendor, instance, language, c.Content);
+                var xml = await _widgetUtilities.Replace(tenant, vendor, instance, language, c.Content, cache);
 
-                xml = await _widgetUtilities.ReplaceLink(xml, tenant, vendor, baseUrl, cdnServer);
+                xml = await _widgetUtilities.ReplaceLink(xml, tenant, vendor, baseUrl, cdnServer, cache);
 
-                var element = XElement.Parse(xml);
+                var element = SafeXml.ParseElement(xml);
                 var node_cdata = element.DescendantNodes().OfType<XCData>().ToList();
 
                 foreach (var node in node_cdata)

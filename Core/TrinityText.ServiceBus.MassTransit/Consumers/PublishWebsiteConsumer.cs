@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using TrinityText.Business;
@@ -34,9 +35,10 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
             if (publicationRs.Success)
             {
                 var setting = publicationRs.Value;
-                string website = setting.Website;
-                string ftpServer = setting.FtpServer.Name;
-                string format = setting.DataType.ToString();
+                // values end up in an HTML mail body: encode them
+                string website = WebUtility.HtmlEncode(setting.Website);
+                string ftpServer = WebUtility.HtmlEncode(setting.FtpServer?.Name);
+                string format = WebUtility.HtmlEncode(setting.DataType.ToString());
 
                 var operationsLogRs = await _generationService.Publish(setting);
                 var body = new StringBuilder();
@@ -54,7 +56,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                     body.Append("<p>All processes are terminated, please start a new update if the error is solved</p>");
                     foreach (var e in operationsLogRs.Errors)
                     {
-                        body.Append($"<p>{e.Context}:{e.Description}</p>");
+                        body.Append($"<p>{WebUtility.HtmlEncode(e.Context)}:{WebUtility.HtmlEncode(e.Description)}</p>");
                     }
                 }
                 var mail = new SendMailMessage()

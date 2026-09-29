@@ -1,4 +1,5 @@
 ﻿using NHibernate.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -65,6 +66,32 @@ namespace TrinityText.Domain.NH
 
         public Task<int> ExecuteDeleteAsync<TEntity>(IQueryable<TEntity> source) where TEntity : class
             => DmlExtensionMethods.DeleteAsync(source);
+
+        public Task<int> ExecuteUpdateAsync<TEntity>(IQueryable<TEntity> source, Action<UpdateSetters<TEntity>> configure) where TEntity : class
+        {
+            var setters = new UpdateSetters<TEntity>();
+            configure(setters);
+            if (setters.Items.Count == 0)
+            {
+                return Task.FromResult(0);
+            }
+
+            var builder = DmlExtensionMethods.UpdateBuilder(source);
+            foreach (var setter in setters.Items)
+            {
+                // IUpdateBuilder<T>.Set<TProp>(Expression<Func<T, TProp>>, TProp)
+                var method = typeof(UpdateBuilder<TEntity>)
+                    .GetMethods()
+                    .Single(m => m.Name == nameof(UpdateBuilder<TEntity>.Set)
+                        && m.GetParameters().Length == 2
+                        && m.GetParameters()[1].ParameterType.IsGenericParameter)
+                    .MakeGenericMethod(setter.PropertyType);
+
+                builder = (UpdateBuilder<TEntity>)method.Invoke(builder, [setter.Property, setter.Value]);
+            }
+
+            return builder.UpdateAsync();
+        }
 
         public async Task<T> Read(params object[] id)
         {

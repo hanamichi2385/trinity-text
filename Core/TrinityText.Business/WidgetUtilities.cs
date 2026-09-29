@@ -27,17 +27,30 @@ namespace TrinityText.Business
             _widgetService = widgetService;
         }
 
-        public async Task<string> Replace(string tenant, string website, string site, string language, string text)
+        public Task<string> Replace(string tenant, string website, string site, string language, string text)
+            => Replace(tenant, website, site, language, text, new WidgetResolutionCache());
+
+        public async Task<string> Replace(string tenant, string website, string site, string language, string text, WidgetResolutionCache cache)
         {
-            var replaced = await ReplaceWidget(text, site, website, tenant, language);
+            var replaced = await ReplaceWidget(text, site, website, tenant, language, cache);
 
             return replaced;
         }
+
+        // Page contents are stored inside CDATA sections: a "]]>" coming from a widget or a placeholder value
+        // would close the section early and let arbitrary markup into the published document.
+        private static string CdataSafe(string value)
+            => string.IsNullOrEmpty(value) ? value : value.Replace("]]>", "]]]]><![CDATA[>", StringComparison.Ordinal);
 
         private static string ReplacePlaceholder(string text, string tenant, string website, string site, string language)
         {
             if (string.IsNullOrEmpty(text) || text.IndexOf("@[", StringComparison.Ordinal) < 0)
                 return text;
+
+            tenant = CdataSafe(tenant);
+            website = CdataSafe(website);
+            site = CdataSafe(site);
+            language = CdataSafe(language);
 
             return text
                 .Replace("@[TENANT]", tenant, StringComparison.InvariantCultureIgnoreCase)
@@ -50,8 +63,12 @@ namespace TrinityText.Business
                 .Replace("@[DATE]", DateTime.Now.ToShortDateString(), StringComparison.InvariantCultureIgnoreCase);
         }
 
-        public async Task<string> ReplaceWidget(string text, string site, string website, string tenant, string language)
+        public Task<string> ReplaceWidget(string text, string site, string website, string tenant, string language)
+            => ReplaceWidget(text, site, website, tenant, language, new WidgetResolutionCache());
+
+        public async Task<string> ReplaceWidget(string text, string site, string website, string tenant, string language, WidgetResolutionCache cache)
         {
+            cache ??= new WidgetResolutionCache();
             var newText = text;
             var resolved = new Dictionary<string, string>(StringComparer.Ordinal);
             const int maxNestedPasses = 10;
@@ -78,10 +95,18 @@ namespace TrinityText.Business
 
                 foreach (var key in newKeys)
                 {
-                    var widgetRs = await _widgetService.GetByKeys(key, website, site, language);
-                    resolved[key] = widgetRs.Success
-                        ? (widgetRs.Value?.Content ?? string.Empty)
-                        : key;
+                    // the same widget key is requested by every page of an export: resolve it once per cache
+                    var cacheKey = string.Join('\u0001', key, website, site, language);
+                    if (!cache.Widgets.TryGetValue(cacheKey, out var content))
+                    {
+                        var widgetRs = await _widgetService.GetByKeys(key, website, site, language);
+                        content = widgetRs.Success
+                            ? CdataSafe(widgetRs.Value?.Content ?? string.Empty)
+                            : key;
+                        cache.Widgets[cacheKey] = content;
+                    }
+
+                    resolved[key] = content;
                 }
 
                 var previous = newText;
@@ -114,8 +139,12 @@ namespace TrinityText.Business
             return ReplacePlaceholder(newText, tenant, website, site, language);
         }
 
-        public async Task<string> ReplaceLink(string xml, string tenant, string website, string baseUrl, CdnServerDTO cdnServer)
+        public Task<string> ReplaceLink(string xml, string tenant, string website, string baseUrl, CdnServerDTO cdnServer)
+            => ReplaceLink(xml, tenant, website, baseUrl, cdnServer, new WidgetResolutionCache());
+
+        public async Task<string> ReplaceLink(string xml, string tenant, string website, string baseUrl, CdnServerDTO cdnServer, WidgetResolutionCache cache)
         {
+            cache ??= new WidgetResolutionCache();
             var newXml = xml;
             if (!string.IsNullOrWhiteSpace(baseUrl))
             {
@@ -132,12 +161,19 @@ namespace TrinityText.Business
                     var resolved = new Dictionary<string, string>(urlSet.Count, StringComparer.Ordinal);
                     foreach (var url in urlSet)
                     {
-                        var fileRs = await _fileManagerService.GetFileByFullname(url);
-                        if (!fileRs.Success)
+                        if (!cache.Links.TryGetValue(url, out var fileId))
                         {
-                            throw new KeyNotFoundException($"Impossibile risolvere il link \"{url}\". Inserire il file mancante sul File Manager e/o verificare che sia nel percorso indicato.");
+                            // only the id is needed: do not load the file content
+                            var fileRs = await _fileManagerService.GetFileIdByFullname(url);
+                            if (!fileRs.Success)
+                            {
+                                throw new KeyNotFoundException($"Impossibile risolvere il link \"{url}\". Inserire il file mancante sul File Manager e/o verificare che sia nel percorso indicato.");
+                            }
+
+                            fileId = fileRs.Value;
+                            cache.Links[url] = fileId;
                         }
-                        resolved[url] = $"{baseUrl}/Renderize.ashx?id={fileRs.Value.Id}";
+                        resolved[url] = $"{baseUrl}/Renderize.ashx?id={fileId}";
                     }
 
                     foreach (var kv in resolved)
@@ -155,5 +191,16 @@ namespace TrinityText.Business
             newXml = newXml.Replace(oldPath, newPath);
             return newXml;
         }
+    }
+
+    /// <summary>
+    /// Memoizes widget and file-link lookups across the pages of a single export
+    /// (create one per document/publication, do not keep it across publications).
+    /// </summary>
+    public sealed class WidgetResolutionCache
+    {
+        internal Dictionary<string, string> Widgets { get; } = new(StringComparer.Ordinal);
+
+        internal Dictionary<string, Guid> Links { get; } = new(StringComparer.Ordinal);
     }
 }

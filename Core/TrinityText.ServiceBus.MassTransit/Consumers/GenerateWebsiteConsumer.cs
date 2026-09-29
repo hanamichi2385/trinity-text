@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using TrinityText.Business;
@@ -67,7 +68,7 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                             {
                                 var mail = new SendMailMessage()
                                 {
-                                    Body = $"<p>The {website} website update file (type {dataType}) is ready to download</p>",
+                                    Body = $"<p>The {WebUtility.HtmlEncode(website)} website update file (type {dataType}) is ready to download</p>",
                                     Id = Guid.NewGuid(),
                                     IsHtmlBody = true,
                                     Subject = $"[CMS] Website {website} update file creation complete with success",
@@ -111,11 +112,11 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
                     if (rs.Success)
                     {
                         var body = new StringBuilder(
-                            $"<p>Website {website} update (type {dataType}) is failed!</p><p>The updated was interrupted so run a new website update.These are the errors recorded during the update process:</p>"
+                            $"<p>Website {WebUtility.HtmlEncode(website)} update (type {dataType}) is failed!</p><p>The updated was interrupted so run a new website update.These are the errors recorded during the update process:</p>"
                           );
                         foreach (var e in generateRs.Errors)
                         {
-                            body.Append($"<p>{e.Context}:{e.Description}</p>");
+                            body.Append($"<p>{WebUtility.HtmlEncode(e.Context)}:{WebUtility.HtmlEncode(e.Description)}</p>");
                         }
                         var mail = new SendMailMessage()
                         {

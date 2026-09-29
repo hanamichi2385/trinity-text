@@ -4,6 +4,18 @@
 - Security: tenant / website / file names validated in `TransferService` before FTP/SFTP navigation; publication payload website must match the publication website (Generate/Publish)
 - Security: removed hard-coded `[TRINITY]` database name from raw SQL in `PublicationService`; `UpdateZipContent` failures are now propagated
 - Security: `IPublicationService.GetAll` accepts an optional `websites` filter (null keeps previous behavior)
+- Security: widget content and placeholder values are CDATA-safe (`]]>` can no longer close the section and inject markup into published pages)
+- Security: XML schemas/contents parsed with DTD processing prohibited (`SafeXml`)
+- Security: file names validated with `PathSafety`; system folder names (site / language) validated in `CreateFolderByName`
+- Security: `SaveFolder` rejects missing / cross-website parents and cycles; `GetFileLink` is loop-safe
+- Security: images declaring more than `MaxPixels` (default 50 MP) are not decoded; null codec handled
+- Security: HTML-encoded values in publish/generate notification mails; null-safe FTP server name
+- Performance: `GetFileIdByFullname` (id only, no `CONTENT`) used for link resolution; new `WidgetResolutionCache` memoizes widget and link lookups across the pages of an export (new overloads on `IWidgetUtilities`)
+- Performance: `DeleteFile` via set-based delete and `GetFileLink` via metadata projection (no blob loading)
+- New: `ExecuteUpdateAsync` on `IRepository<T>` (set-based UPDATE of selected columns; EF Core + NHibernate implementations, `UpdateSetters<T>`)
+- Performance: `RenameFile` and `MoveFile` update the row in place (no blob load/rewrite); a moved file keeps its id (before: new row + delete)
+- Performance: `WidgetService.GetByKeys` is async; owner/website filters use `col == null || col == ""` instead of `IsNullOrWhiteSpace` (index friendly)
+- New: `Core/TrinityText.Domain/Db/indexes.sql` with recommended non-clustered indexes (run manually on the database)
 
 #2026-06-12
 - Performance: `Text.REVISIONS` no longer auto-included; only the latest revision is loaded per text via a single correlated query (was eager-loading every historical revision with full content on every read)

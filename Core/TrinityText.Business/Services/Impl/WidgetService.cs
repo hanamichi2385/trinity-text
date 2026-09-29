@@ -75,39 +75,39 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public Task<OperationResult<WidgetDTO>> GetByKeys(string key, string website, string site, string language)
+        public async Task<OperationResult<WidgetDTO>> GetByKeys(string key, string website, string site, string language)
         {
             try
             {
-                var entity = _widgetRepository
-                    .Repository
-                    .Where(w => w.KEY.Equals(key)
-                        && w.FK_LANGUAGE == language &&
-                        (
-                            (string.IsNullOrWhiteSpace(w.FK_PRICELIST) || w.FK_PRICELIST == site)
-                            &&
-                            (string.IsNullOrWhiteSpace(w.FK_WEBSITE) || w.FK_WEBSITE == website)
+                var entity = await _widgetRepository.FirstOrDefaultAsync(
+                    _widgetRepository
+                        .Repository
+                        .Where(w => w.KEY.Equals(key)
+                            && w.FK_LANGUAGE == language &&
+                            (
+                                ((w.FK_PRICELIST == null || w.FK_PRICELIST == "") || w.FK_PRICELIST == site)
+                                &&
+                                ((w.FK_WEBSITE == null || w.FK_WEBSITE == "") || w.FK_WEBSITE == website)
+                            )
                         )
-                    )
-                    .OrderByDescending(w => w.FK_PRICELIST)
-                    .ThenByDescending(w => w.FK_WEBSITE)
-                    .FirstOrDefault();
+                        .OrderByDescending(w => w.FK_PRICELIST)
+                        .ThenByDescending(w => w.FK_WEBSITE));
 
                 if (entity != null)
                 {
                     var result = _mapper.Map<WidgetDTO>(entity);
 
-                    return Task.FromResult(OperationResult<WidgetDTO>.MakeSuccess(result));
+                    return OperationResult<WidgetDTO>.MakeSuccess(result);
                 }
                 else
                 {
-                    return Task.FromResult(OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("GET_BYKEYS", "NOT_FOUND")]));
+                    return OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("GET_BYKEYS", "NOT_FOUND")]);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GET_BYKEYS {message}", ex.Message);
-                return Task.FromResult(OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("GET_BYKEYS", "GENERIC_ERROR")]));
+                return OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("GET_BYKEYS", "GENERIC_ERROR")]);
             }
         }
 
@@ -247,8 +247,8 @@ namespace TrinityText.Business.Services.Impl
                 _widgetRepository
                 .Repository
                 .Where(s =>
-                    (string.IsNullOrWhiteSpace(s.FK_WEBSITE) ||
-                    (!string.IsNullOrWhiteSpace(s.FK_WEBSITE) && websites.Contains(s.FK_WEBSITE)))
+                    ((s.FK_WEBSITE == null || s.FK_WEBSITE == "") ||
+                    ((s.FK_WEBSITE != null && s.FK_WEBSITE != "") && websites.Contains(s.FK_WEBSITE)))
                     && languages.Contains(s.FK_LANGUAGE));
 
             if (search != null)
@@ -258,8 +258,8 @@ namespace TrinityText.Business.Services.Impl
                     query =
                         query
                         .Where(s =>
-                        (string.IsNullOrWhiteSpace(s.FK_WEBSITE) ||
-                        (!string.IsNullOrWhiteSpace(s.FK_WEBSITE) && s.FK_WEBSITE == search.Website)));
+                        ((s.FK_WEBSITE == null || s.FK_WEBSITE == "") ||
+                        ((s.FK_WEBSITE != null && s.FK_WEBSITE != "") && s.FK_WEBSITE == search.Website)));
                 }
 
                 if (!string.IsNullOrWhiteSpace(search.Site))
@@ -267,8 +267,8 @@ namespace TrinityText.Business.Services.Impl
                     query =
                         query
                         .Where(s =>
-                        (string.IsNullOrWhiteSpace(s.FK_PRICELIST) ||
-                        (!string.IsNullOrWhiteSpace(s.FK_PRICELIST) && s.FK_PRICELIST == search.Site)));
+                        ((s.FK_PRICELIST == null || s.FK_PRICELIST == "") ||
+                        ((s.FK_PRICELIST != null && s.FK_PRICELIST != "") && s.FK_PRICELIST == search.Site)));
                 }
 
                 if (!string.IsNullOrWhiteSpace(search.LanguageId))
@@ -289,7 +289,7 @@ namespace TrinityText.Business.Services.Impl
                 if (search.ShowOnlyDedicated.HasValue)
                 {
                     query =
-                        query.Where(r => !string.IsNullOrWhiteSpace(r.FK_WEBSITE));
+                        query.Where(r => (r.FK_WEBSITE != null && r.FK_WEBSITE != ""));
                 }
 
                 var sortName = search.SortingName ?? SortingType.Unordered;
