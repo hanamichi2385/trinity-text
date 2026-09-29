@@ -6,10 +6,19 @@ namespace TrinityText.Business
 {
     public static class PaginationExtensions
     {
+        /// <summary>Largest page a caller can obtain, whatever it asks for.</summary>
+        public const int MaxPageSize = 1000;
+
         public static IQueryable<T> GetPage<T>(this IQueryable<T> list, int page, int size = 100)
         {
+            size = Math.Clamp(size, 1, MaxPageSize);
+            page = Math.Max(page, 0);
+
+            // page * size can overflow int
+            var skip = (int)Math.Min((long)page * size, int.MaxValue);
+
             return list
-                .Skip(page * size)
+                .Skip(skip)
                 .Take(size);
         }
         public static IQueryable<X> Sort<X, Y>(this IQueryable<X> list, System.Linq.Expressions.Expression<Func<X, Y>> field, SortingType? sorting)

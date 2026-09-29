@@ -36,14 +36,17 @@ namespace TrinityText.Domain.NH
 
         public async Task<T> Create(T newEntity)
         {
-            var entity = await _dataContext.CurrentSession.SaveAsync(newEntity);
+            // SaveAsync returns the generated identifier, not the entity
+            await _dataContext.CurrentSession.SaveAsync(newEntity);
+            await _dataContext.FlushIfNoTransaction();
 
-            return (T)entity;
+            return newEntity;
         }
 
         public async Task Delete(T entityToDelete)
         {
             await _dataContext.CurrentSession.DeleteAsync(entityToDelete);
+            await _dataContext.FlushIfNoTransaction();
         }
 
         public async Task AddRangeAsync(IEnumerable<T> entities)
@@ -95,7 +98,13 @@ namespace TrinityText.Domain.NH
 
         public async Task<T> Read(params object[] id)
         {
-            var entity = await _dataContext.CurrentSession.GetAsync<T>(id);
+            // GetAsync takes the identifier itself, not an array containing it
+            if (id == null || id.Length != 1)
+            {
+                throw new NotSupportedException("Read supports a single identifier value");
+            }
+
+            var entity = await _dataContext.CurrentSession.GetAsync<T>(id[0]);
 
             return entity;
         }
@@ -105,6 +114,7 @@ namespace TrinityText.Domain.NH
         public async Task<T> Update(T modifiedEntity)
         {
             await _dataContext.CurrentSession.UpdateAsync(modifiedEntity);
+            await _dataContext.FlushIfNoTransaction();
 
             return modifiedEntity;
         }

@@ -63,7 +63,7 @@ namespace TrinityText.Domain.NH
                         m.Key(n => n.Column("FK_CDNSERVER"));
                         m.Lazy(CollectionLazy.Extra);
                         m.Inverse(true);
-                        m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
+                        m.Cascade(NHibernate.Mapping.ByCode.Cascade.All | NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
                     },
                     r => r.OneToMany()
                 );
@@ -90,18 +90,20 @@ namespace TrinityText.Domain.NH
                 {
                     prop.Type(NHibernateUtil.String);
                 });
+                // Foreign keys to existing rows: the scalar is the source of truth (it is what the services set,
+                // like with EF Core); the many-to-one below is a read-only navigation on the same column.
                 classmapping.Property(e => e.FK_CDNSERVER, prop =>
                 {
                     prop.Type(NHibernateUtil.Int32);
                     prop.Access(Accessor.Property);
-                    prop.Insert(false);
-                    prop.Update(false);
                 });
                 classmapping.ManyToOne(e => e.CDNSERVER, prop =>
                 {
                     prop.Column("FK_CDNSERVER");
                     prop.Lazy(LazyRelation.NoLazy);
                     prop.NotNullable(true);
+                    prop.Insert(false);
+                    prop.Update(false);
                 });
 
                 return classmapping;
@@ -112,19 +114,12 @@ namespace TrinityText.Domain.NH
                 var classmapping = new ClassMapping<CdnServersPerWebsite>();
                 classmapping.Schema("dbo");
                 classmapping.Table("CdnServersPerVendor");
+                // the key is made of the scalar foreign keys (rows are created from ids, like with EF Core)
                 classmapping.ComposedId(e =>
                 {
-                    e.ManyToOne(f => f.CDNSERVER);
-                    e.Property(f => f.FK_WEBSITE);
+                    e.Property(f => f.FK_CDNSERVER, m => m.Column("FK_CDNSERVER"));
+                    e.Property(f => f.FK_WEBSITE, m => m.Column("FK_VENDOR"));
                 });
-                classmapping.Property(e => e.FK_WEBSITE, m => m.Column("FK_VENDOR"));
-                classmapping.Property(e => e.FK_CDNSERVER, 
-                    m => {
-                        m.Column("FK_CDNSERVER");
-                        m.Insert(false);
-                        m.Update(false);
-                        m.Access(Accessor.Property);
-                    });
                 classmapping.ManyToOne(e => e.CDNSERVER, prop =>
                 {
                     prop.Column("FK_CDNSERVER");
@@ -144,8 +139,8 @@ namespace TrinityText.Domain.NH
                 classmapping.Table("FtpServersPerCdnServer");
                 classmapping.ComposedId(e =>
                 {
-                    e.ManyToOne(f => f.FTPSERVER);
-                    e.ManyToOne(f => f.CDNSERVER);
+                    e.Property(f => f.FK_FTPSERVER, m => m.Column("FK_FTPSERVER"));
+                    e.Property(f => f.FK_CDNSERVER, m => m.Column("FK_CDNSERVER"));
                 });
                 classmapping.ManyToOne(e => e.CDNSERVER, prop =>
                 {
@@ -163,20 +158,6 @@ namespace TrinityText.Domain.NH
                     prop.Insert(false);
                     prop.Update(false);
                 });
-                classmapping.Property(e => e.FK_CDNSERVER,
-                    m => {
-                        m.Column("FK_CDNSERVER");
-                        m.Insert(false);
-                        m.Update(false);
-                        m.Access(Accessor.Property);
-                    });
-                classmapping.Property(e => e.FK_FTPSERVER,
-                    m => {
-                        m.Column("FK_FTPSERVER");
-                        m.Insert(false);
-                        m.Update(false);
-                        m.Access(Accessor.Property);
-                    });
 
                 return classmapping;
             });
@@ -212,6 +193,10 @@ namespace TrinityText.Domain.NH
                     prop.Type(NHibernateUtil.String);
                 });
                 classmapping.Property(e => e.USERNAME, prop =>
+                {
+                    prop.Type(NHibernateUtil.String);
+                });
+                classmapping.Property(e => e.PASSWORD, prop =>
                 {
                     prop.Type(NHibernateUtil.String);
                 });
@@ -501,23 +486,44 @@ namespace TrinityText.Domain.NH
                     prop.Type(NHibernateUtil.Int32);
                 });
                 classmapping.Property(e => e.STATUS_CODE);
+                classmapping.Property(e => e.EMAIL, prop =>
+                {
+                    prop.Type(NHibernateUtil.String);
+                });
+                classmapping.Property(e => e.PAYLOAD, prop =>
+                {
+                    prop.Type(NHibernateUtil.String);
+                });
+                // foreign keys: readable as scalars, written through the many-to-one below
+                classmapping.Property(e => e.FK_CDNSERVER, prop =>
+                {
+                    prop.Type(NHibernateUtil.Int32);
+                    prop.Access(Accessor.Property);
+                });
+                classmapping.Property(e => e.FK_FTPSERVER, prop =>
+                {
+                    prop.Type(NHibernateUtil.Int32);
+                    prop.Access(Accessor.Property);
+                });
                 classmapping.ManyToOne(
                     x => x.CDNSERVER,
                     m =>
                     {
                         m.Column("FK_CDNSERVER");
-                        m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
                         m.Lazy(LazyRelation.NoLazy);
                         m.NotNullable(false);
+                        m.Insert(false);
+                        m.Update(false);
                     });
                 classmapping.ManyToOne(
                     x => x.FTPSERVER,
                     m =>
                     {
                         m.Column("FK_FTPSERVER");
-                        m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
                         m.Lazy(LazyRelation.NoLazy);
                         m.NotNullable(false);
+                        m.Insert(false);
+                        m.Update(false);
                     });
 
                 return classmapping;
@@ -558,10 +564,8 @@ namespace TrinityText.Domain.NH
                 {
                     prop.Column("FK_TIPOLOGIA");
                     prop.Type(NHibernateUtil.Int32);
-                    prop.NotNullable(true);
+                    prop.NotNullable(false);
                     prop.Access(Accessor.Property);
-                    prop.Insert(false);
-                    prop.Update(false);
                 });
 
                 classmapping.Property(e => e.ACTIVE, prop =>
@@ -580,7 +584,9 @@ namespace TrinityText.Domain.NH
                     {
                         m.Key(n => n.Column("RISORSA"));
                         m.Lazy(CollectionLazy.Extra);
-                        m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
+                        // All: new revisions are inserted with the text. No delete-orphan: TextService replaces the
+                        // collection with "latest revision only", which would make NHibernate delete/throw on flush.
+                        m.Cascade(NHibernate.Mapping.ByCode.Cascade.All);
                         m.Inverse(true);
                     },
                     r => r.OneToMany()
@@ -590,9 +596,10 @@ namespace TrinityText.Domain.NH
                     m =>
                     {
                         m.Column("FK_TIPOLOGIA");
-                        m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
                         m.Lazy(LazyRelation.NoLazy);
-                        m.NotNullable(true);
+                        m.NotNullable(false);
+                        m.Insert(false);
+                        m.Update(false);
                     });
 
                 return classmapping;
@@ -642,7 +649,6 @@ namespace TrinityText.Domain.NH
                     m =>
                     {
                         m.Column("RISORSA");
-                        m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
                         m.Lazy(LazyRelation.NoLazy);
                         m.NotNullable(true);
                     });
@@ -701,34 +707,19 @@ namespace TrinityText.Domain.NH
                 classmapping.Table("TipologieTestiPerVendor");
                 classmapping.ComposedId(e =>
                 {
-                    e.Property(a => a.FK_WEBSITE);
-                    e.ManyToOne(a => a.TEXTTYPE);
-                });
-                classmapping.Property(e => e.FK_TEXTTYPE, prop =>
-                {
-                    prop.Column("FK_RESOURCETYPE");
-                    prop.Type(NHibernateUtil.Int32);
-                    prop.NotNullable(true);
-                    prop.Access(Accessor.Property);
-                    prop.Insert(false);
-                    prop.Update(false);
-                });
-                classmapping.Property(e => e.FK_WEBSITE, prop =>
-                {
-                    prop.Column("FK_VENDOR");
-                    prop.Type(NHibernateUtil.String);
-                    prop.NotNullable(true);
+                    e.Property(a => a.FK_WEBSITE, m => m.Column("FK_VENDOR"));
+                    e.Property(a => a.FK_TEXTTYPE, m => m.Column("FK_RESOURCETYPE"));
                 });
                 classmapping.ManyToOne(
                     x => x.TEXTTYPE,
                     m =>
                     {
                         m.Column("FK_RESOURCETYPE");
-                        m.Cascade(NHibernate.Mapping.ByCode.Cascade.DeleteOrphans);
                         m.Lazy(LazyRelation.NoLazy);
                         m.NotNullable(true);
+                        m.Insert(false);
+                        m.Update(false);
                     });
-
 
                 return classmapping;
             });
@@ -753,6 +744,14 @@ namespace TrinityText.Domain.NH
                 {
                     prop.Column("TIPO");
                     prop.Type(NHibernateUtil.Int32);
+                });
+                classmapping.Property(e => e.URL, prop =>
+                {
+                    prop.Type(NHibernateUtil.String);
+                });
+                classmapping.Property(e => e.NOTE, prop =>
+                {
+                    prop.Type(NHibernateUtil.String);
                 });
 
                 return classmapping;

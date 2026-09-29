@@ -16,6 +16,7 @@ namespace TrinityText.Business
         Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<TextDTO>>>> GetPublishableTextsByWebsite(string website, Dictionary<string, string[]> sitesLanguages, IReadOnlyList<TextTypeDTO> textTypes);
         Task<OperationResult> Remove(int id);
         Task<OperationResult> CleanRevisions(int revisionToMantain);
-        Task<OperationResult<int>> ImportTexts(TextTypeDTO type, IList<TextDTO> texts, bool @override);
+        /// <param name="allowedWebsites">When given, texts of any other website are refused (the import data comes from a file).</param>
+        Task<OperationResult<int>> ImportTexts(TextTypeDTO type, IList<TextDTO> texts, bool @override, IReadOnlyCollection<string> allowedWebsites = null);
     }
 }

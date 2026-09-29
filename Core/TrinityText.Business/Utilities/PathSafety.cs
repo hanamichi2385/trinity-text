@@ -14,6 +14,16 @@ namespace TrinityText.Business
         private static readonly char[] InvalidChars =
             Path.GetInvalidFileNameChars().Concat(['/', '\\', ':']).Distinct().ToArray();
 
+        private const int MaxSegmentLength = 255;
+
+        // device names Windows resolves to hardware ("CON", "NUL.txt", "com1", ...): a file or folder with such a name cannot be created
+        private static readonly System.Collections.Generic.HashSet<string> ReservedNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "CON", "PRN", "AUX", "NUL",
+            "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+            "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+        };
+
         public static bool IsValidSegment(string segment)
         {
             if (string.IsNullOrWhiteSpace(segment))
@@ -22,7 +32,26 @@ namespace TrinityText.Business
             }
 
             var s = segment.Trim();
-            return s != "." && s != ".." && s.IndexOfAny(InvalidChars) < 0;
+            if (s == "." || s == ".." || s.Length > MaxSegmentLength)
+            {
+                return false;
+            }
+
+            // control characters (CR / LF reach FTP commands and mail headers), separators, drive separators
+            if (s.IndexOfAny(InvalidChars) >= 0 || s.Any(char.IsControl))
+            {
+                return false;
+            }
+
+            // Windows drops trailing dots: "name." and "name" would be the same entry
+            if (s.EndsWith('.'))
+            {
+                return false;
+            }
+
+            var dot = s.IndexOf('.');
+            var stem = (dot >= 0 ? s[..dot] : s).TrimEnd();
+            return !ReservedNames.Contains(stem);
         }
 
         public static bool IsValidSegmentOrEmpty(string segment)

@@ -45,8 +45,10 @@ namespace TrinityText.Domain.EF
         public Task<int> CountAsync<TResult>(IQueryable<TResult> source)
             => source.CountAsync();
 
+        // A set-based DELETE / UPDATE never needs the AutoInclude'd navigations (and EF cannot translate them for
+        // entities like FtpServerPerCdnServer: ArgumentOutOfRangeException): ignore them.
         public Task<int> ExecuteDeleteAsync<TEntity>(IQueryable<TEntity> source) where TEntity : class
-            => source.ExecuteDeleteAsync();
+            => source.IgnoreAutoIncludes().ExecuteDeleteAsync();
 
         public Task<int> ExecuteUpdateAsync<TEntity>(IQueryable<TEntity> source, Action<UpdateSetters<TEntity>> configure) where TEntity : class
         {
@@ -81,7 +83,7 @@ namespace TrinityText.Domain.EF
             }
 
             var lambda = Expression.Lambda<Func<SetPropertyCalls<TEntity>, SetPropertyCalls<TEntity>>>(body, parameter);
-            return source.ExecuteUpdateAsync(lambda);
+            return source.IgnoreAutoIncludes().ExecuteUpdateAsync(lambda);
         }
 
         public async Task Delete(T entityToDelete)

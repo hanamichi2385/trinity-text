@@ -99,6 +99,11 @@ namespace TrinityText.Utilities.Transfer
 
         private ITransferService GetService(Uri host)
         {
+            if (host.Scheme != "ftp" && host.Scheme != "sftp")
+            {
+                throw new NotSupportedException(host.Scheme);
+            }
+
             if (Services.Count > 1)
             {
                 var key = host.Scheme.ToLowerInvariant();

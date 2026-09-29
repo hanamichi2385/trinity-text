@@ -119,6 +119,14 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
+                // the base URL is written into the published pages: only http(s) addresses
+                if (!string.IsNullOrWhiteSpace(dto.BaseUrl)
+                    && !(Uri.TryCreate(dto.BaseUrl, UriKind.Absolute, out var baseUri)
+                        && (baseUri.Scheme == Uri.UriSchemeHttp || baseUri.Scheme == Uri.UriSchemeHttps)))
+                {
+                    return OperationResult<CdnServerDTO>.MakeFailure([ErrorMessage.Create("SAVE", "INVALID_URL")]);
+                }
+
                 var desiredSet = ftpList.ToHashSet();
 
                 if (dto.Id.HasValue)
@@ -189,16 +197,31 @@ namespace TrinityText.Business.Services.Impl
                 else
                 {
                     var entity = _mapper.Map<CdnServer>(dto);
-                    foreach (var c in desiredSet)
+                    entity.FTPSERVERS = [];
+
+                    CdnServer result;
+                    await _cdnSettingsRepository.BeginTransaction();
+                    try
                     {
-                        var fc = new FtpServerPerCdnServer()
+                        result = await _cdnSettingsRepository.Create(entity);
+
+                        // join rows are created from ids once the server has its own id
+                        if (desiredSet.Count > 0)
                         {
-                            FK_FTPSERVER = c,
-                            FK_CDNSERVER = entity.ID,
-                        };
-                        entity.FTPSERVERS.Add(fc);
+                            await _ftpServerPerCdnRepository.AddRangeAsync(
+                                desiredSet.Select(id => new FtpServerPerCdnServer { FK_CDNSERVER = result.ID, FK_FTPSERVER = id }).ToList());
+                        }
+
+                        await _cdnSettingsRepository.CommitTransaction();
                     }
-                    var result = await _cdnSettingsRepository.Create(entity);
+                    catch
+                    {
+                        await _cdnSettingsRepository.RollbackTransaction();
+                        throw;
+                    }
+
+                    result = await _cdnSettingsRepository.FirstOrDefaultAsync(
+                        _cdnSettingsRepository.Repository.Where(c => c.ID == result.ID));
 
                     var r = _mapper.Map<CdnServerDTO>(result);
 

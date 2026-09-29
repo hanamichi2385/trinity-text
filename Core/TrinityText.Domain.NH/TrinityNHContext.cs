@@ -28,6 +28,18 @@ namespace TrinityText.Domain.NH
 
         public string ConnectionString => CurrentSession?.Connection?.ConnectionString;
 
+        /// <summary>
+        /// Without an explicit transaction nothing else would flush: the session is disposed at the end of the scope
+        /// and the pending changes would be lost. EF Core saves at every call, this keeps the two providers equivalent.
+        /// </summary>
+        public async Task FlushIfNoTransaction()
+        {
+            if (_transaction == null || !_transaction.IsActive)
+            {
+                await CurrentSession.FlushAsync();
+            }
+        }
+
         // nested Begin/Commit join the outermost transaction (see TrinityEFContext); any Rollback rolls back everything
         private int _transactionDepth;
 

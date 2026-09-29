@@ -498,6 +498,11 @@ namespace TrinityText.Business.Services.Impl
 
                     dto.Filename = NormalizeFilename(dto.Filename);
 
+                    if (!FileUploadPolicy.IsAllowed(dto.Filename))
+                    {
+                        return OperationResult.MakeFailure([ErrorMessage.Create("ADDFILE_TO_FOLDER", "FILE_NOT_ALLOWED")]);
+                    }
+
                     var content = dto.Content;
 
                     if (useOriginal == false)
@@ -1115,6 +1120,11 @@ namespace TrinityText.Business.Services.Impl
             try
             {
                 var name = NormalizeFilename(newName);
+                if (!FileUploadPolicy.IsAllowed(name))
+                {
+                    return OperationResult<FileDTO>.MakeFailure([ErrorMessage.Create("SAVE", "FILE_NOT_ALLOWED")]);
+                }
+
                 var now = DateTime.Now;
 
                 // targeted UPDATE: CONTENT / THUMBNAIL are neither loaded nor rewritten

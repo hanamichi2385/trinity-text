@@ -116,7 +116,7 @@ namespace TrinityText.Utilities.Excel
             return ms.ToArray();
         }
 
-        public async Task<TextDTO[]> GetTextsFromStream(string user, Stream fileStream)
+        public async Task<TextDTO[]> GetTextsFromStream(string user, Stream fileStream, IReadOnlyCollection<string> allowedWebsites = null)
         {
             var list = new List<TextDTO>();
             try
@@ -137,8 +137,14 @@ namespace TrinityText.Utilities.Excel
                     var em = new ExcelMapper(fileStream);
                     var rows = em.Fetch();
 
+                    var rowCount = 0;
                     foreach (var r in rows)
                     {
+                        if (++rowCount > MaxImportRows)
+                        {
+                            throw new InvalidOperationException($"The sheet has more than {MaxImportRows} rows");
+                        }
+
                         var rw = (IDictionary<string, object>)r;
                         var key = GetExcelValue(r, "KEY");
                         var typeName = GetExcelValue(r, "TYPE")?.ToUpperInvariant();
@@ -150,6 +156,25 @@ namespace TrinityText.Utilities.Excel
 
                         if (!string.IsNullOrWhiteSpace(key))
                         {
+                            // the sheet decides the website of every row: only the ones the caller can manage
+                            string websiteCell = website;
+                            string siteCell = site;
+                            string langCell = lang;
+
+                            if (allowedWebsites != null
+                                && !string.IsNullOrWhiteSpace(websiteCell) && websiteCell != "*"
+                                && !allowedWebsites.Contains(websiteCell, StringComparer.OrdinalIgnoreCase))
+                            {
+                                throw new UnauthorizedAccessException($"The sheet contains texts of the website '{websiteCell}'");
+                            }
+
+                            // site and language become folder names in the export
+                            if ((!string.IsNullOrWhiteSpace(siteCell) && siteCell != "*" && !PathSafety.IsValidSegment(siteCell))
+                                || (!string.IsNullOrWhiteSpace(langCell) && !PathSafety.IsValidSegment(langCell)))
+                            {
+                                throw new InvalidOperationException($"Invalid site or language for the text '{key}'");
+                            }
+
                             TextTypeDTO type = null;
 
                             var cont = true;
@@ -196,6 +221,8 @@ namespace TrinityText.Utilities.Excel
 
             return [.. list];
         }
+
+        private const int MaxImportRows = 50_000;
 
         // "*" or a blank cell = not scoped (null), never an empty string
         private static string ScopeValue(string cell)

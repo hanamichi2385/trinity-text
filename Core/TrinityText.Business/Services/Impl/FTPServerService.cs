@@ -115,6 +115,15 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
+                // "ftp://host[:port][/dir]" or "sftp://host...": credentials have their own fields and must not be in the address
+                if (!string.IsNullOrWhiteSpace(dto.Host)
+                    && !(Uri.TryCreate(dto.Host, UriKind.Absolute, out var hostUri)
+                        && (hostUri.Scheme == "ftp" || hostUri.Scheme == "sftp")
+                        && string.IsNullOrEmpty(hostUri.UserInfo)))
+                {
+                    return OperationResult<FTPServerDTO>.MakeFailure([ErrorMessage.Create("SAVE", "INVALID_HOST")]);
+                }
+
                 if (dto.Id.HasValue)
                 {
                     var entity = await _ftpServerRepository

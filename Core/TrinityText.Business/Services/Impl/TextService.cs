@@ -78,9 +78,12 @@ namespace TrinityText.Business.Services.Impl
             {
                 if (textTypes.Length > 0)
                 {
+                    // "IN (..., NULL)" never matches NULL on some providers: untyped texts are matched explicitly
+                    var includeUntyped = textTypes.Any(t => t == null);
+                    var typedIds = textTypes.Where(t => t.HasValue).Select(t => t.Value).ToArray();
                     query =
                         query
-                        .Where(s => textTypes.Contains(s.FK_TEXTTYPE));
+                        .Where(s => (includeUntyped && s.FK_TEXTTYPE == null) || (s.FK_TEXTTYPE != null && typedIds.Contains(s.FK_TEXTTYPE.Value)));
                 }
 
                 if (!string.IsNullOrWhiteSpace(search.Website))
@@ -293,6 +296,7 @@ namespace TrinityText.Business.Services.Impl
 
             var revision = entity.REVISIONS.ElementAt(0);
             revision.ID = 0;
+            revision.TEXT = entity;
             revision.CREATION_DATE = DateTime.Now;
             revision.REVISION_NUMBER = 1;
             entity.ACTIVE = true;
@@ -326,15 +330,10 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity.FK_TEXTTYPE != dto.TextTypeId)
                 {
-                    if (dto.TextTypeId.HasValue)
-                    {
-                        entity.TEXTTYPE = textType;
-                    }
-                    else
-                    {
-                        entity.TEXTTYPE = null;
-                        entity.FK_TEXTTYPE = null;
-                    }
+                    // only the foreign key is set: a loaded navigation would win over it and drag the old TextType
+                    // (or the whole graph) into the update
+                    entity.FK_TEXTTYPE = dto.TextTypeId;
+                    entity.TEXTTYPE = null;
                 }
 
                 entity.REVISIONS ??= new List<TextRevision>();
@@ -346,6 +345,7 @@ namespace TrinityText.Business.Services.Impl
                     //revision.FK_TEXT = entity.ID;
                     // always a NEW row: the DTO may carry the id of the latest revision (round-tripped from Get)
                     revision.ID = 0;
+                    revision.TEXT = entity;
                     revision.REVISION_NUMBER = (lastRevision?.REVISION_NUMBER ?? 0) + 1;
                     revision.CREATION_DATE = DateTime.Now;
 
@@ -369,9 +369,11 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
+                // names are stored upper-cased: compare with the same form (SQL Server's collation hid this, others do not)
+                var name = dto.Name?.ToUpperInvariant();
                 var query =
                     _textRepository.Repository
-                        .Where(r => r.NAME == dto.Name
+                        .Where(r => r.NAME == name
                             && r.FK_LANGUAGE == dto.Language);
 
                 if (dto.TextTypeId.HasValue)
@@ -439,6 +441,7 @@ namespace TrinityText.Business.Services.Impl
             try
             {
                 var textTypesIds = textTypes.Select(t => t.Id).Union([null]).ToArray();
+                var typedTypeIds = textTypes.Where(t => t.Id.HasValue).Select(t => t.Id.Value).ToArray();
                 var allLanguages = sitesLanguages.Values.SelectMany(v => v).Distinct().ToArray();
                 var allSites = sitesLanguages.Keys.ToArray();
 
@@ -446,7 +449,7 @@ namespace TrinityText.Business.Services.Impl
                     _textRepository
                         .Repository
                         .Where(t => allLanguages.Contains(t.FK_LANGUAGE) &&
-                            textTypesIds.Contains(t.FK_TEXTTYPE) &&
+                            (t.FK_TEXTTYPE == null || typedTypeIds.Contains(t.FK_TEXTTYPE.Value)) &&
                             t.ACTIVE == true &&
                             ((t.FK_WEBSITE == null || t.FK_WEBSITE == "") || (t.FK_WEBSITE == website && (t.FK_PRICELIST == null || t.FK_PRICELIST == "")))));
 
@@ -459,7 +462,7 @@ namespace TrinityText.Business.Services.Impl
                     _textRepository
                         .Repository
                         .Where(t => allLanguages.Contains(t.FK_LANGUAGE) &&
-                            textTypesIds.Contains(t.FK_TEXTTYPE) &&
+                            (t.FK_TEXTTYPE == null || typedTypeIds.Contains(t.FK_TEXTTYPE.Value)) &&
                             t.ACTIVE == true &&
                             t.FK_WEBSITE == website &&
                             allSites.Contains(t.FK_PRICELIST)));
@@ -715,10 +718,17 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        public async Task<OperationResult<int>> ImportTexts(TextTypeDTO type, IList<TextDTO> texts, bool @override)
+        public async Task<OperationResult<int>> ImportTexts(TextTypeDTO type, IList<TextDTO> texts, bool @override, IReadOnlyCollection<string> allowedWebsites = null)
         {
             try
             {
+                if (allowedWebsites != null
+                    && texts.Any(t => !string.IsNullOrWhiteSpace(t.Website)
+                        && !allowedWebsites.Contains(t.Website, StringComparer.OrdinalIgnoreCase)))
+                {
+                    return OperationResult<int>.MakeFailure([ErrorMessage.Create("IMPORT_TEXTS", "FORBIDDEN_WEBSITE")]);
+                }
+
                 var counter = 0;
                 await _textRepository.BeginTransaction();
 
@@ -729,7 +739,7 @@ namespace TrinityText.Business.Services.Impl
                     textType = await _textTypeRevisionRepository.Read(type.Id.Value);
                 }
 
-                var names = texts.Select(t => t.Name).Distinct().ToArray();
+                var names = texts.Select(t => t.Name?.ToUpperInvariant()).Distinct().ToArray();
                 var languages = texts.Select(t => t.Language).Distinct().ToArray();
 
                 var existing = await _textRepository.ToListAsync(

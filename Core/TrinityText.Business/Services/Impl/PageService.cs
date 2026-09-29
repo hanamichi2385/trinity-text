@@ -189,10 +189,39 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
+        // a page is an XML document that ends up in the published files: refuse what would abort every publication
+        private static bool IsValidContent(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+            {
+                return true;
+            }
+
+            if (content.Length > 5_000_000)
+            {
+                return false;
+            }
+
+            try
+            {
+                SafeXml.ParseDocument(content);
+                return true;
+            }
+            catch (System.Xml.XmlException)
+            {
+                return false;
+            }
+        }
+
         public async Task<OperationResult<PageDTO>> Save(PageDTO dto)
         {
             try
             {
+                if (!IsValidContent(dto.Content))
+                {
+                    return OperationResult<PageDTO>.MakeFailure([ErrorMessage.Create("SAVE", "INVALID_CONTENT")]);
+                }
+
                 if (dto.Id.HasValue)
                 {
                     var entity = await _pageRepository

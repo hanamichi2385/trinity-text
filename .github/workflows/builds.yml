@@ -42,10 +42,11 @@ jobs:
     - name: Test (offline)
       run: dotnet test "$SOLUTION_NAME" --configuration Release --no-build --filter "TestCategory=Offline" --logger "console;verbosity=normal"
 
-    # Reported as a warning for now: turn into a failure (exit 1) once the known advisories are cleared
+    # Fails the build when a dependency (direct or transitive) has a known vulnerability
     - name: Check vulnerable packages
       run: |
         dotnet list "$SOLUTION_NAME" package --vulnerable --include-transitive 2>&1 | tee vulnerable.txt
         if grep -q "has the following vulnerable packages" vulnerable.txt; then
-          echo "::warning title=Vulnerable packages::dotnet list package reported vulnerable dependencies (see the step log)"
+          echo "::error title=Vulnerable packages::dotnet list package reported vulnerable dependencies (see the step log)"
+          exit 1
         fi

@@ -140,6 +140,12 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
+                // the expansion of the widgets is bounded when publishing: keep a single widget reasonable
+                if (dto.Content != null && dto.Content.Length > 1_000_000)
+                {
+                    return OperationResult<WidgetDTO>.MakeFailure([ErrorMessage.Create("SAVE", "CONTENT_TOO_LARGE")]);
+                }
+
                 if (dto.Id.HasValue)
                 {
                     var entity = await _widgetRepository
