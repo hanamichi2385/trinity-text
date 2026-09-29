@@ -310,7 +310,7 @@ namespace TrinityText.Domain.EF
                 entity.Property(e => e.ID).ValueGeneratedOnAdd();
                 entity.Property(e => e.CONTENTTYPE).HasColumnName("TIPOLOGIA");
                 entity.Navigation(e => e.TEXTS);
-                entity.Navigation(e => e.TEXTTYPEPERWEBSITES).AutoInclude();
+                // TEXTTYPEPERWEBSITES is not auto-included: it multiplied every text row by the number of websites of its type
 
                 entity.HasMany(e => e.TEXTS)
                     .WithOne(e => e.TEXTTYPE)

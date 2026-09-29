@@ -497,5 +497,139 @@ namespace TrinityText.UnitTests.Offline
                 Assert.IsFalse(renamed.Success);
             }
         }
+
+        private sealed class FixedImages : IImageDrawingService
+        {
+            public Task<OperationResult<byte[]>> GenerateThumb(FileDTO dto)
+                => Task.FromResult(OperationResult<byte[]>.MakeSuccess([7, 7]));
+
+            public Task<OperationResult<byte[]>> Compression(FileDTO dto)
+                => Task.FromResult(OperationResult<byte[]>.MakeFailure([ErrorMessage.Create("COMPRESSION", "NOT_OPTIMIZED")]));
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(Providers))]
+        public async Task Files_GetFile_ReadsOnlyTheRequestedBlob_AndOverrideReplacesInPlace(string provider)
+        {
+            using var db = ProviderFixture.Create(provider);
+
+            FileManagerService Service(ProviderScope scope)
+                => new(scope.Repo<Folder>(), scope.Repo<TrinityText.Domain.File>(), new FixedImages(), Mapper, NullLogger<FileManagerService>.Instance);
+
+            int folder;
+            using (var scope = db.NewScope())
+            {
+                Assert.IsTrue((await Service(scope).CreateDefaultWebsiteFolders("W")).Success);
+                var root = await scope.Repo<Folder>().FirstOrDefaultAsync(scope.Repo<Folder>().Repository.Where(f => f.FK_WEBSITE == "W" && f.FK_PARENT == null));
+                folder = (await Service(scope).SaveFolder(root.ID, new FolderDTO { Name = "img", Website = "W" })).Value.Id.Value;
+                Assert.IsTrue((await Service(scope).AddFile("me", "W", folder, new FileDTO { Filename = "a.png", Content = [1, 2, 3] }, false, true)).Success);
+            }
+
+            Guid id;
+            using (var scope = db.NewScope())
+            {
+                id = (await Service(scope).GetFilesByFolder("W", folder, false, null)).Value.Single().Id;
+
+                var full = (await Service(scope).GetFile(id, false)).Value;
+                CollectionAssert.AreEqual(new byte[] { 1, 2, 3 }, full.Content);
+                Assert.IsTrue(full.HasThumbnail);
+
+                var thumb = (await Service(scope).GetFile(id, true)).Value;
+                CollectionAssert.AreEqual(new byte[] { 7, 7 }, thumb.Content);
+
+                Assert.IsFalse((await Service(scope).GetFile(Guid.NewGuid(), false)).Success);
+            }
+
+            using (var scope = db.NewScope())
+            {
+                // same name + override: the row is updated in place
+                Assert.IsTrue((await Service(scope).AddFile("you", "W", folder, new FileDTO { Filename = "a.png", Content = [9, 9, 9, 9] }, true, true)).Success);
+            }
+
+            using (var scope = db.NewScope())
+            {
+                var files = (await Service(scope).GetFilesByFolder("W", folder, false, null)).Value;
+                Assert.AreEqual(1, files.Count);
+                Assert.AreEqual(id, files.Single().Id, "the file keeps its id");
+                Assert.AreEqual("you", files.Single().LastUpdateUser);
+                CollectionAssert.AreEqual(new byte[] { 9, 9, 9, 9 }, (await Service(scope).GetFileContent(id)).Value);
+            }
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(Providers))]
+        public async Task Text_Revisions_AreListedInOrder_AndTheImportSkipsUnchangedRows(string provider)
+        {
+            using var db = ProviderFixture.Create(provider);
+
+            int id;
+            using (var scope = db.NewScope())
+            {
+                id = (await Texts(scope).Save(NewText("key", "v1"))).Value.Id.Value;
+            }
+
+            using (var scope = db.NewScope())
+            {
+                var dto = (await Texts(scope).Get(id)).Value;
+                dto.TextRevision.Content = "v2";
+                Assert.IsTrue((await Texts(scope).Save(dto)).Success);
+            }
+
+            using (var scope = db.NewScope())
+            {
+                var revisions = (await Texts(scope).GetAllRevisions(id)).Value;
+                CollectionAssert.AreEqual(new[] { "v1", "v2" }, revisions.Select(r => r.Content).ToArray());
+                Assert.IsFalse((await Texts(scope).GetAllRevisions(id + 1000)).Success);
+            }
+
+            // re-importing the same values with override changes nothing, a different value adds one revision
+            using (var scope = db.NewScope())
+            {
+                var same = await Texts(scope).ImportTexts(null, [NewText("key", "v2")], true);
+                Assert.AreEqual(1, same.Value, "processed rows are still counted");
+            }
+
+            using (var scope = db.NewScope())
+            {
+                Assert.AreEqual(2, (await Texts(scope).GetAllRevisions(id)).Value.Count);
+                Assert.IsTrue((await Texts(scope).ImportTexts(null, [NewText("key", "v3")], true)).Success);
+            }
+
+            using (var scope = db.NewScope())
+            {
+                Assert.AreEqual(3, (await Texts(scope).GetAllRevisions(id)).Value.Count);
+            }
+        }
+
+        [DataTestMethod]
+        [DynamicData(nameof(Providers))]
+        public async Task Texts_MoreThanOneInListChunk_AreAllLoaded(string provider)
+        {
+            using var db = ProviderFixture.Create(provider);
+
+            var many = Enumerable.Range(0, 2500).Select(n => NewText("key" + n, "content " + n)).ToList();
+            using (var scope = db.NewScope())
+            {
+                var rs = await Texts(scope).ImportTexts(null, many, false);
+                Assert.IsTrue(rs.Success);
+                Assert.AreEqual(2500, rs.Value);
+            }
+
+            using (var scope = db.NewScope())
+            {
+                // existing texts found through the chunked lookup: nothing new is created
+                var again = await Texts(scope).ImportTexts(null, many, false);
+                Assert.AreEqual(0, again.Value);
+            }
+
+            using (var scope = db.NewScope())
+            {
+                var rs = await Texts(scope).GetPublishableTextsByWebsite("W", new Dictionary<string, string[]> { ["S1"] = ["it"] }, []);
+                Assert.IsTrue(rs.Success);
+                var published = rs.Value["S1"];
+                Assert.AreEqual(2500, published.Count);
+                Assert.IsTrue(published.All(t => !string.IsNullOrEmpty(t.TextRevision?.Content)), "every text has its latest revision");
+            }
+        }
     }
 }

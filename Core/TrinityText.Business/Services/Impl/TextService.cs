@@ -158,15 +158,15 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var entity = await _textRepository
-                    .Read(textId);
+                var exists = await _textRepository.CountAsync(_textRepository.Repository.Where(t => t.ID == textId)) > 0;
 
-                if (entity != null)
+                if (exists)
                 {
                     var revisions = await _textRevisionRepository.ToListAsync(
                         _textRevisionRepository
                             .Repository
-                            .Where(r => r.FK_TEXT == textId));
+                            .Where(r => r.FK_TEXT == textId)
+                            .OrderBy(r => r.REVISION_NUMBER));
 
                     var result = _mapper.Map<IList<TextRevisionDTO>>(revisions);
 
@@ -263,6 +263,9 @@ namespace TrinityText.Business.Services.Impl
         /// assigns it to <see cref="Text.REVISIONS"/>. Replaces the former AutoInclude that eagerly loaded every
         /// historical revision (with full CONTENT) on every Text read.
         /// </summary>
+        // values per IN (...) list (SQL Server accepts at most 2100 parameters per command)
+        private const int InListChunkSize = 1000;
+
         private async Task PopulateLatestRevisions(IEnumerable<Text> texts)
         {
             var list = texts as ICollection<Text> ?? texts.ToList();
@@ -272,14 +275,19 @@ namespace TrinityText.Business.Services.Impl
                 return;
             }
 
-            var latest = await _textRevisionRepository.ToListAsync(
-                _textRevisionRepository
-                    .Repository
-                    .Where(r => ids.Contains(r.FK_TEXT)
-                        && r.REVISION_NUMBER == _textRevisionRepository
-                            .Repository
-                            .Where(x => x.FK_TEXT == r.FK_TEXT)
-                            .Max(x => x.REVISION_NUMBER)));
+            // A huge IN (...) list breaks providers that send one parameter per value (2100 on SQL Server): ask in chunks
+            var latest = new List<TextRevision>(ids.Length);
+            foreach (var chunk in ids.Chunk(InListChunkSize))
+            {
+                latest.AddRange(await _textRevisionRepository.ToListAsync(
+                    _textRevisionRepository
+                        .Repository
+                        .Where(r => chunk.Contains(r.FK_TEXT)
+                            && r.REVISION_NUMBER == _textRevisionRepository
+                                .Repository
+                                .Where(x => x.FK_TEXT == r.FK_TEXT)
+                                .Max(x => x.REVISION_NUMBER))));
+            }
 
             var byText = latest.ToLookup(r => r.FK_TEXT);
             foreach (var t in list)
@@ -742,13 +750,17 @@ namespace TrinityText.Business.Services.Impl
                 var names = texts.Select(t => t.Name?.ToUpperInvariant()).Distinct().ToArray();
                 var languages = texts.Select(t => t.Language).Distinct().ToArray();
 
-                var existing = await _textRepository.ToListAsync(
-                    _textRepository
-                        .Repository
-                        .Where(x =>
-                            x.FK_TEXTTYPE == typeId
-                            && names.Contains(x.NAME)
-                            && languages.Contains(x.FK_LANGUAGE)));
+                var existing = new List<Text>();
+                foreach (var chunk in names.Chunk(InListChunkSize))
+                {
+                    existing.AddRange(await _textRepository.ToListAsync(
+                        _textRepository
+                            .Repository
+                            .Where(x =>
+                                x.FK_TEXTTYPE == typeId
+                                && chunk.Contains(x.NAME)
+                                && languages.Contains(x.FK_LANGUAGE))));
+                }
 
                 // The @override path calls Update, which compares against the latest revision's content;
                 // populate it explicitly (REVISIONS is no longer auto-included).
@@ -776,6 +788,15 @@ namespace TrinityText.Business.Services.Impl
                     }
                     else if (@override)
                     {
+                        // re-importing an unchanged sheet must not rewrite (and re-save) every text
+                        var latest = t.REVISIONS?.OrderByDescending(x => x.REVISION_NUMBER).FirstOrDefault();
+                        var newContent = string.IsNullOrWhiteSpace(r.TextRevision?.Content) ? string.Empty : r.TextRevision.Content;
+                        if (latest != null && t.ACTIVE == r.Active && string.Equals(latest.CONTENT, newContent, StringComparison.Ordinal))
+                        {
+                            counter++;
+                            continue;
+                        }
+
                         var rs = await Update(r, t, textType);
                         if (rs.Success)
                         {

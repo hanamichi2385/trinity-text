@@ -87,3 +87,23 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_CdnServersPerVendor_Cd
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_TIpologieTestiPerVendor_ResourceType' AND object_id = OBJECT_ID('[dbo].[TIpologieTestiPerVendor]'))
     CREATE NONCLUSTERED INDEX [IX_TIpologieTestiPerVendor_ResourceType]
     ON [dbo].[TIpologieTestiPerVendor] ([FK_RESOURCETYPE]);
+
+-- Foreign keys without a supporting index: deleting a parent scanned the whole child table
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Risorse_Tipologia' AND object_id = OBJECT_ID('[dbo].[Risorse]'))
+    CREATE NONCLUSTERED INDEX [IX_Risorse_Tipologia]
+    ON [dbo].[Risorse] ([FK_TIPOLOGIA]);
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Cartelle_ParentFolder' AND object_id = OBJECT_ID('[dbo].[Cartelle]'))
+    CREATE NONCLUSTERED INDEX [IX_Cartelle_ParentFolder]
+    ON [dbo].[Cartelle] ([PARENT_FOLDER]);
+
+-- Widgets: search by website and language
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_WidgetContenuti_Vendor_Lingua' AND object_id = OBJECT_ID('[dbo].[WidgetContenuti]'))
+    CREATE NONCLUSTERED INDEX [IX_WidgetContenuti_Vendor_Lingua]
+    ON [dbo].[WidgetContenuti] ([FK_VENDOR], [FK_LINGUA])
+    INCLUDE ([FK_ISTANZA], [CHIAVE]);
+
+-- Join table read by website
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_CdnServersPerVendor_Vendor' AND object_id = OBJECT_ID('[dbo].[CdnServersPerVendor]'))
+    CREATE NONCLUSTERED INDEX [IX_CdnServersPerVendor_Vendor]
+    ON [dbo].[CdnServersPerVendor] ([FK_VENDOR]);

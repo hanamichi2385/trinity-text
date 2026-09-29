@@ -352,17 +352,34 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var entity = await _fileRepository
-                    .Read(id);
-
-                if (entity != null)
-                {
-                    var result = _mapper.Map<FileDTO>(entity);
-                    if (withThumb)
+                // exactly one of the two blob columns is read: a thumbnail request used to load the full image as well
+                var query = _fileRepository.Repository.Where(f => f.ID == id);
+                var result = withThumb
+                    ? await _fileRepository.FirstOrDefaultAsync(query.Select(f => new FileDTO
                     {
-                        result.Content = entity.THUMBNAIL;
-                    }
+                        Id = f.ID,
+                        Filename = f.FILENAME,
+                        CreationDate = f.CREATION_DATE,
+                        CreationUser = f.CREATION_USER,
+                        LastUpdate = f.LASTUPDATE_DATE,
+                        LastUpdateUser = f.LASTUPDATE_USER,
+                        HasThumbnail = f.THUMBNAIL != null,
+                        Content = f.THUMBNAIL,
+                    }))
+                    : await _fileRepository.FirstOrDefaultAsync(query.Select(f => new FileDTO
+                    {
+                        Id = f.ID,
+                        Filename = f.FILENAME,
+                        CreationDate = f.CREATION_DATE,
+                        CreationUser = f.CREATION_USER,
+                        LastUpdate = f.LASTUPDATE_DATE,
+                        LastUpdateUser = f.LASTUPDATE_USER,
+                        HasThumbnail = f.THUMBNAIL != null,
+                        Content = f.CONTENT,
+                    }));
 
+                if (result != null)
+                {
                     return OperationResult<FileDTO>.MakeSuccess(result);
                 }
                 else
@@ -523,19 +540,24 @@ namespace TrinityText.Business.Services.Impl
 
                     if (@override == true)
                     {
-                        var sameNameFile = await _fileRepository.FirstOrDefaultAsync(
+                        // only the id: the current content is about to be replaced, there is no reason to read it
+                        var sameNameFileId = await _fileRepository.FirstOrDefaultAsync(
                             _fileRepository
                             .Repository
-                            .Where(f => f.FK_FOLDER == folderId && f.FILENAME.Equals(dto.Filename) == true));
+                            .Where(f => f.FK_FOLDER == folderId && f.FILENAME.Equals(dto.Filename) == true)
+                            .Select(f => (Guid?)f.ID));
 
-                        if (sameNameFile != null)
+                        if (sameNameFileId != null)
                         {
-                            sameNameFile.CONTENT = content;
-                            sameNameFile.THUMBNAIL = thumb;
-                            sameNameFile.LASTUPDATE_DATE = DateTime.Now;
-                            sameNameFile.LASTUPDATE_USER = user;
-
-                            await _fileRepository.Update(sameNameFile);
+                            var existingId = sameNameFileId.Value;
+                            var now = DateTime.Now;
+                            await _fileRepository.ExecuteUpdateAsync(
+                                _fileRepository.Repository.Where(f => f.ID == existingId),
+                                set => set
+                                    .Set(f => f.CONTENT, content)
+                                    .Set(f => f.THUMBNAIL, thumb)
+                                    .Set(f => f.LASTUPDATE_DATE, now)
+                                    .Set(f => f.LASTUPDATE_USER, user));
                         }
                         else
                         {

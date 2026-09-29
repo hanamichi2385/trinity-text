@@ -12,6 +12,8 @@ namespace TrinityText.Domain.NH
             AddDynamicMapping<CdnServer>(() =>
             {
                 var classmapping = new ClassMapping<CdnServer>();
+                // related entities are loaded in batches instead of one query each
+                classmapping.BatchSize(50);
                 classmapping.Schema("dbo");
                 classmapping.Table("CdnServers");
                 classmapping.Id(e => e.ID, id =>
@@ -165,6 +167,8 @@ namespace TrinityText.Domain.NH
             AddDynamicMapping<FtpServer>(() =>
             {
                 var classmapping = new ClassMapping<FtpServer>();
+                // related entities are loaded in batches instead of one query each
+                classmapping.BatchSize(50);
                 classmapping.Schema("dbo");
                 classmapping.Table("FtpServers");
                 classmapping.Id(e => e.ID, id =>
@@ -267,6 +271,8 @@ namespace TrinityText.Domain.NH
             AddDynamicMapping<Folder>(() =>
             {
                 var classmapping = new ClassMapping<Folder>();
+                // related entities are loaded in batches instead of one query each
+                classmapping.BatchSize(50);
                 classmapping.Schema("dbo");
                 classmapping.Table("Cartelle");
                 classmapping.Id(e => e.ID, id =>
@@ -299,6 +305,8 @@ namespace TrinityText.Domain.NH
             AddDynamicMapping<PageType>(() =>
             {
                 var classmapping = new ClassMapping<PageType>();
+                // related entities are loaded in batches instead of one query each
+                classmapping.BatchSize(50);
                 classmapping.Schema("dbo");
                 classmapping.Table("TipologieContenuti");
                 classmapping.Id(e => e.ID, id =>
@@ -659,6 +667,8 @@ namespace TrinityText.Domain.NH
             AddDynamicMapping<TextType>(() =>
             {
                 var classmapping = new ClassMapping<TextType>();
+                // related entities are loaded in batches instead of one query each
+                classmapping.BatchSize(50);
                 classmapping.Schema("dbo");
                 classmapping.Table("TipologieTesti");
                 classmapping.Id(e => e.ID, id =>

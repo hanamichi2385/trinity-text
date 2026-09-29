@@ -17,6 +17,9 @@ namespace TrinityText.Business
         /// <summary>Same as Update, but the ZIP is streamed to the database without being loaded in memory.</summary>
         Task<OperationResult> UpdateWithZipStream(int id, PublicationStatus status, string message, System.IO.Stream zipFile);
 
+        /// <summary>Copies the stored ZIP of the publication to <paramref name="destination"/> without loading it in memory (SQL Server).</summary>
+        Task<OperationResult> CopyZipTo(int id, System.IO.Stream destination);
+
         Task<OperationResult> Remove(int id);
     }
 }

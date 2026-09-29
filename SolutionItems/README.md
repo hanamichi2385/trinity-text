@@ -49,6 +49,17 @@
 - Security: pages must be well-formed XML (no DTD, at most 200 levels, 5 M characters) to be saved; widgets are limited to 1 M characters; `SafeXml` limits characters and depth (the JSON conversion is recursive); `GetPage` caps the page size (1000) and cannot overflow
 - Security: vulnerable transitive packages pinned (`System.Text.Json` 8.0.5, `System.Security.Cryptography.Xml` 10.0.12, `System.Net.Http` / `X509Certificates` for NHibernate); the CI check of vulnerable packages now fails the build
 - Tests: SQLite in-memory fixture running the repository and service tests on EF Core and NHibernate, EF/NH/script parity tests, hardening tests
+- Performance: `TextType.TEXTTYPEPERWEBSITES` is no longer auto-included (every text row was multiplied by the number of websites of its type)
+- Performance: latest-revision loading and text import query in chunks of 1000 ids/names (no huge `IN (...)` lists); re-importing an unchanged sheet with override does not rewrite the texts
+- Performance: `PageService` search / publishable pages read the page columns only and load each `PageType` (with its schema XML) once; no SQL ORDER BY on the export; `Save` uses a targeted UPDATE and `Remove` a set-based delete
+- Fix: publishable pages of a site no longer include pages of languages the site does not publish
+- Performance: `GetFile` reads only the requested blob (content or thumbnail); overriding a file updates it in place without reading the old blobs; `Remove` of widgets / publications is a set-based delete; `GetAllRevisions` is ordered and does not load the text
+- Performance: one widget / link cache and one parsed schema per page type for the whole export; texts grouped once per language; ordinal placeholder replacement; `GalleryAtom.Validate` is linear
+- Performance: publication ZIP streamed from the database to a temporary file (`IPublicationService.CopyZipTo`) and extracted off the consumer thread (`ICompressionFileService.DecompressFile`); `PublishWebsiteConsumer` no longer loads the ZIP in memory; ZIP built with `CompressionLevel.Fastest`
+- Performance: `SFTPTransferService` uses the asynchronous SSH.NET API (no thread blocked for the whole transfer)
+- Performance: NHibernate batch fetching on `TextType`, `PageType`, `FtpServer`, `CdnServer`, `Folder`
+- New: `Db/indexes.sql` (foreign key and widget indexes) and `Db/optional_optimizations.sql` (`Contenuti.CONTENUTO` ntext -> nvarchar(max), unique index on text revisions): run manually
+- Tests: page / widget behavior on both providers, end-to-end export and publish with fake services
 
 #2026-06-12
 - Performance: `Text.REVISIONS` no longer auto-included; only the latest revision is loaded per text via a single correlated query (was eager-loading every historical revision with full content on every read)

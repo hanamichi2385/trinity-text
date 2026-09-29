@@ -7,8 +7,9 @@ namespace TrinityText.Business
 {
     public interface IPageSchemaService
     {
-        Task<byte[]> CreateJsonContentsDocument(PageSchema structure, IList<PageDTO> contentsPerType, string tenant, string website, string site, string language, string baseUrl, CdnServerDTO cdnServer);
-        Task<byte[]> CreateXmlContentsDocument(PageSchema structure, IList<PageDTO> contentsPerType, string tenant, string website, string site, string language, string baseUrl, CdnServerDTO cdnServer);
+        /// <param name="cache">Shared by all the documents of an export: each widget / link is looked up once instead of once per document.</param>
+        Task<byte[]> CreateJsonContentsDocument(PageSchema structure, IList<PageDTO> contentsPerType, string tenant, string website, string site, string language, string baseUrl, CdnServerDTO cdnServer, WidgetResolutionCache cache = null);
+        Task<byte[]> CreateXmlContentsDocument(PageSchema structure, IList<PageDTO> contentsPerType, string tenant, string website, string site, string language, string baseUrl, CdnServerDTO cdnServer, WidgetResolutionCache cache = null);
         PageSchema GetContentStructure(Stream stream);
         PageSchema GetContentStructure(string xml);
         string GetXmlFromContent(PageSchema pageSchema);

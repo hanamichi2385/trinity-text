@@ -95,6 +95,33 @@ namespace TrinityText.Business.Services.Impl
             return bytes;
         }
 
+        public async Task<OperationResult> CopyZipTo(int id, System.IO.Stream destination)
+        {
+            try
+            {
+                using var sqlConnection = new SqlConnection(_publicationRepository.ConnectionString);
+                await sqlConnection.OpenAsync();
+                using var sqlCommand = new SqlCommand(@"SELECT [ZIP_FILE] FROM [dbo].[Generazioni] WHERE ID = @id", sqlConnection);
+                sqlCommand.Parameters.Add(new SqlParameter("id", id));
+
+                // SequentialAccess + GetStream: the blob flows to the destination in chunks
+                using var reader = await sqlCommand.ExecuteReaderAsync(System.Data.CommandBehavior.SequentialAccess);
+                if (await reader.ReadAsync() && !await reader.IsDBNullAsync(0))
+                {
+                    await using var source = reader.GetStream(0);
+                    await source.CopyToAsync(destination);
+                    return OperationResult.MakeSuccess();
+                }
+
+                return OperationResult.MakeFailure([ErrorMessage.Create("COPY_ZIP", "NOT_FOUND")]);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "COPY_ZIP {id} : {message}", id, ex.Message);
+                return OperationResult.MakeFailure([ErrorMessage.Create("COPY_ZIP", "GENERIC_ERROR")]);
+            }
+        }
+
         private async Task UpdateZipContent(int id, object zipFile)
         {
             try
@@ -189,19 +216,12 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var entity = await _publicationRepository
-                    .Read(id);
+                // the row (with its auto-included FTP / CDN servers) is not loaded just to be deleted
+                var deleted = await _publicationRepository.ExecuteDeleteAsync(_publicationRepository.Repository.Where(p => p.ID == id));
 
-                if (entity != null)
-                {
-                    await _publicationRepository.Delete(entity);
-
-                    return OperationResult.MakeSuccess();
-                }
-                else
-                {
-                    return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
-                }
+                return deleted > 0
+                    ? OperationResult.MakeSuccess()
+                    : OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
             }
             catch (Exception ex)
             {

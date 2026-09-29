@@ -25,7 +25,7 @@ namespace TrinityText.Utilities
 
                 fileZipName = Path.Combine(destinationFilePath, $"{folderName}.zip");
 
-                await Task.Run(() => ZipFile.CreateFromDirectory(folder, fileZipName, CompressionLevel.Optimal, includeBaseDirectory: false));
+                await Task.Run(() => ZipFile.CreateFromDirectory(folder, fileZipName, CompressionLevel.Fastest, includeBaseDirectory: false));
 
                 return fileZipName;
             }
@@ -39,7 +39,7 @@ namespace TrinityText.Utilities
             }
         }
 
-        public Task DecompressFolder(string basePath, byte[] zipFileByteArray)
+        public async Task DecompressFolder(string basePath, byte[] zipFileByteArray)
         {
             if (zipFileByteArray == null || zipFileByteArray.Length == 0)
             {
@@ -48,11 +48,15 @@ namespace TrinityText.Utilities
 
             try
             {
-                Directory.CreateDirectory(basePath);
+                // extraction is CPU / disk bound: not on the thread of the message consumer
+                await Task.Run(() =>
+                {
+                    Directory.CreateDirectory(basePath);
 
-                using var stream = new MemoryStream(zipFileByteArray, writable: false);
-                using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
-                archive.ExtractToDirectory(basePath, overwriteFiles: true);
+                    using var stream = new MemoryStream(zipFileByteArray, writable: false);
+                    using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
+                    archive.ExtractToDirectory(basePath, overwriteFiles: true);
+                });
             }
             catch (Exception ex)
             {
@@ -61,7 +65,23 @@ namespace TrinityText.Utilities
                 // a broken archive must fail the publish, not upload an empty folder as a "success"
                 throw;
             }
-            return Task.CompletedTask;
+        }
+
+        public async Task DecompressFile(string basePath, string zipFilePath)
+        {
+            try
+            {
+                await Task.Run(() =>
+                {
+                    Directory.CreateDirectory(basePath);
+                    ZipFile.ExtractToDirectory(zipFilePath, basePath, overwriteFiles: true);
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception during Decompress file: {ZipFile} -> {BasePath}", zipFilePath, basePath);
+                throw;
+            }
         }
 
         private static void TryDelete(string path)

@@ -115,19 +115,11 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var entity = await _widgetRepository
-                    .Read(id);
+                var deleted = await _widgetRepository.ExecuteDeleteAsync(_widgetRepository.Repository.Where(w => w.ID == id));
 
-                if (entity != null)
-                {
-                    await _widgetRepository.Delete(entity);
-
-                    return OperationResult.MakeSuccess();
-                }
-                else
-                {
-                    return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
-                }
+                return deleted > 0
+                    ? OperationResult.MakeSuccess()
+                    : OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
             }
             catch (Exception ex)
             {

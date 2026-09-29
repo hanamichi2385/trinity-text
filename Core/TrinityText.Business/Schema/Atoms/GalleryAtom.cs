@@ -31,17 +31,12 @@ namespace TrinityText.Business.Schema
         {
             var errors = new List<ErrorMessage>();
 
-            int i = 0;
-            while (i < Items.Count)
+            // walking backwards: removing while walking forwards (and searching the item again) was quadratic
+            for (var i = Items.Count - 1; i >= 0; i--)
             {
-                var item = Items[i];
-                if (item.IsEmpty)
+                if (Items[i].IsEmpty)
                 {
-                    Items.Remove(item);
-                }
-                else
-                {
-                    i++;
+                    Items.RemoveAt(i);
                 }
             }
 

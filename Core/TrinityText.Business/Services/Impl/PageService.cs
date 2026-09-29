@@ -35,31 +35,12 @@ namespace TrinityText.Business.Services.Impl
             {
                 var query = GetPagesByFilter(search);
 
-                if (search?.ExcludeContent ?? false)
-                {
-                    query =
-                        query
-                            .Select(q => new Page()
-                            {
-                                ACTIVE = q.ACTIVE,
-                                CONTENT = string.Empty,
-                                ID = q.ID,
-                                CREATION_DATE = q.CREATION_DATE,
-                                CREATION_USER = q.CREATION_USER,
-                                FK_LANGUAGE = q.FK_LANGUAGE,
-                                FK_PAGETYPE = q.FK_PAGETYPE,
-                                FK_PRICELIST = q.FK_PRICELIST,
-                                FK_WEBSITE = q.FK_WEBSITE,
-                                GENERATE_PDF = q.GENERATE_PDF,
-                                LASTUPDATE_DATE = q.LASTUPDATE_DATE,
-                                LASTUPDATE_USER = q.LASTUPDATE_USER,
-                                PAGETYPE = q.PAGETYPE,
-                                TITLE = q.TITLE,
-                            });
-                }
+                // page columns only: the PageType (with its schema XML) is loaded once per type, not joined on every row
+                var projected = WithoutPageType(query, includeContent: !(search?.ExcludeContent ?? false));
 
-                var totalCount = await _pageRepository.CountAsync(query);
-                var list = await _pageRepository.ToListAsync(query.GetPage(page, size));
+                var totalCount = await _pageRepository.CountAsync(projected);
+                var list = await _pageRepository.ToListAsync(projected.GetPage(page, size));
+                await AttachPageTypes(list);
 
                 var result = new PagedResult<PageDTO>()
                 {
@@ -78,7 +59,7 @@ namespace TrinityText.Business.Services.Impl
             }
         }
 
-        private IQueryable<Page> GetPagesByFilter(SearchPageDTO search)
+        private IQueryable<Page> GetPagesByFilter(SearchPageDTO search, bool applySorting = true)
         {
             var websites = search.UserWebsites ?? [];
             var languages = search.WebsiteLanguages ?? [];
@@ -141,23 +122,26 @@ namespace TrinityText.Business.Services.Impl
                         query.Where(r => r.ACTIVE == search.ShowOnlyActive.Value);
                 }
 
-                var sortName = search.SortingName ?? SortingType.Unordered;
-                var sortWebsite = search.SortingWebsite ?? SortingType.Unordered;
-                var sortSite = search.SortingSite ?? SortingType.Unordered;
-                var sortLanguage = search.SortingLanguage ?? SortingType.Unordered;
-                var sortLastUpdate = search.SortingLastUpdate ?? SortingType.Unordered;
+                if (applySorting)
+                {
+                    var sortName = search.SortingName ?? SortingType.Unordered;
+                    var sortWebsite = search.SortingWebsite ?? SortingType.Unordered;
+                    var sortSite = search.SortingSite ?? SortingType.Unordered;
+                    var sortLanguage = search.SortingLanguage ?? SortingType.Unordered;
+                    var sortLastUpdate = search.SortingLastUpdate ?? SortingType.Unordered;
 
-                if (sortName == SortingType.Unordered && sortWebsite == SortingType.Unordered && sortSite == SortingType.Unordered && sortLanguage == SortingType.Unordered && sortLastUpdate == SortingType.Unordered)
-                {
-                    query = query.Sort((r) => r.TITLE, SortingType.Ascending);
-                }
-                else
-                {
-                    query = query.Sort((r) => r.TITLE, sortName);
-                    query = query.Sort((r) => r.FK_WEBSITE, sortWebsite);
-                    query = query.Sort((r) => r.FK_PRICELIST, sortSite);
-                    query = query.Sort((r) => r.FK_LANGUAGE, sortLanguage);
-                    query = query.Sort((r) => r.LASTUPDATE_DATE, sortLastUpdate);
+                    if (sortName == SortingType.Unordered && sortWebsite == SortingType.Unordered && sortSite == SortingType.Unordered && sortLanguage == SortingType.Unordered && sortLastUpdate == SortingType.Unordered)
+                    {
+                        query = query.Sort((r) => r.TITLE, SortingType.Ascending);
+                    }
+                    else
+                    {
+                        query = query.Sort((r) => r.TITLE, sortName);
+                        query = query.Sort((r) => r.FK_WEBSITE, sortWebsite);
+                        query = query.Sort((r) => r.FK_PRICELIST, sortSite);
+                        query = query.Sort((r) => r.FK_LANGUAGE, sortLanguage);
+                        query = query.Sort((r) => r.LASTUPDATE_DATE, sortLastUpdate);
+                    }
                 }
             }
 
@@ -224,31 +208,36 @@ namespace TrinityText.Business.Services.Impl
 
                 if (dto.Id.HasValue)
                 {
-                    var entity = await _pageRepository
-                        .Read(dto.Id.Value);
+                    var id = dto.Id.Value;
+                    var content = dto.Content;
+                    var site = dto.Site;
+                    var language = dto.Language;
+                    var title = dto.Title;
+                    var active = dto.Active;
+                    var generatePdf = dto.GeneratePdf;
+                    var user = dto.LastUpdateUser;
+                    var now = DateTime.Now;
 
-                    if (entity != null)
+                    // website and page type never change: only the editable columns are written
+                    var updated = await _pageRepository.ExecuteUpdateAsync(
+                        _pageRepository.Repository.Where(p => p.ID == id),
+                        set => set
+                            .Set(p => p.CONTENT, content)
+                            .Set(p => p.FK_PRICELIST, site)
+                            .Set(p => p.FK_LANGUAGE, language)
+                            .Set(p => p.TITLE, title)
+                            .Set(p => p.ACTIVE, active)
+                            .Set(p => p.GENERATE_PDF, generatePdf)
+                            .Set(p => p.LASTUPDATE_USER, user)
+                            .Set(p => p.LASTUPDATE_DATE, now));
+
+                    if (updated > 0)
                     {
-                        entity.CONTENT = dto.Content;
-                        entity.FK_PRICELIST = dto.Site;
-                        //entity.FK_WEBSITE = dto.Website;
-                        entity.FK_LANGUAGE = dto.Language;
-                        //entity.FK_PAGETYPE = dto.PageTypeId;
-                        entity.TITLE = dto.Title;
-                        entity.ACTIVE = dto.Active;
-                        entity.GENERATE_PDF = dto.GeneratePdf;
-                        entity.LASTUPDATE_USER = dto.LastUpdateUser;
-                        entity.LASTUPDATE_DATE = DateTime.Now;
+                        var saved = await _pageRepository.ToListAsync(
+                            WithoutPageType(_pageRepository.Repository.Where(p => p.ID == id)));
+                        await AttachPageTypes(saved);
 
-                        //entity.PAGETYPE = null;
-
-                        var result = await _pageRepository.Update(entity);
-
-                        var r = _mapper.Map<PageDTO>(result);
-                        //var t = _mapper.Map<PageTypeDTO>(pageType);
-                        //r.PageType = t;
-
-                        return OperationResult<PageDTO>.MakeSuccess(r);
+                        return OperationResult<PageDTO>.MakeSuccess(_mapper.Map<PageDTO>(saved.Single()));
                     }
                     else
                     {
@@ -350,10 +339,12 @@ namespace TrinityText.Business.Services.Impl
                     WebsiteLanguages = languages,
                 };
 
+                // the export does not need an ORDER BY on the (large) content column, nor the PageType joined on every row
                 var query =
-                    GetPagesByFilter(search);
+                    WithoutPageType(GetPagesByFilter(search, applySorting: false));
 
                 var contents = await _pageRepository.ToListAsync(query);
+                await AttachPageTypes(contents);
 
                 var list = _mapper.Map<List<PageDTO>>(contents);
 
@@ -369,11 +360,11 @@ namespace TrinityText.Business.Services.Impl
         }
 
 
-        private static IQueryable<Page> WithoutPageType(IQueryable<Page> query)
+        private static IQueryable<Page> WithoutPageType(IQueryable<Page> query, bool includeContent = true)
             => query.Select(q => new Page()
             {
                 ACTIVE = q.ACTIVE,
-                CONTENT = q.CONTENT,
+                CONTENT = includeContent ? q.CONTENT : string.Empty,
                 ID = q.ID,
                 CREATION_DATE = q.CREATION_DATE,
                 CREATION_USER = q.CREATION_USER,
@@ -386,6 +377,24 @@ namespace TrinityText.Business.Services.Impl
                 LASTUPDATE_USER = q.LASTUPDATE_USER,
                 TITLE = q.TITLE,
             });
+
+        // page types are few: load each one once and attach it to the pages that use it
+        private async Task AttachPageTypes(IList<Page> pages)
+        {
+            var typeIds = pages.Select(p => p.FK_PAGETYPE).Distinct().ToArray();
+            if (typeIds.Length == 0)
+            {
+                return;
+            }
+
+            var types = (await _pageTypeRepository.ToListAsync(
+                _pageTypeRepository.Repository.Where(pt => typeIds.Contains(pt.ID))))
+                .ToDictionary(pt => pt.ID);
+            foreach (var page in pages)
+            {
+                page.PAGETYPE = types.GetValueOrDefault(page.FK_PAGETYPE);
+            }
+        }
 
         public async Task<OperationResult<FrozenDictionary<string, ReadOnlyCollection<PageDTO>>>> GetPublishablePagesByWebsite(string website, Dictionary<string, string[]> sitesLanguages)
         {
@@ -413,14 +422,8 @@ namespace TrinityText.Business.Services.Impl
                                 t.FK_WEBSITE == website &&
                                 allSites.Contains(t.FK_PRICELIST))));
 
-                var typeIds = pagesGlobalList.Concat(pagesBySiteList).Select(p => p.FK_PAGETYPE).Distinct().ToArray();
-                var pageTypes = (await _pageTypeRepository.ToListAsync(
-                    _pageTypeRepository.Repository.Where(pt => typeIds.Contains(pt.ID))))
-                    .ToDictionary(pt => pt.ID);
-                foreach (var page in pagesGlobalList.Concat(pagesBySiteList))
-                {
-                    page.PAGETYPE = pageTypes.GetValueOrDefault(page.FK_PAGETYPE);
-                }
+                await AttachPageTypes(pagesGlobalList);
+                await AttachPageTypes(pagesBySiteList);
 
                 var pagesGlobalDto = _mapper.Map<IList<PageDTO>>(pagesGlobalList).AsReadOnly();
                 var pagesBySiteDto = _mapper.Map<IList<PageDTO>>(pagesBySiteList);
@@ -435,7 +438,8 @@ namespace TrinityText.Business.Services.Impl
 
                     var allpagesBySite = pagesGlobalDto
                             .Where(p => langSet.Contains(p.Language))
-                            .Union(pagesBySiteLookup[site])
+                            // pages of a site in a language the site does not publish must not leak into it
+                            .Concat(pagesBySiteLookup[site].Where(p => langSet.Contains(p.Language)))
                             .ToList()
                             .AsReadOnly();
 
@@ -457,19 +461,12 @@ namespace TrinityText.Business.Services.Impl
         {
             try
             {
-                var entity = await _pageRepository
-                    .Read(id);
+                // the page (and its content) is not loaded just to be deleted
+                var deleted = await _pageRepository.ExecuteDeleteAsync(_pageRepository.Repository.Where(p => p.ID == id));
 
-                if (entity != null)
-                {
-                    await _pageRepository.Delete(entity);
-
-                    return OperationResult.MakeSuccess();
-                }
-                else
-                {
-                    return OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
-                }
+                return deleted > 0
+                    ? OperationResult.MakeSuccess()
+                    : OperationResult.MakeFailure([ErrorMessage.Create("REMOVE", "NOT_FOUND")]);
             }
             catch (Exception ex)
             {

@@ -107,6 +107,9 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 if (exportType == PublicationType.All || exportType == PublicationType.Pages)
                 {
                     var pageByWebsiteRs = await _pageService.GetPublishablePagesByWebsite(website, siteLanguages);
+                // shared by every document of the export: widgets, links and page schemas are resolved once
+                var widgetCache = new WidgetResolutionCache();
+                var structures = new Dictionary<int, TrinityText.Business.Schema.PageSchema>();
 
                     if (pageByWebsiteRs.Success)
                     {
@@ -118,7 +121,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                             if (pageByWebsite.TryGetValue(s.Site, out var textsPerSite))
                             {
                                 var dict = textsPerSite.GroupBy(t => t.Language).ToFrozenDictionary(k => k.Key, v => v.ToList().AsReadOnly());
-                                await GeneratePagesFileBySite(tenant, website, s.Site, dict, siteDirectory.FullName, string.Empty, cdnServer, publishType);
+                                await GeneratePagesFileBySite(tenant, website, s.Site, dict, siteDirectory.FullName, string.Empty, cdnServer, publishType, widgetCache, structures);
                             }
                         }
 
@@ -271,7 +274,36 @@ namespace TrinityText.ServiceBus.MassTransit.Services
             var result = OperationResult.MakeSuccess();
             try
             {
-                await _compressionFileService.DecompressFolder(basePath, setting.ZipFile);
+                if (setting.ZipFile != null && setting.ZipFile.Length > 0)
+                {
+                    await _compressionFileService.DecompressFolder(basePath, setting.ZipFile);
+                }
+                else
+                {
+                    // the ZIP is not held in memory: it flows from the database to a temporary file, then it is extracted
+                    var zipPath = basePath + ".zip";
+                    Directory.CreateDirectory(Path.GetDirectoryName(zipPath));
+                    try
+                    {
+                        await using (var zipStream = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, FileOptions.Asynchronous))
+                        {
+                            var copyRs = await _publicationService.CopyZipTo(setting.Id.Value, zipStream);
+                            if (!copyRs.Success)
+                            {
+                                throw new InvalidOperationException("The publication has no ZIP content to publish");
+                            }
+                        }
+
+                        await _compressionFileService.DecompressFile(basePath, zipPath);
+                    }
+                    finally
+                    {
+                        if (File.Exists(zipPath))
+                        {
+                            File.Delete(zipPath);
+                        }
+                    }
+                }
 
                 var payload = setting.Payload;
                 EnsurePayloadMatchesPublication(payload, setting);
@@ -342,11 +374,15 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                     .GroupBy(r => r.TextType?.Name ?? website)
                     .ToFrozenDictionary(r => r.Key, r => r.First().TextType?.Subfolder ?? string.Empty);
 
+                // grouped once: scanning every text for every type was O(types x texts)
+                var untypedTexts = resources.Where(r => r.TextType == null).ToList().AsReadOnly();
+                var typedTexts = resources.Where(r => r.TextType != null).ToLookup(r => r.TextType.Name);
+
                 foreach (var t in types.Keys)
                 {
                     var textsPerType = t.Equals(website, StringComparison.InvariantCultureIgnoreCase) ?
-                        resources.Where(r => r.TextType == null).ToList().AsReadOnly() :
-                        resources.Where(r => r.TextType != null && r.TextType.Name == t).ToList().AsReadOnly();
+                        untypedTexts :
+                        typedTexts[t].ToList().AsReadOnly();
 
                     var fileName = string.IsNullOrWhiteSpace(t) ? website : t;
                     var file = Array.Empty<byte>();
@@ -472,7 +508,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
         //}
         //}
 
-        private async Task GeneratePagesFileBySite(string tenant, string website, string site, FrozenDictionary<string, ReadOnlyCollection<PageDTO>> contentsPerLanguages, string directoryPath, string baseUrl, CdnServerDTO cdnServer, PublicationFormat type)
+        private async Task GeneratePagesFileBySite(string tenant, string website, string site, FrozenDictionary<string, ReadOnlyCollection<PageDTO>> contentsPerLanguages, string directoryPath, string baseUrl, CdnServerDTO cdnServer, PublicationFormat type, WidgetResolutionCache widgetCache, Dictionary<int, TrinityText.Business.Schema.PageSchema> structures)
         {
             if (string.IsNullOrWhiteSpace(directoryPath))
             {
@@ -505,11 +541,15 @@ namespace TrinityText.ServiceBus.MassTransit.Services
 
                     var documentSchema = contentsPerType.First().PageType.Schema;
                     var fileName = ResolvePageFileName(contentsPerType.First().PageType);
-                    var structure = _pageSchemaService.GetContentStructure(documentSchema);
+                    if (!structures.TryGetValue(t, out var structure))
+                    {
+                        structure = _pageSchemaService.GetContentStructure(documentSchema);
+                        structures[t] = structure;
+                    }
                     var file = type switch
                     {
-                        PublicationFormat.XML => await _pageSchemaService.CreateXmlContentsDocument(structure, contentsPerType, tenant, website, site, lang, baseUrl, cdnServer),
-                        PublicationFormat.JSON => await _pageSchemaService.CreateJsonContentsDocument(structure, contentsPerType, tenant, website, site, lang, baseUrl, cdnServer),
+                        PublicationFormat.XML => await _pageSchemaService.CreateXmlContentsDocument(structure, contentsPerType, tenant, website, site, lang, baseUrl, cdnServer, widgetCache),
+                        PublicationFormat.JSON => await _pageSchemaService.CreateJsonContentsDocument(structure, contentsPerType, tenant, website, site, lang, baseUrl, cdnServer, widgetCache),
                         _ => throw new NotSupportedException(type.ToString()),
                     };
                     var folder = ResolveOutputFolder(directory.FullName, langDir.FullName, types[t]);

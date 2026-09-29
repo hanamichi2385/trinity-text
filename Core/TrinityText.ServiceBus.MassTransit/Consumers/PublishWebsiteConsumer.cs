@@ -31,7 +31,8 @@ namespace TrinityText.ServiceBus.MassTransit.Consumers
         {
             var message = context.Message;
 
-            var publicationRs = await _publicationService.Get(message.PublicationId, true);
+            // without the ZIP: Publish streams it from the database instead of holding it in memory
+            var publicationRs = await _publicationService.Get(message.PublicationId, false);
             if (!publicationRs.Success)
             {
                 throw new ApplicationException(string.Join(",", publicationRs.Errors.Select(s => s.Description)));

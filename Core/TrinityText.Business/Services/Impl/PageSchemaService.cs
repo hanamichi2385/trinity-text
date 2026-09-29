@@ -538,13 +538,13 @@ namespace TrinityText.Business.Services.Impl
             return ParseContent(doc, structure);
         }
 
-        public async Task<byte[]> CreateXmlContentsDocument(PageSchema structure, IList<PageDTO> contentsPerType, string tenant, string vendor, string instance, string language, string baseUrl, CdnServerDTO cdnServer)
+        public async Task<byte[]> CreateXmlContentsDocument(PageSchema structure, IList<PageDTO> contentsPerType, string tenant, string vendor, string instance, string language, string baseUrl, CdnServerDTO cdnServer, WidgetResolutionCache cache = null)
         {
             var doc = new XDocument();
             var declaration = new XDeclaration("1.0", "utf-8", string.Empty);
             doc.Declaration = declaration;
             var root = new XElement(structure.RootName);
-            var cache = new WidgetResolutionCache();
+            cache ??= new WidgetResolutionCache();
 
             foreach (var c in contentsPerType)
             {
@@ -569,10 +569,10 @@ namespace TrinityText.Business.Services.Impl
             return Encoding.UTF8.GetBytes(file);
         }
 
-        public async Task<byte[]> CreateJsonContentsDocument(PageSchema structure, IList<PageDTO> contentsPerType, string tenant, string vendor, string instance, string language, string baseUrl, CdnServerDTO cdnServer)
+        public async Task<byte[]> CreateJsonContentsDocument(PageSchema structure, IList<PageDTO> contentsPerType, string tenant, string vendor, string instance, string language, string baseUrl, CdnServerDTO cdnServer, WidgetResolutionCache cache = null)
         {
             var list = new List<JRaw>(contentsPerType.Count);
-            var cache = new WidgetResolutionCache();
+            cache ??= new WidgetResolutionCache();
 
             foreach (var c in contentsPerType)
             {

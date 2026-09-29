@@ -59,15 +59,16 @@ namespace TrinityText.Business
             site = CdataSafe(site);
             language = CdataSafe(language);
 
+            // ordinal comparison: the tokens are ASCII, culture-aware matching only made every pass slower
             return text
-                .Replace("@[TENANT]", tenant, StringComparison.InvariantCultureIgnoreCase)
-                .Replace("@[WEBSITE]", website, StringComparison.InvariantCultureIgnoreCase)
-                .Replace("@[PRICELIST]", site, StringComparison.InvariantCultureIgnoreCase)
-                .Replace("@[PARTNER]", tenant, StringComparison.InvariantCultureIgnoreCase)
-                .Replace("@[CHANNEL]", website, StringComparison.InvariantCultureIgnoreCase)
-                .Replace("@[SITE]", site, StringComparison.InvariantCultureIgnoreCase)
-                .Replace("@[LANG]", language, StringComparison.InvariantCultureIgnoreCase)
-                .Replace("@[DATE]", DateTime.Now.ToShortDateString(), StringComparison.InvariantCultureIgnoreCase);
+                .Replace("@[TENANT]", tenant, StringComparison.OrdinalIgnoreCase)
+                .Replace("@[WEBSITE]", website, StringComparison.OrdinalIgnoreCase)
+                .Replace("@[PRICELIST]", site, StringComparison.OrdinalIgnoreCase)
+                .Replace("@[PARTNER]", tenant, StringComparison.OrdinalIgnoreCase)
+                .Replace("@[CHANNEL]", website, StringComparison.OrdinalIgnoreCase)
+                .Replace("@[SITE]", site, StringComparison.OrdinalIgnoreCase)
+                .Replace("@[LANG]", language, StringComparison.OrdinalIgnoreCase)
+                .Replace("@[DATE]", DateTime.Now.ToShortDateString(), StringComparison.OrdinalIgnoreCase);
         }
 
         public Task<string> ReplaceWidget(string text, string site, string website, string tenant, string language)

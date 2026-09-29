@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using TrinityText.Business;
 
@@ -20,7 +21,7 @@ namespace TrinityText.Utilities
             _logger = logger;
         }
 
-        public Task<string> Upload(string tenant, string vendor, DirectoryInfo baseDirectory, string host, string username, string password, string path)
+        public async Task<string> Upload(string tenant, string vendor, DirectoryInfo baseDirectory, string host, string username, string password, string path)
         {
             var operationLog = new StringBuilder();
 
@@ -31,7 +32,7 @@ namespace TrinityText.Utilities
 
                 ftp = new SftpClient(h.Host, h.Port > 0 ? h.Port : 22, username, password);
 
-                ftp.Connect();
+                await ftp.ConnectAsync(CancellationToken.None);
 
                 var directories = path.Split('/', StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
 
@@ -39,21 +40,21 @@ namespace TrinityText.Utilities
 
                 foreach (var d in directories)
                 {
-                    currentDirectory = NavigateTo(d, ftp, operationLog);
+                    currentDirectory = await NavigateTo(d, ftp, operationLog);
                 }
 
-                currentDirectory = NavigateTo(tenant, ftp, operationLog);
-                currentDirectory = NavigateTo(vendor, ftp, operationLog);
+                currentDirectory = await NavigateTo(tenant, ftp, operationLog);
+                currentDirectory = await NavigateTo(vendor, ftp, operationLog);
 
-                UploadFilesPerDirectory(currentDirectory, ftp, baseDirectory, operationLog);
+                await UploadFilesPerDirectory(currentDirectory, ftp, baseDirectory, operationLog);
 
                 foreach (var d in baseDirectory.GetDirectories())
                 {
                     try
                     {
-                        ftp.ChangeDirectory(currentDirectory);
+                        await ftp.ChangeDirectoryAsync(currentDirectory, CancellationToken.None);
 
-                        UploadDirectory(d.FullName, d.Name, ftp, operationLog);
+                        await UploadDirectory(d.FullName, d.Name, ftp, operationLog);
                     }
                     catch (Exception e)
                     {
@@ -98,10 +99,10 @@ namespace TrinityText.Utilities
 
                 ftp?.Dispose();
             }
-            return Task.FromResult(operationLog.ToString());
+            return operationLog.ToString();
         }
 
-        public Task<byte[]> GetFile(string tenant, string vendor, string file, string host, string username, string password, string path)
+        public async Task<byte[]> GetFile(string tenant, string vendor, string file, string host, string username, string password, string path)
         {
             var operationLog = new StringBuilder();
 
@@ -114,23 +115,23 @@ namespace TrinityText.Utilities
 
                 ftp = new SftpClient(host, username, password);
 
-                ftp.Connect();
+                await ftp.ConnectAsync(CancellationToken.None);
 
                 var currentDirectory = ftp.WorkingDirectory;
 
                 foreach (var d in directories)
                 {
-                    currentDirectory = NavigateTo(d, ftp, operationLog);
+                    currentDirectory = await NavigateTo(d, ftp, operationLog);
                 }
 
-                currentDirectory = NavigateTo(tenant, ftp, operationLog);
-                currentDirectory = NavigateTo(vendor, ftp, operationLog);
+                currentDirectory = await NavigateTo(tenant, ftp, operationLog);
+                currentDirectory = await NavigateTo(vendor, ftp, operationLog);
 
-                if (ftp.Exists($"{currentDirectory}/{file}"))
+                if (await ftp.ExistsAsync($"{currentDirectory}/{file}", CancellationToken.None))
                 {
                     using var ms = new MemoryStream();
-                    ftp.DownloadFile(file, ms);
-                    return Task.FromResult(ms.ToArray());
+                    await ftp.DownloadFileAsync(file, ms, CancellationToken.None);
+                    return ms.ToArray();
                 }
             }
             catch (Exception e)
@@ -148,18 +149,18 @@ namespace TrinityText.Utilities
             }
 
             // "not found" is a null result, not a null Task (awaiting it threw a NullReferenceException)
-            return Task.FromResult<byte[]>(null);
+            return null;
         }
 
-        private string NavigateTo(string directoryName, SftpClient ftp, StringBuilder operationLog)
+        private async Task<string> NavigateTo(string directoryName, SftpClient ftp, StringBuilder operationLog)
         {
             var currentDirectory = $"{ftp.WorkingDirectory}/{directoryName}";
 
-            if (!ftp.Exists(currentDirectory))
+            if (!await ftp.ExistsAsync(currentDirectory, CancellationToken.None))
             {
                 try
                 {
-                    ftp.CreateDirectory(directoryName);
+                    await ftp.CreateDirectoryAsync(directoryName, CancellationToken.None);
                 }
                 catch (Exception e)
                 {
@@ -172,18 +173,18 @@ namespace TrinityText.Utilities
                     }
                 }
             }
-            ftp.ChangeDirectory(directoryName);
+            await ftp.ChangeDirectoryAsync(directoryName, CancellationToken.None);
 
             return currentDirectory;
         }
 
-        private void UploadFilesPerDirectory(string currentDirectory, SftpClient ftp, DirectoryInfo directory, StringBuilder operationLog)
+        private async Task UploadFilesPerDirectory(string currentDirectory, SftpClient ftp, DirectoryInfo directory, StringBuilder operationLog)
         {
             try
             {
                 if (!ftp.WorkingDirectory.Equals(currentDirectory, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    ftp.ChangeDirectory(currentDirectory);
+                    await ftp.ChangeDirectoryAsync(currentDirectory, CancellationToken.None);
                 }
 
                 var filesToUpload = directory.GetFiles();
@@ -193,7 +194,7 @@ namespace TrinityText.Utilities
                     foreach (var f in filesToUpload)
                     {
                         using var stream = f.OpenRead();
-                        ftp.UploadFile(stream, f.Name);
+                        await ftp.UploadFileAsync(stream, f.Name, CancellationToken.None);
                     }
                 }
 
@@ -210,21 +211,21 @@ namespace TrinityText.Utilities
             }
         }
 
-        private void UploadDirectory(string localDirectoryPath, string ftpDirectoryPath, SftpClient ftp, StringBuilder operationLog)
+        private async Task UploadDirectory(string localDirectoryPath, string ftpDirectoryPath, SftpClient ftp, StringBuilder operationLog)
         {
             try
             {
                 var directory = new DirectoryInfo(localDirectoryPath);
 
-                var currentDirectory = NavigateTo(ftpDirectoryPath, ftp, operationLog);
+                var currentDirectory = await NavigateTo(ftpDirectoryPath, ftp, operationLog);
 
                 foreach (var sub in directory.GetDirectories())
                 {
-                    UploadDirectory(sub.FullName, sub.Name, ftp, operationLog);
-                    ftp.ChangeDirectory(currentDirectory);
+                    await UploadDirectory(sub.FullName, sub.Name, ftp, operationLog);
+                    await ftp.ChangeDirectoryAsync(currentDirectory, CancellationToken.None);
                 }
 
-                UploadFilesPerDirectory(currentDirectory, ftp, directory, operationLog);
+                await UploadFilesPerDirectory(currentDirectory, ftp, directory, operationLog);
             }
             catch (Exception e)
             {
