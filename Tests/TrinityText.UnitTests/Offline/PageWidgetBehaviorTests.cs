@@ -19,7 +19,7 @@ namespace TrinityText.UnitTests.Offline
         public static IEnumerable<object[]> Providers => new[] { new object[] { "EF" }, new object[] { "NH" } };
 
         private static IMapper Mapper { get; } =
-            new MapperConfiguration(cfg => cfg.AddProfile<BusinessMapperProfile>(), NullLoggerFactory.Instance).CreateMapper();
+            new MapperConfiguration(cfg => cfg.AddProfile<BusinessMapperProfile>()).CreateMapper();
 
         private static PageService Pages(ProviderScope scope)
             => new(scope.Repo<Page>(), scope.Repo<PageType>(), Mapper, NullLogger<PageService>.Instance);

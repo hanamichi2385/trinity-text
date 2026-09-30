@@ -14,7 +14,7 @@ namespace TrinityText.UnitTests.Offline
     public class TextMappingTests
     {
         private static IMapper CreateMapper()
-            => new MapperConfiguration(cfg => cfg.AddProfile<BusinessMapperProfile>(), NullLoggerFactory.Instance).CreateMapper();
+            => new MapperConfiguration(cfg => cfg.AddProfile<BusinessMapperProfile>()).CreateMapper();
 
         private static TextDTO NewDto() => new()
         {

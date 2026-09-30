@@ -24,7 +24,7 @@ namespace TrinityText.UnitTests.Offline
     public class SecurityHardeningTests
     {
         private static IMapper Mapper { get; } =
-            new MapperConfiguration(cfg => cfg.AddProfile<BusinessMapperProfile>(), NullLoggerFactory.Instance).CreateMapper();
+            new MapperConfiguration(cfg => cfg.AddProfile<BusinessMapperProfile>()).CreateMapper();
 
         // ------------------------------------------------------------ PathSafety
 

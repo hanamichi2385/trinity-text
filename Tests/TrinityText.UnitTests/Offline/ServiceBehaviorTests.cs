@@ -20,7 +20,7 @@ namespace TrinityText.UnitTests.Offline
         public static IEnumerable<object[]> Providers => new[] { new object[] { "EF" }, new object[] { "NH" } };
 
         private static IMapper Mapper { get; } =
-            new MapperConfiguration(cfg => cfg.AddProfile<BusinessMapperProfile>(), NullLoggerFactory.Instance).CreateMapper();
+            new MapperConfiguration(cfg => cfg.AddProfile<BusinessMapperProfile>()).CreateMapper();
 
         private static TextService Texts(ProviderScope scope)
             => new(scope.Repo<Text>(), scope.Repo<TextRevision>(), scope.Repo<TextType>(), Mapper, NullLogger<TextService>.Instance);

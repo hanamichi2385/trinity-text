@@ -1,4 +1,7 @@
-﻿#2026-09-29
+﻿#2026-09-30
+- License: rollback to Automapper 14.0.0
+
+#2026-09-29
 - Security: `TextType.Name` validated with `PathSafety` (used as export file name); export file paths canonicalised and confined to the export root (`PathSafety.EnsureWithinRoot`)
 - Security: widget expansion capped at 5 MB total (nested widgets could grow exponentially)
 - Security: tenant / website / file names validated in `TransferService` before FTP/SFTP navigation; publication payload website must match the publication website (Generate/Publish)
