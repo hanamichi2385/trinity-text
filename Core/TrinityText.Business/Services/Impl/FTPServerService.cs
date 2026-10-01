@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
 using System.Collections.Generic;
@@ -15,12 +14,9 @@ namespace TrinityText.Business.Services.Impl
 
         private readonly ILogger<FTPServerService> _logger;
 
-        private readonly IMapper _mapper;
-
-        public FTPServerService(IRepository<FtpServer> ftpServerRepository, IMapper mapper, ILogger<FTPServerService> logger)
+        public FTPServerService(IRepository<FtpServer> ftpServerRepository, ILogger<FTPServerService> logger)
         {
             _ftpServerRepository = ftpServerRepository;
-            _mapper = mapper;
             _logger = logger;
         }
 
@@ -33,7 +29,7 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var result = _mapper.Map<FTPServerDTO>(entity);
+                    var result = BusinessMapper.ToDto(entity);
 
                     return OperationResult<FTPServerDTO>.MakeSuccess(result);
                 }
@@ -56,7 +52,7 @@ namespace TrinityText.Business.Services.Impl
                 var list = await _ftpServerRepository.ToListAsync(_ftpServerRepository.Repository
                     .OrderBy(t => t.TYPE));
 
-                var result = _mapper.Map<IList<FTPServerDTO>>(list);
+                var result = BusinessMapper.ToDtoList(list);
 
                 return OperationResult<IList<FTPServerDTO>>.MakeSuccess(result);
             }
@@ -75,7 +71,7 @@ namespace TrinityText.Business.Services.Impl
                     .Where(f => f.CDNSERVERS.Any(c => c.FK_CDNSERVER == cdn))
                     .OrderBy(t => t.TYPE));
 
-                var result = _mapper.Map<IList<FTPServerDTO>>(list);
+                var result = BusinessMapper.ToDtoList(list);
 
                 return OperationResult<IList<FTPServerDTO>>.MakeSuccess(result);
             }
@@ -140,7 +136,7 @@ namespace TrinityText.Business.Services.Impl
 
                         var result = await _ftpServerRepository.Update(entity);
 
-                        var r = _mapper.Map<FTPServerDTO>(result);
+                        var r = BusinessMapper.ToDto(result);
 
                         return OperationResult<FTPServerDTO>.MakeSuccess(r);
                     }
@@ -151,10 +147,10 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    var entity = _mapper.Map<FtpServer>(dto);
+                    var entity = BusinessMapper.ToEntity(dto);
                     var result = await _ftpServerRepository.Create(entity);
 
-                    var r = _mapper.Map<FTPServerDTO>(result);
+                    var r = BusinessMapper.ToDto(result);
 
                     return OperationResult<FTPServerDTO>.MakeSuccess(r);
                 }

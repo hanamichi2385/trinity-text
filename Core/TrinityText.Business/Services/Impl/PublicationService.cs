@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
 using System.Collections.Generic;
@@ -18,13 +17,10 @@ namespace TrinityText.Business.Services.Impl
 
         private readonly ILogger<PublicationService> _logger;
 
-        private readonly IMapper _mapper;
-
-        public PublicationService(IRepository<Publication> publicationRepository, IRepository<FtpServer> ftpServerRepository, IMapper mapper, ILogger<PublicationService> logger)
+        public PublicationService(IRepository<Publication> publicationRepository, IRepository<FtpServer> ftpServerRepository, ILogger<PublicationService> logger)
         {
             _publicationRepository = publicationRepository;
             _ftpServerRepository = ftpServerRepository;
-            _mapper = mapper;
             _logger = logger;
         }
 
@@ -259,7 +255,7 @@ namespace TrinityText.Business.Services.Impl
 
                 var  saved = await _publicationRepository.Create(entity);
 
-                var result = _mapper.Map<PublicationDTO>(saved);
+                var result = BusinessMapper.ToDto(saved);
                 result.SetPayload(entity.PAYLOAD);
                 // the mapper only sees the FK ids of the (not loaded) servers
                 result.FtpServer = dto.FtpServer;

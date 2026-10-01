@@ -31,7 +31,7 @@ Pages are composed of typed atoms defined by an XML schema (`<textatom>`, `<imag
 
 - `TrinityText.Domain` — entities and `IRepository<T>` abstraction
 - `TrinityText.Domain.EF` / `TrinityText.Domain.NH` — EF Core 8 and NHibernate 5 implementations (interchangeable)
-- `TrinityText.Business` — services, DTOs, AutoMapper profiles (provider-agnostic)
+- `TrinityText.Business` — services, DTOs, compile-time mappers (Mapperly) (provider-agnostic)
 - `TrinityText.Utilities` — image, zip, FTP/SFTP, Excel
 - `TrinityText.ServiceBus[.MassTransit]` — messaging contracts and transport
 - `TrinityText.Utilities.AWS` — AWS-specific helpers

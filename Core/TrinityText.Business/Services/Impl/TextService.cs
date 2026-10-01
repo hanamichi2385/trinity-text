@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
 using System.Collections.Frozen;
@@ -22,14 +21,11 @@ namespace TrinityText.Business.Services.Impl
 
         private readonly ILogger<TextService> _logger;
 
-        private readonly IMapper _mapper;
-
-        public TextService(IRepository<Text> textRepository, IRepository<TextRevision> textRevisionRepository, IRepository<TextType> textTypeRevisionRepository, IMapper mapper, ILogger<TextService> logger)
+        public TextService(IRepository<Text> textRepository, IRepository<TextRevision> textRevisionRepository, IRepository<TextType> textTypeRevisionRepository, ILogger<TextService> logger)
         {
             _textRepository = textRepository;
             _textRevisionRepository = textRevisionRepository;
             _textTypeRevisionRepository = textTypeRevisionRepository;
-            _mapper = mapper;
             _logger = logger;
         }
 
@@ -48,7 +44,7 @@ namespace TrinityText.Business.Services.Impl
                 {
                     Page = page,
                     PageSize = size,
-                    Result = _mapper.Map<TextDTO[]>(list),
+                    Result = BusinessMapper.ToDtoList(list).ToArray(),
                     TotalCount = totalCount,
                 };
 
@@ -168,7 +164,7 @@ namespace TrinityText.Business.Services.Impl
                             .Where(r => r.FK_TEXT == textId)
                             .OrderBy(r => r.REVISION_NUMBER));
 
-                    var result = _mapper.Map<IList<TextRevisionDTO>>(revisions);
+                    var result = BusinessMapper.ToDtoList(revisions);
 
                     return OperationResult<IList<TextRevisionDTO>>.MakeSuccess(result);
                 }
@@ -195,7 +191,7 @@ namespace TrinityText.Business.Services.Impl
                 {
                     await PopulateLatestRevisions([entity]);
 
-                    var result = _mapper.Map<TextDTO>(entity);
+                    var result = BusinessMapper.ToDto(entity);
 
                     return OperationResult<TextDTO>.MakeSuccess(result);
                 }
@@ -298,7 +294,7 @@ namespace TrinityText.Business.Services.Impl
 
         private Text BuildNewText(TextDTO dto)
         {
-            var entity = _mapper.Map<Text>(dto);
+            var entity = BusinessMapper.ToEntity(dto);
             //entity.TEXTTYPE = textType;
 
 
@@ -317,8 +313,8 @@ namespace TrinityText.Business.Services.Impl
             var entity = BuildNewText(dto);
             await _textRepository.Create(entity);
 
-            var r = _mapper.Map<TextDTO>(entity);
-            r.TextType = _mapper.Map<TextTypeDTO>(textType);
+            var r = BusinessMapper.ToDto(entity);
+            r.TextType = BusinessMapper.ToDto(textType);
 
             return OperationResult<TextDTO>.MakeSuccess(r);
         }
@@ -348,7 +344,7 @@ namespace TrinityText.Business.Services.Impl
                 var lastRevision = entity.REVISIONS.OrderByDescending(d => d.REVISION_NUMBER).FirstOrDefault();
                 if (lastRevision == null || string.Equals(lastRevision.CONTENT, dto.TextRevision.Content) == false)
                 {
-                    var revision = _mapper.Map<TextRevision>(dto.TextRevision);
+                    var revision = BusinessMapper.ToEntity(dto.TextRevision);
                     //revision.TEXT = entity;
                     //revision.FK_TEXT = entity.ID;
                     // always a NEW row: the DTO may carry the id of the latest revision (round-tripped from Get)
@@ -364,7 +360,7 @@ namespace TrinityText.Business.Services.Impl
 
                 var result = await _textRepository.Update(entity);
 
-                var r = _mapper.Map<TextDTO>(result);
+                var r = BusinessMapper.ToDto(result);
                 return OperationResult<TextDTO>.MakeSuccess(r);
             }
             else
@@ -462,7 +458,7 @@ namespace TrinityText.Business.Services.Impl
                             ((t.FK_WEBSITE == null || t.FK_WEBSITE == "") || (t.FK_WEBSITE == website && (t.FK_PRICELIST == null || t.FK_PRICELIST == "")))));
 
                 await PopulateLatestRevisions(textsGlobalByWebsiteList);
-                var textsGlobalByWebsite = _mapper.Map<IList<TextDTO>>(textsGlobalByWebsiteList).AsReadOnly();
+                var textsGlobalByWebsite = BusinessMapper.ToDtoList(textsGlobalByWebsiteList).AsReadOnly();
                 // grouped once: the loop below runs for every site x language
                 var textsGlobalByLanguage = textsGlobalByWebsite.ToLookup(t => t.Language);
 
@@ -476,7 +472,7 @@ namespace TrinityText.Business.Services.Impl
                             allSites.Contains(t.FK_PRICELIST)));
 
                 await PopulateLatestRevisions(textsBySiteList);
-                var textsBySiteAll = _mapper.Map<IList<TextDTO>>(textsBySiteList);
+                var textsBySiteAll = BusinessMapper.ToDtoList(textsBySiteList);
                 var textsBySiteLookup = textsBySiteAll.ToLookup(t => t.Site, StringComparer.OrdinalIgnoreCase);
 
                 var publishableTexts = new Dictionary<string, ReadOnlyCollection<TextDTO>>(sitesLanguages.Count);
@@ -638,7 +634,7 @@ namespace TrinityText.Business.Services.Impl
                 var query = GetTextsByFilter(search, applySorting: false);
                 var q = await _textRepository.ToListAsync(query);
                 await PopulateLatestRevisions(q);
-                var all = _mapper.Map<IList<TextDTO>>(q).AsReadOnly();
+                var all = BusinessMapper.ToDtoList(q).AsReadOnly();
 
                 var byLanguage = all.ToLookup(n => n.Language);
 

@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
 using System.Collections.Generic;
@@ -20,14 +19,11 @@ namespace TrinityText.Business.Services.Impl
 
         private readonly IImageDrawingService _imageDrawingService;
 
-        private readonly IMapper _mapper;
-
-        public FileManagerService(IRepository<Folder> folderRepository, IRepository<File> fileRepository, IImageDrawingService imageDrawingService, IMapper mapper, ILogger<FileManagerService> logger)
+        public FileManagerService(IRepository<Folder> folderRepository, IRepository<File> fileRepository, IImageDrawingService imageDrawingService, ILogger<FileManagerService> logger)
         {
             _folderRepository = folderRepository;
             _fileRepository = fileRepository;
             _imageDrawingService = imageDrawingService;
-            _mapper = mapper;
             _logger = logger;
         }
 
@@ -81,7 +77,7 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var result = _mapper.Map<FolderDTO>(entity);
+                    var result = BusinessMapper.ToDto(entity);
 
                     return OperationResult<FolderDTO>.MakeSuccess(result);
                 }
@@ -218,7 +214,7 @@ namespace TrinityText.Business.Services.Impl
 
                         var result = await _folderRepository.Update(entity);
 
-                        var r = _mapper.Map<FolderDTO>(result);
+                        var r = BusinessMapper.ToDto(result);
 
                         return OperationResult<FolderDTO>.MakeSuccess(r);
                     }
@@ -241,12 +237,12 @@ namespace TrinityText.Business.Services.Impl
                         return OperationResult<FolderDTO>.MakeFailure([ErrorMessage.Create("SAVE", "DUPLICATED")]);
                     }
 
-                    var entity = _mapper.Map<Folder>(dto);
+                    var entity = BusinessMapper.ToEntity(dto);
                     entity.DELETABLE = true;
                     entity.FK_PARENT = parentFolderId;
                     var result = await _folderRepository.Create(entity);
 
-                    var r = _mapper.Map<FolderDTO>(result);
+                    var r = BusinessMapper.ToDto(result);
 
                     return OperationResult<FolderDTO>.MakeSuccess(r);
                 }
@@ -673,7 +669,7 @@ namespace TrinityText.Business.Services.Impl
 
                         var newFile = await _fileRepository.Create(fileCopy);
 
-                        var dto = _mapper.Map<FileDTO>(newFile);
+                        var dto = BusinessMapper.ToDto(newFile);
 
                         return OperationResult<FileDTO>.MakeSuccess(dto);
                     }
@@ -779,7 +775,7 @@ namespace TrinityText.Business.Services.Impl
 
                 //if (primaryFolder != null)
                 //{
-                //    var dto = _mapper.Map<FolderDTO>(primaryFolder);
+                //    var dto = BusinessMapper.ToDto(primaryFolder);
                 //    dto.SubFolders = await GetAllSubfoldersByFolder(primaryFolder.ID);
 
                 //    return OperationResult<FolderDTO>.MakeSuccess(dto);

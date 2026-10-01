@@ -1,4 +1,3 @@
-using AutoMapper;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Resulz;
@@ -19,11 +18,9 @@ namespace TrinityText.UnitTests.Offline
     {
         public static IEnumerable<object[]> Providers => new[] { new object[] { "EF" }, new object[] { "NH" } };
 
-        private static IMapper Mapper { get; } =
-            new MapperConfiguration(cfg => cfg.AddProfile<BusinessMapperProfile>()).CreateMapper();
 
         private static TextService Texts(ProviderScope scope)
-            => new(scope.Repo<Text>(), scope.Repo<TextRevision>(), scope.Repo<TextType>(), Mapper, NullLogger<TextService>.Instance);
+            => new(scope.Repo<Text>(), scope.Repo<TextRevision>(), scope.Repo<TextType>(), NullLogger<TextService>.Instance);
 
         private static TextDTO NewText(string name, string content, string language = "it", string website = null, string site = null, int? textTypeId = null)
             => new()
@@ -251,7 +248,7 @@ namespace TrinityText.UnitTests.Offline
             using (var scope = db.NewScope())
             {
                 var logger = new CollectingLogger<CDNSettingService>();
-                var service = new CDNSettingService(scope.Repo<CdnServer>(), scope.Repo<FtpServerPerCdnServer>(), Mapper, logger);
+                var service = new CDNSettingService(scope.Repo<CdnServer>(), scope.Repo<FtpServerPerCdnServer>(), logger);
                 var rs = await service.Save(new CdnServerDTO { Name = "cdn", BaseUrl = "https://cdn", Type = EnvironmentType.Production }, [ftp1]);
                 Assert.IsTrue(rs.Success, logger.ToString());
                 created = rs.Value;
@@ -261,7 +258,7 @@ namespace TrinityText.UnitTests.Offline
             using (var scope = db.NewScope())
             {
                 var logger = new CollectingLogger<CDNSettingService>();
-                var service = new CDNSettingService(scope.Repo<CdnServer>(), scope.Repo<FtpServerPerCdnServer>(), Mapper, logger);
+                var service = new CDNSettingService(scope.Repo<CdnServer>(), scope.Repo<FtpServerPerCdnServer>(), logger);
                 var rs = await service.Save(new CdnServerDTO { Id = created.Id, Name = "cdn2", BaseUrl = "https://cdn2", Type = EnvironmentType.Production }, [ftp2]);
                 Assert.IsTrue(rs.Success, logger.ToString());
                 Assert.AreEqual("cdn2", rs.Value.Name);
@@ -289,7 +286,7 @@ namespace TrinityText.UnitTests.Offline
             }
 
             PublicationService Service(ProviderScope scope)
-                => new(scope.Repo<Publication>(), scope.Repo<FtpServer>(), Mapper, NullLogger<PublicationService>.Instance);
+                => new(scope.Repo<Publication>(), scope.Repo<FtpServer>(), NullLogger<PublicationService>.Instance);
 
             var dto = new PublicationDTO
             {
@@ -362,7 +359,7 @@ namespace TrinityText.UnitTests.Offline
         }
 
         private static FileManagerService Files(ProviderScope scope)
-            => new(scope.Repo<Folder>(), scope.Repo<TrinityText.Domain.File>(), new NoImages(), Mapper, NullLogger<FileManagerService>.Instance);
+            => new(scope.Repo<Folder>(), scope.Repo<TrinityText.Domain.File>(), new NoImages(), NullLogger<FileManagerService>.Instance);
 
         [DataTestMethod]
         [DynamicData(nameof(Providers))]
@@ -514,7 +511,7 @@ namespace TrinityText.UnitTests.Offline
             using var db = ProviderFixture.Create(provider);
 
             FileManagerService Service(ProviderScope scope)
-                => new(scope.Repo<Folder>(), scope.Repo<TrinityText.Domain.File>(), new FixedImages(), Mapper, NullLogger<FileManagerService>.Instance);
+                => new(scope.Repo<Folder>(), scope.Repo<TrinityText.Domain.File>(), new FixedImages(), NullLogger<FileManagerService>.Instance);
 
             int folder;
             using (var scope = db.NewScope())

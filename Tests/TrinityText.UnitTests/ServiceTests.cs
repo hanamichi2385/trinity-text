@@ -75,10 +75,6 @@ namespace TrinityText.UnitTests
             });
             services.AddLogging();
 
-            services.AddAutoMapper((cfg) =>
-            {
-                cfg.AddProfile(typeof(Business.BusinessMapperProfile));
-            });
 
             var serviceProvider = services.BuildServiceProvider();
 

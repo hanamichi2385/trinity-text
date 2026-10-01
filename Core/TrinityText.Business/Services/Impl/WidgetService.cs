@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
 using System.Collections.Generic;
@@ -15,12 +14,9 @@ namespace TrinityText.Business.Services.Impl
 
         private readonly ILogger<WidgetService> _logger;
 
-        private readonly IMapper _mapper;
-
-        public WidgetService(IRepository<Widget> pageTypeRepository, IMapper mapper, ILogger<WidgetService> logger)
+        public WidgetService(IRepository<Widget> pageTypeRepository, ILogger<WidgetService> logger)
         {
             _widgetRepository = pageTypeRepository;
-            _mapper = mapper;
             _logger = logger;
         }
 
@@ -37,7 +33,7 @@ namespace TrinityText.Business.Services.Impl
                 {
                     Page = page,
                     PageSize = size,
-                    Result = _mapper.Map<IList<WidgetDTO>>(list),
+                    Result = BusinessMapper.ToDtoList(list),
                     TotalCount = totalCount,
                 };
 
@@ -59,7 +55,7 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var result = _mapper.Map<WidgetDTO>(entity);
+                    var result = BusinessMapper.ToDto(entity);
 
                     return OperationResult<WidgetDTO>.MakeSuccess(result);
                 }
@@ -95,7 +91,7 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var result = _mapper.Map<WidgetDTO>(entity);
+                    var result = BusinessMapper.ToDto(entity);
 
                     return OperationResult<WidgetDTO>.MakeSuccess(result);
                 }
@@ -161,7 +157,7 @@ namespace TrinityText.Business.Services.Impl
 
                         var result = await _widgetRepository.Update(entity);
 
-                        var r = _mapper.Map<WidgetDTO>(result);
+                        var r = BusinessMapper.ToDto(result);
                         return OperationResult<WidgetDTO>.MakeSuccess(r);
                     }
                     else
@@ -175,12 +171,12 @@ namespace TrinityText.Business.Services.Impl
 
                     if (existRs.Success)
                     {
-                        var entity = _mapper.Map<Widget>(dto);
+                        var entity = BusinessMapper.ToEntity(dto);
                         entity.LASTUPDATE_DATE = DateTime.Now;
                         entity.CREATION_DATE = DateTime.Now;
                         await _widgetRepository.Create(entity);
 
-                        var r = _mapper.Map<WidgetDTO>(entity);
+                        var r = BusinessMapper.ToDto(entity);
 
                         return OperationResult<WidgetDTO>.MakeSuccess(r);
                     }

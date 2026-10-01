@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
 using System.Collections.Generic;
@@ -15,12 +14,9 @@ namespace TrinityText.Business.Services.Impl
 
         private readonly ILogger<PageTypeService> _logger;
 
-        private readonly IMapper _mapper;
-
-        public PageTypeService(IRepository<PageType> pageTypeRepository, IMapper mapper, ILogger<PageTypeService> logger)
+        public PageTypeService(IRepository<PageType> pageTypeRepository, ILogger<PageTypeService> logger)
         {
             _pageTypeRepository = pageTypeRepository;
-            _mapper = mapper;
             _logger = logger;
         }
 
@@ -31,7 +27,7 @@ namespace TrinityText.Business.Services.Impl
                 var list = await _pageTypeRepository.ToListAsync(_pageTypeRepository.Repository
                     .OrderBy(t => t.NAME));
 
-                var result = _mapper.Map<PageTypeDTO[]>(list);
+                var result = BusinessMapper.ToDtoList(list).ToArray();
 
                 return OperationResult<PageTypeDTO[]>.MakeSuccess(result);
             }
@@ -51,7 +47,7 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var result = _mapper.Map<PageTypeDTO>(entity);
+                    var result = BusinessMapper.ToDto(entity);
 
                     return OperationResult<PageTypeDTO>.MakeSuccess(result);
                 }
@@ -83,7 +79,7 @@ namespace TrinityText.Business.Services.Impl
                             e.VISIBILITY.Split('|', StringSplitOptions.RemoveEmptyEntries).Any(visibilitySet.Contains))
                         .ToList();
 
-                    var result = _mapper.Map<IList<PageTypeDTO>>(filtered);
+                    var result = BusinessMapper.ToDtoList(filtered);
 
                     return OperationResult<IList<PageTypeDTO>>.MakeSuccess(result);
                 }
@@ -131,7 +127,7 @@ namespace TrinityText.Business.Services.Impl
 
                         var result = await _pageTypeRepository.Update(entity);
 
-                        var r = _mapper.Map<PageTypeDTO>(result);
+                        var r = BusinessMapper.ToDto(result);
 
                         return OperationResult<PageTypeDTO>.MakeSuccess(r);
                     }
@@ -142,10 +138,10 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    var entity = _mapper.Map<PageType>(dto);
+                    var entity = BusinessMapper.ToEntity(dto);
                     var result = await _pageTypeRepository.Create(entity);
 
-                    var r = _mapper.Map<PageTypeDTO>(result);
+                    var r = BusinessMapper.ToDto(result);
 
                     return OperationResult<PageTypeDTO>.MakeSuccess(r);
                 }

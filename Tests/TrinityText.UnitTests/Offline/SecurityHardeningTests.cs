@@ -9,7 +9,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
 using TrinityText.Business;
 using TrinityText.Business.Services.Impl;
 using TrinityText.Utilities;
@@ -23,8 +22,6 @@ namespace TrinityText.UnitTests.Offline
     [TestCategory("Offline")]
     public class SecurityHardeningTests
     {
-        private static IMapper Mapper { get; } =
-            new MapperConfiguration(cfg => cfg.AddProfile<BusinessMapperProfile>()).CreateMapper();
 
         // ------------------------------------------------------------ PathSafety
 
@@ -134,7 +131,7 @@ namespace TrinityText.UnitTests.Offline
         [TestMethod]
         public async Task Page_WithMalformedOrTooDeepContent_IsRefusedOnSave()
         {
-            var service = new PageService(null, null, Mapper, NullLogger<PageService>.Instance);
+            var service = new PageService(null, null, NullLogger<PageService>.Instance);
 
             foreach (var content in new[] { "<a><b></a>", Nested(SafeXml.MaxDepth + 1), "<!DOCTYPE r [<!ENTITY x \"y\">]><r/>" })
             {
@@ -148,7 +145,7 @@ namespace TrinityText.UnitTests.Offline
         [TestMethod]
         public async Task Widget_TooLarge_IsRefusedOnSave()
         {
-            var service = new WidgetService(null, Mapper, NullLogger<WidgetService>.Instance);
+            var service = new WidgetService(null, NullLogger<WidgetService>.Instance);
 
             var rs = await service.Save(new WidgetDTO { Key = "k", Language = "it", Content = new string('x', 1_000_001) });
 
@@ -193,7 +190,7 @@ namespace TrinityText.UnitTests.Offline
         [DataRow("not a url")]
         public async Task CdnBaseUrl_MustBeHttp(string url)
         {
-            var service = new CDNSettingService(null, null, Mapper, NullLogger<CDNSettingService>.Instance);
+            var service = new CDNSettingService(null, null, NullLogger<CDNSettingService>.Instance);
 
             var rs = await service.Save(new CdnServerDTO { Name = "cdn", BaseUrl = url }, []);
 
@@ -207,7 +204,7 @@ namespace TrinityText.UnitTests.Offline
         [DataRow("server")]
         public async Task FtpHost_MustBeAnFtpOrSftpAddressWithoutCredentials(string host)
         {
-            var service = new FTPServerService(null, Mapper, NullLogger<FTPServerService>.Instance);
+            var service = new FTPServerService(null, NullLogger<FTPServerService>.Instance);
 
             var rs = await service.Save(new FTPServerDTO { Name = "ftp", Host = host, Username = "u", Password = "p" });
 
@@ -242,7 +239,7 @@ namespace TrinityText.UnitTests.Offline
         [TestMethod]
         public async Task ImportTexts_OfAnotherWebsite_IsRefused_BeforeAnyWrite()
         {
-            var service = new TextService(null, null, null, Mapper, NullLogger<TextService>.Instance);
+            var service = new TextService(null, null, null, NullLogger<TextService>.Instance);
             var texts = new List<TextDTO>
             {
                 new() { Name = "a", Language = "it", Website = "mine", TextRevision = new TextRevisionDTO { Content = "x" } },

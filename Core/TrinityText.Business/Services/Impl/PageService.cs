@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
 using System.Collections.Frozen;
@@ -19,13 +18,10 @@ namespace TrinityText.Business.Services.Impl
 
         private readonly ILogger<PageService> _logger;
 
-        private readonly IMapper _mapper;
-
-        public PageService(IRepository<Page> pageRepository, IRepository<PageType> pageTypeRepository, IMapper mapper, ILogger<PageService> logger)
+        public PageService(IRepository<Page> pageRepository, IRepository<PageType> pageTypeRepository, ILogger<PageService> logger)
         {
             _pageRepository = pageRepository;
             _pageTypeRepository = pageTypeRepository;
-            _mapper = mapper;
             _logger = logger;
         }
 
@@ -46,7 +42,7 @@ namespace TrinityText.Business.Services.Impl
                 {
                     Page = page,
                     PageSize = size,
-                    Result = _mapper.Map<IList<PageDTO>>(list),
+                    Result = BusinessMapper.ToDtoList(list),
                     TotalCount = totalCount,
                 };
 
@@ -157,7 +153,7 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var result = _mapper.Map<PageDTO>(entity);
+                    var result = BusinessMapper.ToDto(entity);
 
                     return OperationResult<PageDTO>.MakeSuccess(result);
                 }
@@ -237,7 +233,7 @@ namespace TrinityText.Business.Services.Impl
                             WithoutPageType(_pageRepository.Repository.Where(p => p.ID == id)));
                         await AttachPageTypes(saved);
 
-                        return OperationResult<PageDTO>.MakeSuccess(_mapper.Map<PageDTO>(saved.Single()));
+                        return OperationResult<PageDTO>.MakeSuccess(BusinessMapper.ToDto(saved.Single()));
                     }
                     else
                     {
@@ -254,7 +250,7 @@ namespace TrinityText.Business.Services.Impl
                     var typeId = dto.PageTypeId;
                     var pageType = await _pageTypeRepository.Read(typeId);
 
-                    var entity = _mapper.Map<Page>(dto);
+                    var entity = BusinessMapper.ToEntity(dto);
                     entity.ACTIVE = true;
                     entity.CREATION_DATE = DateTime.Now;
                     entity.LASTUPDATE_DATE = DateTime.Now;
@@ -262,8 +258,8 @@ namespace TrinityText.Business.Services.Impl
 
                     await _pageRepository.Create(entity);
 
-                    var r = _mapper.Map<PageDTO>(entity);
-                    var t = _mapper.Map<PageTypeDTO>(pageType);
+                    var r = BusinessMapper.ToDto(entity);
+                    var t = BusinessMapper.ToDto(pageType);
                     r.PageType = t;
 
                     return OperationResult<PageDTO>.MakeSuccess(r);
@@ -346,7 +342,7 @@ namespace TrinityText.Business.Services.Impl
                 var contents = await _pageRepository.ToListAsync(query);
                 await AttachPageTypes(contents);
 
-                var list = _mapper.Map<List<PageDTO>>(contents);
+                var list = BusinessMapper.ToDtoList(contents);
 
                 var result = list.GroupBy(c => c.Language).ToFrozenDictionary(c => c.Key, c => c.ToList().AsReadOnly());
 
@@ -425,8 +421,8 @@ namespace TrinityText.Business.Services.Impl
                 await AttachPageTypes(pagesGlobalList);
                 await AttachPageTypes(pagesBySiteList);
 
-                var pagesGlobalDto = _mapper.Map<IList<PageDTO>>(pagesGlobalList).AsReadOnly();
-                var pagesBySiteDto = _mapper.Map<IList<PageDTO>>(pagesBySiteList);
+                var pagesGlobalDto = BusinessMapper.ToDtoList(pagesGlobalList).AsReadOnly();
+                var pagesBySiteDto = BusinessMapper.ToDtoList(pagesBySiteList);
                 var pagesBySiteLookup = pagesBySiteDto.ToLookup(p => p.Site, StringComparer.OrdinalIgnoreCase);
 
                 var publishablePages = new Dictionary<string, ReadOnlyCollection<PageDTO>>(sitesLanguages.Count);

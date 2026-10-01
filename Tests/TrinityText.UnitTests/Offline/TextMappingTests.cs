@@ -1,4 +1,3 @@
-using AutoMapper;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Globalization;
@@ -13,8 +12,6 @@ namespace TrinityText.UnitTests.Offline
     [TestCategory("Offline")]
     public class TextMappingTests
     {
-        private static IMapper CreateMapper()
-            => new MapperConfiguration(cfg => cfg.AddProfile<BusinessMapperProfile>()).CreateMapper();
 
         private static TextDTO NewDto() => new()
         {
@@ -28,7 +25,7 @@ namespace TrinityText.UnitTests.Offline
         [TestMethod]
         public void DtoToEntity_LinksTheTypeThroughTheForeignKeyOnly()
         {
-            var entity = CreateMapper().Map<Text>(NewDto());
+            var entity = BusinessMapper.ToEntity(NewDto());
 
             Assert.AreEqual(3, entity.FK_TEXTTYPE);
             // mapping the nested DTO would make EF try to insert a new TextType
@@ -44,7 +41,7 @@ namespace TrinityText.UnitTests.Offline
                 // "i".ToUpper() is "İ" under tr-TR: the same key would differ between import and save
                 CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
 
-                var entity = CreateMapper().Map<Text>(NewDto());
+                var entity = BusinessMapper.ToEntity(NewDto());
 
                 Assert.AreEqual("INFO", entity.NAME);
             }
@@ -67,7 +64,7 @@ namespace TrinityText.UnitTests.Offline
                 ],
             };
 
-            var dto = CreateMapper().Map<TextDTO>(entity);
+            var dto = BusinessMapper.ToDto(entity);
 
             Assert.AreEqual("new", dto.TextRevision.Content);
         }
@@ -78,7 +75,7 @@ namespace TrinityText.UnitTests.Offline
         public async Task CleanRevisions_NonPositiveLimit_IsRejected_BeforeTouchingTheDatabase(int keep)
         {
             // would delete EVERY revision of every text
-            var service = new TextService(null, null, null, CreateMapper(), NullLogger<TextService>.Instance);
+            var service = new TextService(null, null, null, NullLogger<TextService>.Instance);
 
             var result = await service.CleanRevisions(keep);
 

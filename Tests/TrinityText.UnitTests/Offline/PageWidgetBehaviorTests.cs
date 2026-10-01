@@ -1,4 +1,3 @@
-using AutoMapper;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
@@ -18,11 +17,9 @@ namespace TrinityText.UnitTests.Offline
     {
         public static IEnumerable<object[]> Providers => new[] { new object[] { "EF" }, new object[] { "NH" } };
 
-        private static IMapper Mapper { get; } =
-            new MapperConfiguration(cfg => cfg.AddProfile<BusinessMapperProfile>()).CreateMapper();
 
         private static PageService Pages(ProviderScope scope)
-            => new(scope.Repo<Page>(), scope.Repo<PageType>(), Mapper, NullLogger<PageService>.Instance);
+            => new(scope.Repo<Page>(), scope.Repo<PageType>(), NullLogger<PageService>.Instance);
 
         private static async Task<int> CreatePageType(ProviderFixture db, string name)
         {
@@ -149,7 +146,7 @@ namespace TrinityText.UnitTests.Offline
         {
             using var db = ProviderFixture.Create(provider);
 
-            WidgetService Service(ProviderScope scope) => new(scope.Repo<Widget>(), Mapper, NullLogger<WidgetService>.Instance);
+            WidgetService Service(ProviderScope scope) => new(scope.Repo<Widget>(), NullLogger<WidgetService>.Instance);
 
             int global;
             using (var scope = db.NewScope())

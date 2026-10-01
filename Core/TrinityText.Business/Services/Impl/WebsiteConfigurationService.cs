@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
 using System.Collections.Generic;
@@ -19,15 +18,12 @@ namespace TrinityText.Business.Services.Impl
 
         private readonly ILogger<WebsiteConfigurationService> _logger;
 
-        private readonly IMapper _mapper;
-
         public WebsiteConfigurationService(IRepository<WebsiteConfiguration> websiteConfigurationRepository, IRepository<TextTypePerWebsite> textTypePerWebsiteRepository, IRepository<CdnServersPerWebsite> cdnServersPerWebsite,
-            IMapper mapper, ILogger<WebsiteConfigurationService> logger)
+            ILogger<WebsiteConfigurationService> logger)
         {
             _websiteConfigurationRepository = websiteConfigurationRepository;
             _textTypePerWebsiteRepository = textTypePerWebsiteRepository;
             _cdnServersPerWebsite = cdnServersPerWebsite;
-            _mapper = mapper;
             _logger = logger;
         }
 
@@ -40,7 +36,7 @@ namespace TrinityText.Business.Services.Impl
                     .OrderBy(t => t.TYPE)
                     );
 
-                var result = _mapper.Map<IList<WebsiteConfigurationDTO>>(list);
+                var result = BusinessMapper.ToDtoList(list);
 
                 return OperationResult<IList<WebsiteConfigurationDTO>>.MakeSuccess(result);
             }
@@ -60,7 +56,7 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var result = _mapper.Map<WebsiteConfigurationDTO>(entity);
+                    var result = BusinessMapper.ToDto(entity);
 
                     return OperationResult<WebsiteConfigurationDTO>.MakeSuccess(result);
                 }
@@ -93,7 +89,7 @@ namespace TrinityText.Business.Services.Impl
 
                         var result = await _websiteConfigurationRepository.Update(entity);
 
-                        var r = _mapper.Map<WebsiteConfigurationDTO>(result);
+                        var r = BusinessMapper.ToDto(result);
 
                         return OperationResult<WebsiteConfigurationDTO>.MakeSuccess(r);
                     }
@@ -104,10 +100,10 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    var entity = _mapper.Map<WebsiteConfiguration>(dto);
+                    var entity = BusinessMapper.ToEntity(dto);
                     var result = await _websiteConfigurationRepository.Create(entity);
 
-                    var r = _mapper.Map<WebsiteConfigurationDTO>(result);
+                    var r = BusinessMapper.ToDto(result);
 
                     return OperationResult<WebsiteConfigurationDTO>.MakeSuccess(r);
                 }

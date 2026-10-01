@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
 using System.Collections.Generic;
@@ -15,12 +14,9 @@ namespace TrinityText.Business.Services.Impl
 
         private readonly ILogger<TextTypeService> _logger;
 
-        private readonly IMapper _mapper;
-
-        public TextTypeService(IRepository<TextType> textTypeRepository, IMapper mapper, ILogger<TextTypeService> logger)
+        public TextTypeService(IRepository<TextType> textTypeRepository, ILogger<TextTypeService> logger)
         {
             _textTypeRepository = textTypeRepository;
-            _mapper = mapper;
             _logger = logger;
         }
 
@@ -32,7 +28,7 @@ namespace TrinityText.Business.Services.Impl
                     .OrderBy(t => t.SUBFOLDER)
                     .ThenBy(t => t.CONTENTTYPE));
 
-                var result = _mapper.Map<IList<TextTypeDTO>>(list);
+                var result = BusinessMapper.ToDtoList(list);
 
                 return OperationResult<IList<TextTypeDTO>>.MakeSuccess(result);
             }
@@ -52,7 +48,7 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var result = _mapper.Map<TextTypeDTO>(entity);
+                    var result = BusinessMapper.ToDto(entity);
 
                     return OperationResult<TextTypeDTO>.MakeSuccess(result);
                 }
@@ -77,7 +73,7 @@ namespace TrinityText.Business.Services.Impl
                     .OrderBy(t => t.SUBFOLDER)
                     .ThenBy(t => t.CONTENTTYPE));
 
-                var result = _mapper.Map<IList<TextTypeDTO>>(list);
+                var result = BusinessMapper.ToDtoList(list);
 
                 return OperationResult<IList<TextTypeDTO>>.MakeSuccess(result);
             }
@@ -116,7 +112,7 @@ namespace TrinityText.Business.Services.Impl
 
                         var result = await _textTypeRepository.Update(entity);
 
-                        var r = _mapper.Map<TextTypeDTO>(result);
+                        var r = BusinessMapper.ToDto(result);
 
                         return OperationResult<TextTypeDTO>.MakeSuccess(r);
                     }
@@ -127,10 +123,10 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    var entity = _mapper.Map<TextType>(dto);
+                    var entity = BusinessMapper.ToEntity(dto);
                     var result = await _textTypeRepository.Create(entity);
 
-                    var r = _mapper.Map<TextTypeDTO>(result);
+                    var r = BusinessMapper.ToDto(result);
 
                     return OperationResult<TextTypeDTO>.MakeSuccess(r);
                 }

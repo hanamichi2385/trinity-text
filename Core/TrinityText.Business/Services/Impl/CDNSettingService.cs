@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
 using System.Collections.Generic;
@@ -17,13 +16,10 @@ namespace TrinityText.Business.Services.Impl
 
         private readonly ILogger<CDNSettingService> _logger;
 
-        private readonly IMapper _mapper;
-
-        public CDNSettingService(IRepository<CdnServer> cdnSettingsRepository, IRepository<FtpServerPerCdnServer> ftpServerPerCdnRepository, IMapper mapper, ILogger<CDNSettingService> logger)
+        public CDNSettingService(IRepository<CdnServer> cdnSettingsRepository, IRepository<FtpServerPerCdnServer> ftpServerPerCdnRepository, ILogger<CDNSettingService> logger)
         {
             _cdnSettingsRepository = cdnSettingsRepository;
             _ftpServerPerCdnRepository = ftpServerPerCdnRepository;
-            _mapper = mapper;
             _logger = logger;
         }
 
@@ -35,7 +31,7 @@ namespace TrinityText.Business.Services.Impl
                     .OrderBy(t => t.TYPE)
                     );
 
-                var result = _mapper.Map<IList<CdnServerDTO>>(list);
+                var result = BusinessMapper.ToDtoList(list);
 
                 return OperationResult<IList<CdnServerDTO>>.MakeSuccess(result);
             }
@@ -55,7 +51,7 @@ namespace TrinityText.Business.Services.Impl
                     .OrderBy(t => t.TYPE)
                     );
 
-                var result = _mapper.Map<IList<CdnServerDTO>>(list);
+                var result = BusinessMapper.ToDtoList(list);
 
                 return OperationResult<IList<CdnServerDTO>>.MakeSuccess(result);
             }
@@ -75,7 +71,7 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var result = _mapper.Map<CdnServerDTO>(entity);
+                    var result = BusinessMapper.ToDto(entity);
 
                     return OperationResult<CdnServerDTO>.MakeSuccess(result);
                 }
@@ -185,7 +181,7 @@ namespace TrinityText.Business.Services.Impl
                         var result = await _cdnSettingsRepository.FirstOrDefaultAsync(
                             _cdnSettingsRepository.Repository.Where(c => c.ID == cdnId));
 
-                        var r = _mapper.Map<CdnServerDTO>(result);
+                        var r = BusinessMapper.ToDto(result);
 
                         return OperationResult<CdnServerDTO>.MakeSuccess(r);
                     }
@@ -196,7 +192,7 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    var entity = _mapper.Map<CdnServer>(dto);
+                    var entity = BusinessMapper.ToEntity(dto);
                     entity.FTPSERVERS = [];
 
                     CdnServer result;
@@ -223,7 +219,7 @@ namespace TrinityText.Business.Services.Impl
                     result = await _cdnSettingsRepository.FirstOrDefaultAsync(
                         _cdnSettingsRepository.Repository.Where(c => c.ID == result.ID));
 
-                    var r = _mapper.Map<CdnServerDTO>(result);
+                    var r = BusinessMapper.ToDto(result);
 
                     return OperationResult<CdnServerDTO>.MakeSuccess(r);
                 }

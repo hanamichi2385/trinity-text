@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Resulz;
 using System;
 using System.Collections.Generic;
@@ -15,12 +14,9 @@ namespace TrinityText.Business.Services.Impl
 
         private readonly ILogger<CacheSettingsService> _logger;
 
-        private readonly IMapper _mapper;
-
-        public CacheSettingsService(IRepository<CacheSettings> cacheSettingsRepository, IMapper mapper, ILogger<CacheSettingsService> logger)
+        public CacheSettingsService(IRepository<CacheSettings> cacheSettingsRepository, ILogger<CacheSettingsService> logger)
         {
             _cacheSettingsRepository = cacheSettingsRepository;
-            _mapper = mapper;
             _logger = logger;
         }
 
@@ -31,7 +27,7 @@ namespace TrinityText.Business.Services.Impl
                 var list = await _cacheSettingsRepository.ToListAsync(_cacheSettingsRepository.Repository
                     .OrderBy(t => t.TYPE));
 
-                var result = _mapper.Map<IList<CacheSettingsDTO>>(list);
+                var result = BusinessMapper.ToDtoList(list);
 
                 return OperationResult<IList<CacheSettingsDTO>>.MakeSuccess(result);
             }
@@ -51,7 +47,7 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var result = _mapper.Map<CacheSettingsDTO>(entity);
+                    var result = BusinessMapper.ToDto(entity);
 
                     return OperationResult<CacheSettingsDTO>.MakeSuccess(result);
                 }
@@ -76,7 +72,7 @@ namespace TrinityText.Business.Services.Impl
 
                 if (entity != null)
                 {
-                    var result = _mapper.Map<CacheSettingsDTO>(entity);
+                    var result = BusinessMapper.ToDto(entity);
 
                     return OperationResult<CacheSettingsDTO>.MakeSuccess(result);
                 }
@@ -107,7 +103,7 @@ namespace TrinityText.Business.Services.Impl
 
                         var result = await _cacheSettingsRepository.Update(entity);
 
-                        var r = _mapper.Map<CacheSettingsDTO>(result);
+                        var r = BusinessMapper.ToDto(result);
 
                         return OperationResult<CacheSettingsDTO>.MakeSuccess(r);
                     }
@@ -118,10 +114,10 @@ namespace TrinityText.Business.Services.Impl
                 }
                 else
                 {
-                    var entity = _mapper.Map<CacheSettings>(dto);
+                    var entity = BusinessMapper.ToEntity(dto);
                     var result = await _cacheSettingsRepository.Create(entity);
 
-                    var r = _mapper.Map<CacheSettingsDTO>(result);
+                    var r = BusinessMapper.ToDto(result);
 
                     return OperationResult<CacheSettingsDTO>.MakeSuccess(r);
                 }
