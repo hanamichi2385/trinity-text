@@ -1,4 +1,8 @@
-﻿#2026-10-01
+﻿#2026-10-06
+- Tests: `SourceConventionTests` (offline) fail on runtime `IOrderedQueryable` checks, `Task.FromResult(...ToList())` and EF/NH `using` in `Core/TrinityText.Business`
+- CI: pull requests that change `Core/**` without a `SolutionItems/README.md` change fail the build (`builds.yml`, "Check changelog entry")
+
+#2026-10-01
 - Security: AutoMapper 14 (GHSA-rvv3-g6hj-g44x, DoS via uncontrolled recursion; fixes only in the commercial 15.x/16.x) replaced by Riok.Mapperly 4.3 (Apache-2.0, source generator: no reflection, no runtime graph walking). `BusinessMapperProfile` -> internal `BusinessMapper`; services no longer take `IMapper` (hosts must remove `AddAutoMapper(BusinessMapperProfile)`). Unmapped DTO/entity members now break the build (RMG012)
 - Refactor: version 1.4.0 (public API: services lose the `IMapper` constructor parameter); mapping behavior is unchanged
 - Tests: `BusinessMapperTests` for every custom mapping rule
