@@ -19,13 +19,13 @@ namespace TrinityText.UnitTests.Offline
 
             public List<(string Tenant, string Website, string Path)> Uploads { get; } = new();
 
-            public Task<string> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password, string path)
+            public Task<string> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password, string path, int? port)
             {
                 Uploads.Add((tenant, website, path));
                 return Task.FromResult(string.Empty);
             }
 
-            public Task<byte[]> GetFile(string tenant, string website, string file, string host, string username, string password, string path)
+            public Task<byte[]> GetFile(string tenant, string website, string file, string host, string username, string password, string path, int? port)
                 => Task.FromResult<byte[]>(null);
         }
 
@@ -38,7 +38,7 @@ namespace TrinityText.UnitTests.Offline
             var recorder = new RecordingTransfer();
             var service = new TransferService([recorder]);
 
-            var result = await service.Upload("tenant", "website", NewDirectory(), "sftp://user:secret@server:2222/dir/sub", "u", "p");
+            var result = await service.Upload("tenant", "website", NewDirectory(), "sftp://user:secret@server:2222/dir/sub", "u", "p", 2222);
 
             Assert.IsTrue(result.Success);
             Assert.AreEqual("/dir/sub", recorder.Uploads.Single().Path);
@@ -50,7 +50,7 @@ namespace TrinityText.UnitTests.Offline
             var recorder = new RecordingTransfer();
             var service = new TransferService([recorder]);
 
-            await service.Upload("tenant", "website", NewDirectory(), "sftp://server", "u", "p");
+            await service.Upload("tenant", "website", NewDirectory(), "sftp://server", "u", "p", 21);
 
             Assert.AreEqual("/", recorder.Uploads.Single().Path);
         }
@@ -65,7 +65,7 @@ namespace TrinityText.UnitTests.Offline
             var service = new TransferService([recorder]);
             var local = NewDirectory();
 
-            var result = await service.Upload(tenant, website, local, "sftp://server/dir", "u", "p");
+            var result = await service.Upload(tenant, website, local, "sftp://server/dir", "u", "p", 22);
 
             Assert.IsFalse(result.Success);
             Assert.AreEqual(0, recorder.Uploads.Count);

@@ -17,7 +17,7 @@ namespace TrinityText.Utilities.Transfer
             Services = services.ToDictionary(s => s.Key, s => s);
         }
 
-        public async Task<OperationResult<byte[]>> GetFile(string tenant, string website, string file, string host, string username, string password)
+        public async Task<OperationResult<byte[]>> GetFile(string tenant, string website, string file, string host, string username, string password, int? port)
         {
             try
             {
@@ -30,7 +30,7 @@ namespace TrinityText.Utilities.Transfer
                 var directories = GetRemoteDirectory(uri);
 
                 var service = GetService(uri);
-                var ftpfile = await service.GetFile(tenant, website, file, uri.Host, username, password, directories);
+                var ftpfile = await service.GetFile(tenant, website, file, uri.Host, username, password, directories, port);
 
                 return ftpfile != null
                     ? OperationResult<byte[]>.MakeSuccess(ftpfile)
@@ -42,7 +42,7 @@ namespace TrinityText.Utilities.Transfer
             }
         }
 
-        public async Task<OperationResult> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password)
+        public async Task<OperationResult> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password, int? port)
         {
             var result = OperationResult.MakeSuccess();
             try
@@ -56,7 +56,7 @@ namespace TrinityText.Utilities.Transfer
 
                 var service = GetService(uri);
 
-                var uploadlog = await service.Upload(tenant, website, baseDirectory, host, username, password, directories);
+                var uploadlog = await service.Upload(tenant, website, baseDirectory, host, username, password, directories,port);
 
                 if (!string.IsNullOrWhiteSpace(uploadlog))
                 {

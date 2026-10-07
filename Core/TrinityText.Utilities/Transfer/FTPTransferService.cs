@@ -21,15 +21,14 @@ namespace TrinityText.Utilities
             _logger = logger;
         }
 
-        public async Task<string> Upload(string tenant, string website, DirectoryInfo baseDirectory, string ftphost, string username, string password, string path)
+        public async Task<string> Upload(string tenant, string website, DirectoryInfo baseDirectory, string ftphost, string username, string password, string path, int? port)
         {
             var operationLog = new StringBuilder();
 
-            await using var ftp = new AsyncFtpClient();
+            await using var ftp = new AsyncFtpClient(ftphost, port ?? 21);
             try
             {
                 var directories = path.Split('/', StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
-                ftp.Host = ftphost;
                 if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
                 {
                     var credentials = new NetworkCredential(username, password);
@@ -187,19 +186,16 @@ namespace TrinityText.Utilities
         //    }
         //}
 
-        public async Task<byte[]> GetFile(string tenant, string website, string file, string host, string username, string password, string path)
+        public async Task<byte[]> GetFile(string tenant, string website, string file, string host, string username, string password, string path, int? port)
         {
             var operationLog = new StringBuilder();
 
             //string baseFtpDirectoryPath = host;
 
-            await using var ftp = new AsyncFtpClient();
+            await using var ftp = new AsyncFtpClient(host, port ?? 21);
             try
             {
                 var directories = path.Split('/', StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
-
-
-                ftp.Host = host;
                 if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
                 {
                     var credentials = new NetworkCredential(username, password);

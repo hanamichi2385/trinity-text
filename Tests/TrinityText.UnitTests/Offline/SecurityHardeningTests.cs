@@ -216,10 +216,10 @@ namespace TrinityText.UnitTests.Offline
         {
             public string Key => "sftp";
 
-            public Task<string> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password, string path)
+            public Task<string> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password, string path, int? port)
                 => throw new InvalidOperationException("must not be reached");
 
-            public Task<byte[]> GetFile(string tenant, string website, string file, string host, string username, string password, string path)
+            public Task<byte[]> GetFile(string tenant, string website, string file, string host, string username, string password, string path, int? port)
                 => throw new InvalidOperationException("must not be reached");
         }
 
@@ -229,7 +229,7 @@ namespace TrinityText.UnitTests.Offline
             var service = new TransferService([new NeverCalled()]);
             var local = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "trinity-tests-" + Guid.NewGuid().ToString("N")));
 
-            var rs = await service.Upload("tenant", "website", local, "http://server/dir", "u", "p");
+            var rs = await service.Upload("tenant", "website", local, "http://server/dir", "u", "p", null);
 
             Assert.IsFalse(rs.Success);
         }

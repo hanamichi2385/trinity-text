@@ -1,4 +1,7 @@
-﻿#2026-10-06
+﻿#2026-10-07
+- SFTP/FTP: manage port parameter
+
+#2026-10-06
 - Tests: `SourceConventionTests` (offline) fail on runtime `IOrderedQueryable` checks, `Task.FromResult(...ToList())` and EF/NH `using` in `Core/TrinityText.Business`
 - CI: pull requests that change `Core/**` without a `SolutionItems/README.md` change fail the build (`builds.yml`, "Check changelog entry")
 

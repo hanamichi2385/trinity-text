@@ -311,7 +311,7 @@ namespace TrinityText.ServiceBus.MassTransit.Services
                 var server = setting.FtpServer;
                 var d = new DirectoryInfo(basePath);
 
-                var uploadRs = await _transferServiceCoordinator.Upload(payload.Tenant, setting.Website, d, server.Host, server.Username, server.Password);
+                var uploadRs = await _transferServiceCoordinator.Upload(payload.Tenant, setting.Website, d, server.Host, server.Username, server.Password, server.Port);
 
                 if (uploadRs.Success == false)
                 {

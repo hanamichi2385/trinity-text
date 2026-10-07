@@ -8,15 +8,15 @@ namespace TrinityText.Business
     public interface ITransferService
     {
         string Key { get; }
-        Task<string> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password, string path);
-        Task<byte[]> GetFile(string tenant, string website, string file, string host, string username, string password, string path);
+        Task<string> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password, string path, int? port);
+        Task<byte[]> GetFile(string tenant, string website, string file, string host, string username, string password, string path, int? port);
     }
 
     public interface ITransferServiceCoordinator 
     {
         IDictionary<string, ITransferService> Services { get; }
 
-        Task<OperationResult> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password);
-        Task<OperationResult<byte[]>> GetFile(string tenant, string website, string file, string host, string username, string password);
+        Task<OperationResult> Upload(string tenant, string website, DirectoryInfo baseDirectory, string host, string username, string password, int? port);
+        Task<OperationResult<byte[]>> GetFile(string tenant, string website, string file, string host, string username, string password, int? port);
     }
 }

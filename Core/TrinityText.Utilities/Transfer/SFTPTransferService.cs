@@ -21,7 +21,7 @@ namespace TrinityText.Utilities
             _logger = logger;
         }
 
-        public async Task<string> Upload(string tenant, string vendor, DirectoryInfo baseDirectory, string host, string username, string password, string path)
+        public async Task<string> Upload(string tenant, string vendor, DirectoryInfo baseDirectory, string host, string username, string password, string path, int? port)
         {
             var operationLog = new StringBuilder();
 
@@ -30,7 +30,7 @@ namespace TrinityText.Utilities
             {
                 var h = new Uri(host);
 
-                ftp = new SftpClient(h.Host, h.Port > 0 ? h.Port : 22, username, password);
+                ftp = new SftpClient(h.Host, port ?? 22, username, password);
 
                 await ftp.ConnectAsync(CancellationToken.None);
 
@@ -102,7 +102,7 @@ namespace TrinityText.Utilities
             return operationLog.ToString();
         }
 
-        public async Task<byte[]> GetFile(string tenant, string vendor, string file, string host, string username, string password, string path)
+        public async Task<byte[]> GetFile(string tenant, string vendor, string file, string host, string username, string password, string path, int? port)
         {
             var operationLog = new StringBuilder();
 
@@ -113,7 +113,7 @@ namespace TrinityText.Utilities
             {
                 var directories = path.Split('/', StringSplitOptions.RemoveEmptyEntries).ToList().AsReadOnly();
 
-                ftp = new SftpClient(host, username, password);
+                ftp = new SftpClient(host, port ?? 22,  username, password);
 
                 await ftp.ConnectAsync(CancellationToken.None);
 
